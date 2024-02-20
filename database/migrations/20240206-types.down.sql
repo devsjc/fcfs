@@ -1,1 +1,0 @@
-DELETE TYPE IF EXISTS power_unit;
