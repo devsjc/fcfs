@@ -64,21 +64,24 @@ where possible. However, because generation can be for locations that vary great
 size, we also store the unit of the generation.
 
 - BIGINT: 8 bytes for 0W-2.14MW
-- SMALLINT + ENUM: 2+4 = 6 bytes for 0W-32000TW 
+- SMALLINT + TINYINT: 2+1 = 3 bytes for 0W-32000TW 
 */
 CREATE TABLE pred.predicted_generation (
     forecast_id INT NOT NULL,
     horizon_mins smallint NOT NULL,
-    generation smallint NOT NULL,
-    unit public.power_unit NOT NULL,
-    CHECK (generation >= 0),
     CHECK (horizon_mins >= 0),
+    generation smallint NOT NULL,
+    CHECK (generation >= 0),
+    generation_unit TINYINT NOT NULL,
     PRIMARY KEY (forecast_id, location_id, horizon),
+    FOREIGN_KEY generation_unit REFERENCES public.lu_power_units(seq),
     FOREIGN KEY (forecast_id) REFERENCES pred.forecast(id),
 );
 COMMENT ON TABLE pred.predicted_generation IS 'Predicted generation values';
-COMMENT ON ROW pred.predicted_generation.forecast_uuid IS 'Unique identifier for a forecast';
-COMMENT ON ROW pred.predicted_generation.horizon IS 'Time horizon for the forecast';
+COMMENT ON ROW pred.predicted_generation.forecast_id IS 'Unique identifier for a forecast';
+COMMENT ON ROW pred.predicted_generation.horizon_mins IS 'Time horizon in mins for generation value';
+COMMENT ON ROW pred.predicted_generation.generation IS 'Predicted generation value';
+COMMENT ON ROW pred.predicted_generation.generation_unit IS 'Unit of the generation value';
 
 
 

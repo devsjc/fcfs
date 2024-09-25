@@ -19,18 +19,30 @@ https://stackoverflow.com/a/2672722
 CREATE SCHEMA loc;
 COMMENT ON SCHEMA loc IS 'Locations schema';
 
+/*- Lookups -----------------------------------------------------------------------------------*/
+CREATE TABLE loc.lu_subtypes (
+    seq TINYINT AUTO INCREMENT NOT NULL,
+    name TEXT NOT NULL,
+    PRIMARY KEY (seq),
+    CHECK ( name IN ('site', 'region') ),
+    CHECK ( LEN(name) <= 15 ),
+);
+INSERT INTO loc.lu_subtypes (name) VALUES ('site'), ('region');
+COMMENT ON TABLE loc.lu_subtypes IS 'Lookup table for location subtypes';
+
 /*- Tables ----------------------------------------------------------------------------------*/
 
 CREATE TABLE loc.locations (
-    id SERIAL PRIMARY KEY,
+    id SERIAL NOT NULL,
     name TEXT NOT NULL,
-    latitude real NOT NULL,
-    longitude real NOT NULL,
-    capacity_kw integer NOT NULL,
-    subtype varchar(10) NOT NULL,
-    CHECK ( capacity_kw >= 0),
-    CHECK ( subtype IN ('site', 'region')),
-    UNIQUE (name, latitude, longitude, subtype),
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    capacity_kw INTEGER NOT NULL,
+    CHECK ( capacity_kw >= 0 ),
+    subtype TINYINT NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (subtype) REFERENCES loc.lu_subtypes(seq),
+    CREATE UNIQUE INDEX ON (name, latitude, longitude, subtype),
 );
 COMMENT ON TABLE loc.locations IS 'Supertype table for locations.';
 COMMENT ON COLUMN loc.locations.id IS 'Primary key for the location.';
@@ -38,19 +50,22 @@ COMMENT ON COLUMN loc.locations.name IS 'Name of the location.';
 COMMENT ON COLUMN loc.locations.latitude IS 'Latitude assocciated with the location.';
 COMMENT ON COLUMN loc.locations.longitude IS 'Longitude associated with the location.';
 COMMENT ON COLUMN loc.locations.capacity_kw IS 'Capacity of the location in kilowatts.';
-COMMENT ON COLUMN loc.locations.subtype IS 'Type of location (site, region).';
+COMMENT ON COLUMN loc.locations.subtype IS 'Type of location.';
 
 
 CREATE TABLE loc.site_metadata (
-    id SERIAL PRIMARY KEY,
+    id SERIAL NOT NULL,
     location_id INTEGER NOT NULL,
-    client_name varchar(255) NULLABLE,
-    client_site_id varchar(255) NULLABLE,
-    created_utc timestamp DEFAULT CURRENT_TIMESTAMP,
-    orientation_deg smallint NULLABLE,
-    pitch_deg smallint NULLABLE,
-    CHECK ( (orientation_deg is NULL) or (orientation_deg >= 0 AND orientation_deg < 360)),
-    CHECK ( (pitch_deg is NULL) or (pitch_deg >= 0 AND pitch_deg <= 180)),
+    client_name TEXT NULLABLE,
+    CHECK ( client_name IS NULL OR LEN(client_name) <= 64 ),
+    client_site_id TEXT NULLABLE,
+    CHECK ( client_site_id IS NULL OR LEN(client_site_id) <= 126 ),
+    created_utc TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    orientation_deg SMALLINT NULLABLE,
+    CHECK ( (orientation_deg is NULL) or (orientation_deg >= 0 AND orientation_deg < 360) ),
+    pitch_deg SMALLINT NULLABLE,
+    CHECK ( (pitch_deg is NULL) or (pitch_deg >= 0 AND pitch_deg <= 180) ),
+    PRIMARY KEY (id),
     FOREIGN KEY (location_id) REFERENCES loc.location(id),
 );
 COMMENT ON TABLE loc.sites IS 'Subtype table for site-level locations.';
@@ -65,8 +80,9 @@ COMMENT ON COLUMN loc.sites.tilt_deg IS 'Pitch of the site in degrees (0: Points
 CREATE TABLE loc.region_metadata (
     id SERIAL PRIMARY KEY,
     location_id INTEGER NOT NULL,
-    region_name varchar(255) NOT NULL,
-    boundary_geojson jsonb NOT NULL,
+    region_name TEXT NOT NULL,
+    CHECK ( LEN(region_name) <= 64 ),
+    boundary_geojson JSONB NOT NULL,
     FOREIGN KEY (location_id) REFERENCES loc.location(id),
 );
 COMMENT ON TABLE loc.regions IS 'Subtype table for region-level locations.';
