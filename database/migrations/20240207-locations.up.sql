@@ -19,7 +19,7 @@ https://stackoverflow.com/a/2672722
 CREATE SCHEMA loc;
 COMMENT ON SCHEMA loc IS 'Locations schema';
 
--- Tables ------------------------------------------------------------------------------------
+/*- Tables ----------------------------------------------------------------------------------*/
 
 CREATE TABLE loc.locations (
     id SERIAL PRIMARY KEY,
@@ -28,6 +28,8 @@ CREATE TABLE loc.locations (
     longitude real NOT NULL,
     capacity_kw integer NOT NULL,
     subtype varchar(10) NOT NULL,
+    CHECK ( capacity_kw >= 0),
+    CHECK ( subtype IN ('site', 'region')),
     UNIQUE (name, latitude, longitude, subtype),
 );
 COMMENT ON TABLE loc.locations IS 'Supertype table for locations.';
@@ -64,15 +66,17 @@ CREATE TABLE loc.region_metadata (
     id SERIAL PRIMARY KEY,
     location_id INTEGER NOT NULL,
     region_name varchar(255) NOT NULL,
+    boundary_geojson jsonb NOT NULL,
     FOREIGN KEY (location_id) REFERENCES loc.location(id),
 );
 COMMENT ON TABLE loc.regions IS 'Subtype table for region-level locations.';
 COMMENT ON COLUMN loc.regions.id IS 'Primary key for the region.';
 COMMENT ON COLUMN loc.regions.location_id IS 'Foreign key to the location table.';
 COMMENT ON COLUMN loc.regions.region_name IS 'Name of the region.';
+COMMENT ON COLUMN loc.regions.boundary_geojson IS 'GeoJSON representation of the region boundary.';
 
 
--- Materialized Views ------------------------------------------------------------------------
+/*- Materialized Views ----------------------------------------------------------------------*/
 
 CREATE MATERIALIZED VIEW loc.sites AS (
     SELECT 
@@ -87,7 +91,7 @@ CREATE MATERIALIZED VIEW loc.sites AS (
         s.client_site_id AS client_site_id,
         s.created_utc AS created_utc
     FROM loc.locations l
-    JOIN loc.site_metadata s ON l.id = s.location_id
+    INNER JOIN loc.site_metadata s ON l.id = s.location_id
 );
 COMMENT ON MATERIALIZED VIEW loc.sites IS 'Materialized view of the site locations and metadata.';
 
@@ -101,6 +105,7 @@ CREATE MATERIALIZED VIEW loc.regions AS (
         l.created_utc AS created_utc,
         r.id AS region_id
     FROM loc.locations l
-    JOIN loc.region_metadata r ON l.id = r.location_id
+    INNER JOIN loc.region_metadata r ON l.id = r.location_id
 );
+COMMENT ON MATERIALIZED VIEW loc.regions IS 'Materialized view of the region locations and metadata.';
 
