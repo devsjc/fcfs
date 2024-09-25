@@ -23,7 +23,7 @@ There can only be one forecast per location per initialization time per model,
 reruns should replace old values.
 */
 CREATE TABLE pred.forecasts (
-    id SERIAL NOT NULL,
+    id INTEGER AUTOINCREMENT NOT NULL,
     location_id INT NOT NULL,
     created_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     init_time_utc TIMESTAMP NOT NULL,
@@ -45,9 +45,11 @@ A forecast model is an ML model that generated predicted generation values.
 Each forecast model's name and version number uniquely identifies it.
 */
 CREATE TABLE pred.forecast_models (
-    id SERIAL NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    version VARCHAR(255) NOT NULL,
+    id INTEGER AUTOINCREMENT NOT NULL,
+    name TEXT NOT NULL,
+    CHECK ( LEN(name) > 0 and LEN(name) < 126 ),
+    version TEXT NOT NULL,
+    CHECK ( LEN(version) > 0 and LEN(version) < 64 ),
     PRIMARY KEY (id),
     CREATE UNIQUE INDEX ON (name, version)
 );
@@ -64,24 +66,22 @@ where possible. However, because generation can be for locations that vary great
 size, we also store the unit of the generation.
 
 - BIGINT: 8 bytes for 0W-2.14MW
-- SMALLINT + TINYINT: 2+1 = 3 bytes for 0W-32000TW 
+- SMALLINT + TINYINT: 2+1 = 3 bytes for 0W-32000TW+
 */
 CREATE TABLE pred.predicted_generation (
     forecast_id INT NOT NULL,
-    horizon_mins smallint NOT NULL,
+    horizon_mins SMALLINT NOT NULL,
     CHECK (horizon_mins >= 0),
-    generation smallint NOT NULL,
+    generation SMALLINT NOT NULL,
     CHECK (generation >= 0),
-    generation_unit TINYINT NOT NULL,
+    generation_units TINYINT NOT NULL,
     PRIMARY KEY (forecast_id, location_id, horizon),
-    FOREIGN_KEY generation_unit REFERENCES public.lu_power_units(seq),
+    FOREIGN_KEY (generation_units) REFERENCES obs.lu_power_units(seq),
     FOREIGN KEY (forecast_id) REFERENCES pred.forecast(id),
 );
 COMMENT ON TABLE pred.predicted_generation IS 'Predicted generation values';
 COMMENT ON ROW pred.predicted_generation.forecast_id IS 'Unique identifier for a forecast';
 COMMENT ON ROW pred.predicted_generation.horizon_mins IS 'Time horizon in mins for generation value';
 COMMENT ON ROW pred.predicted_generation.generation IS 'Predicted generation value';
-COMMENT ON ROW pred.predicted_generation.generation_unit IS 'Unit of the generation value';
-
-
+COMMENT ON ROW pred.predicted_generation.generation_units IS 'Units of the generation value';
 

@@ -33,10 +33,12 @@ COMMENT ON TABLE loc.lu_subtypes IS 'Lookup table for location subtypes';
 /*- Tables ----------------------------------------------------------------------------------*/
 
 CREATE TABLE loc.locations (
-    id SERIAL NOT NULL,
+    id INTEGER AUTOINCREMENT NOT NULL,
     name TEXT NOT NULL,
     latitude REAL NOT NULL,
+    CHECK ( latitude >= -90 AND latitude <= 90 ),
     longitude REAL NOT NULL,
+    CHECK ( longitude >= -180 AND longitude <= 180 ),
     capacity_kw INTEGER NOT NULL,
     CHECK ( capacity_kw >= 0 ),
     subtype TINYINT NOT NULL,
@@ -54,7 +56,7 @@ COMMENT ON COLUMN loc.locations.subtype IS 'Type of location.';
 
 
 CREATE TABLE loc.site_metadata (
-    id SERIAL NOT NULL,
+    id INTEGER AUTOINCREMENT NOT NULL,
     location_id INTEGER NOT NULL,
     client_name TEXT NULLABLE,
     CHECK ( client_name IS NULL OR LEN(client_name) <= 64 ),
@@ -78,11 +80,12 @@ COMMENT ON COLUMN loc.sites.orientation_deg IS 'Yaw of the site in degrees (0: N
 COMMENT ON COLUMN loc.sites.tilt_deg IS 'Pitch of the site in degrees (0: Points directly downwards, 180: Points directly upwards)';
 
 CREATE TABLE loc.region_metadata (
-    id SERIAL PRIMARY KEY,
+    id INTEGER AUTOINCREMENT NOT NULL,
     location_id INTEGER NOT NULL,
     region_name TEXT NOT NULL,
     CHECK ( LEN(region_name) <= 64 ),
     boundary_geojson JSONB NOT NULL,
+    PRIMARY KEY (id),
     FOREIGN KEY (location_id) REFERENCES loc.location(id),
 );
 COMMENT ON TABLE loc.regions IS 'Subtype table for region-level locations.';
