@@ -95,7 +95,7 @@ CREATE TABLE loc.site_metadata (
     PRIMARY KEY (id)
 );
 COMMENT ON TABLE loc.site_metadata IS 'Subtype table for site-level locations.
- These are typically single renewable generation sources identifiable via their lat/long.';
+  These are typically single renewable generation sources identifiable via their lat/long.';
 COMMENT ON COLUMN loc.site_metadata.id IS 'Primary key for the site.';
 COMMENT ON COLUMN loc.site_metadata.location_id IS 'Foreign key to the location table.';
 COMMENT ON COLUMN loc.site_metadata.client_name IS 'Name of the client associated with the site.';

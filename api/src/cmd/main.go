@@ -9,7 +9,7 @@ import (
 
 	service "github.com/devsjc/fcfs/api/src/internal/service"
 	repository "github.com/devsjc/fcfs/api/src/internal/repository"
-	pb "github.com/devsjc/fcfs/api/src/proto"
+	pb "github.com/devsjc/fcfs/api/src/gen/proto"
 )
 
 func main() {

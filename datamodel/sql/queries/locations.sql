@@ -36,4 +36,14 @@ INSERT INTO loc.region_metadata (
 ) RETURNING location_id, id AS region_id;
 REFRESH MATERIALIZED VIEW loc.regions;
 
--- name: GetLocationSites
+-- name: ListLocations :many
+SELECT * FROM loc.locations
+ORDER BY id;
+
+-- name: ListSites :many
+SELECT * FROM loc.sites
+ORDER BY location_id;
+
+-- name: ListRegions :many
+SELECT * FROM loc.regions
+ORDER BY location_id;
