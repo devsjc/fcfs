@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.28.0
 
-package locations
+package gen
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
@@ -107,18 +107,10 @@ type ObsObservation struct {
 	LocationID int32
 	// Time of the observation in UTC.
 	TimeUtc pgtype.Timestamp
-	// Observed generation value.
+	// Observed generation numeric value. Convert to Watts by combining with the metric_prefix.
 	Generation int16
-	// Units of the observed generation.
-	GenerationUnits int16
-}
-
-// Lookup table for power units.
-type ObsPowerUnit struct {
-	// Unique identifier for the unit
-	ID int16
-	// Representation of the unit
-	Unit string
+	// Metric prefix for the generation value.
+	MetricPrefix interface{}
 }
 
 // Metadata for a forecast

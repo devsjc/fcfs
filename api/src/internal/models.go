@@ -1,5 +1,7 @@
 package internal
 
+// --- Structs and interfaces for connecting to a database service --- //
+
 type DBPredictedYield struct {
 	YieldKW  int
 	TimeUnix int64

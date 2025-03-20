@@ -152,4 +152,5 @@ func (*DummyClient) GetPredictedYieldsForLocation(locID string) ([]internal.DBPr
 	return yields, nil
 }
 
+// Compile check to ensure that the DummyClient implements the DatabaseService interface.
 var _ internal.DatabaseService = &DummyClient{}
