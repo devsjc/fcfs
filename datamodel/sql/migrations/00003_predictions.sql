@@ -86,7 +86,7 @@ CREATE TABLE pred.predicted_generation (
     CHECK (horizon_mins >= 0),
     generation SMALLINT NOT NULL,
     CHECK (generation >= 0),
-    unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
+    generation_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
         CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12) ),
     PRIMARY KEY (forecast_id, horizon_mins)
 );
@@ -94,7 +94,7 @@ COMMENT ON TABLE pred.predicted_generation IS 'Predicted generation data, in fac
 COMMENT ON COLUMN pred.predicted_generation.forecast_id IS 'Unique identifier for a forecast';
 COMMENT ON COLUMN pred.predicted_generation.horizon_mins IS 'Time horizon in mins for generation value';
 COMMENT ON COLUMN pred.predicted_generation.generation IS 'Numeric value associated with predicted generation. Multiply by 10 raised to the power of unit_prefix_factor to get the actual value in Watts';
-COMMENT ON COLUMN obs.observations.unit_prefix_factor IS 'Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.';
+COMMENT ON COLUMN pred.predicted_generation.generation_unit_prefix_factor IS 'Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.';
 
 
 -- +goose StatementEnd

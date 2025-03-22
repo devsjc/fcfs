@@ -25,7 +25,7 @@ CREATE TABLE obs.observations (
         CHECK ( time_utc <= CURRENT_TIMESTAMP ),
     generation SMALLINT NOT NULL
         CHECK ( generation >= 0 ),
-    unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
+    generation_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
         CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12) ),
     PRIMARY KEY (id),
     UNIQUE (location_id, time_utc)
@@ -35,7 +35,7 @@ COMMENT ON COLUMN obs.observations.observation_id IS 'Unique identifier for the 
 COMMENT ON COLUMN obs.observations.location_id IS 'Location of the observed generation.';
 COMMENT ON COLUMN obs.observations.time_utc IS 'Time of the observation in UTC.';
 COMMENT ON COLUMN obs.observations.generation IS 'Numeric value associated with generation. Multiply by 10 to the power of unit_prefix_factor to get the actual value.';
-COMMENT ON COLUMN obs.observations.unit_prefix_factor IS 'Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the prefix.';
+COMMENT ON COLUMN obs.observations.generation_unit_prefix_factor IS 'Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the prefix.';
 
 -- +goose StatementEnd
 
