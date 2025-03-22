@@ -21,21 +21,20 @@ COMMENT ON SCHEMA pred IS 'Data for predicted generation';
 
 /*
 A forecast model is an ML model that generated predicted generation values.
-Each forecast model's name and version number uniquely identifies it.
+Each model's name and version number uniquely identifies it.
 */
-CREATE TABLE pred.forecast_models (
-    id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
+CREATE TABLE pred.models (
     name TEXT NOT NULL
         CHECK ( LENGTH(name) > 0 and LENGTH(name) < 126 ),
     version TEXT NOT NULL
         CHECK ( LENGTH(version) > 0 and LENGTH(version) < 64 ),
-    PRIMARY KEY (id),
-    UNIQUE (name, version)
+    created_at_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (name, version),
 );
-COMMENT ON TABLE pred.forecast_models IS 'Model used to generate a forecast';
-COMMENT ON COLUMN pred.forecast_models.id IS 'Unique identifier for a forecast model';
-COMMENT ON COLUMN pred.forecast_models.name IS 'Name of the forecast model';
-COMMENT ON COLUMN pred.forecast_models.version IS 'Version of the forecast model';
+COMMENT ON TABLE pred.models IS 'Model used to generate a forecast';
+COMMENT ON COLUMN pred.models.name IS 'Name of the forecast model';
+COMMENT ON COLUMN pred.models.version IS 'Version of the forecast model';
+COMMENT ON COLUMN pred.models.created_at_utc IS 'Time the model was created';
 
 /*
 Forecasts refer to the generation predictions created by a specific version
@@ -44,14 +43,20 @@ There can only be one forecast per location per initialization time per model,
 reruns should replace old values.
 */
 CREATE TABLE pred.forecasts (
-    id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
+    forecast_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
     location_id INT NOT NULL
-        REFERENCES loc.locations(id),
+        REFERENCES loc.locations(id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
     created_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     init_time_utc TIMESTAMP NOT NULL,
-    forecast_model_id INT NOT NULL
-        REFERENCES pred.forecast_models(id),
+    model_name TEXT NOT NULL,
+    model_version TEXT NOT NULL,
     PRIMARY KEY (id),
+    FOREIGN KEY (model_name, model_version)
+        REFERENCES pred.models(name, version)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     UNIQUE (location_id, init_time_utc, forecast_model_id)
 );
 COMMENT ON TABLE pred.forecasts IS 'Metadata for a forecast';
@@ -59,8 +64,8 @@ COMMENT ON COLUMN pred.forecasts.id IS 'Unique identifier for a forecast';
 COMMENT ON COLUMN pred.forecasts.location_id IS 'Location the forecast is for';
 COMMENT ON COLUMN pred.forecasts.created_utc IS 'Time the forecast was created';
 COMMENT ON COLUMN pred.forecasts.init_time_utc IS 'Initialization time of the forecast';
-COMMENT ON COLUMN pred.forecasts.forecast_model_id IS 'Model used to generate the forecast';
-
+COMMENT ON COLUMN pred.forecasts.model_name IS 'Name of the forecast model';
+COMMENT ON COLUMN pred.forecasts.model_version IS 'Version of the forecast model';
 
 /*
 Predicted generation values are the output of a forecast model.
@@ -74,13 +79,17 @@ size, we also store the unit of the generation.
 */
 CREATE TABLE pred.predicted_generation (
     forecast_id INT NOT NULL
-        REFERENCES pred.forecasts(id),
+        REFERENCES pred.forecasts(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     horizon_mins SMALLINT NOT NULL,
     CHECK (horizon_mins >= 0),
     generation SMALLINT NOT NULL,
     CHECK (generation >= 0),
     generation_units SMALLINT NOT NULL
-        REFERENCES obs.power_units(id),
+        REFERENCES obs.power_units(id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
     PRIMARY KEY (forecast_id, horizon_mins)
 );
 COMMENT ON TABLE pred.predicted_generation IS 'Predicted generation values';

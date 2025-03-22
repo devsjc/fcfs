@@ -34,13 +34,17 @@ INSERT INTO obs.power_units (unit) VALUES ('kW'),('MW'),('GW'),('TW');
 CREATE TABLE obs.observations (
     id INT GENERATED ALWAYS AS IDENTITY NOT NULL,
     location_id INT NOT NULL
-        REFERENCES loc.locations(id),
+        REFERENCES loc.locations(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     time_utc TIMESTAMP NOT NULL
         CHECK ( time_utc <= CURRENT_TIMESTAMP ),
     generation SMALLINT NOT NULL
         CHECK ( generation >= 0 ),
     generation_units SMALLINT NOT NULL
-        REFERENCES obs.power_units(id),
+        REFERENCES obs.power_units(id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
     PRIMARY KEY (id),
     UNIQUE (location_id, time_utc)
 );
