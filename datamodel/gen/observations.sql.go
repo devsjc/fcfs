@@ -13,17 +13,17 @@ import (
 
 const createObservation = `-- name: CreateObservation :one
 INSERT INTO obs.observations (
-    location_id, time_utc, generation, metric_prefix
+    location_id, time_utc, generation, unit_prefix_factor
 ) VALUES (
     $1, $2, $3, $4
-) RETURNING id
+) RETURNING observation_id
 `
 
 type CreateObservationParams struct {
-	LocationID   int32
-	TimeUtc      pgtype.Timestamp
-	Generation   int16
-	MetricPrefix interface{}
+	LocationID       int32
+	TimeUtc          pgtype.Timestamp
+	Generation       int16
+	UnitPrefixFactor int16
 }
 
 func (q *Queries) CreateObservation(ctx context.Context, db DBTX, arg CreateObservationParams) (int32, error) {
@@ -31,20 +31,27 @@ func (q *Queries) CreateObservation(ctx context.Context, db DBTX, arg CreateObse
 		arg.LocationID,
 		arg.TimeUtc,
 		arg.Generation,
-		arg.MetricPrefix,
+		arg.UnitPrefixFactor,
 	)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
+	var observation_id int32
+	err := row.Scan(&observation_id)
+	return observation_id, err
+}
+
+type CreateObservationsParams struct {
+	LocationID       int32
+	TimeUtc          pgtype.Timestamp
+	Generation       int16
+	UnitPrefixFactor int16
 }
 
 const listObservations = `-- name: ListObservations :many
 SELECT
-    obs.observations.id,
+    obs.observations.observation_id,
     obs.observations.location_id,
     obs.observations.time_utc,
     obs.observations.generation,
-    obs.observations.metric_prefix
+    obs.observations.unit_prefix_factor
 FROM obs.observations
 `
 
@@ -58,11 +65,11 @@ func (q *Queries) ListObservations(ctx context.Context, db DBTX) ([]ObsObservati
 	for rows.Next() {
 		var i ObsObservation
 		if err := rows.Scan(
-			&i.ID,
+			&i.ObservationID,
 			&i.LocationID,
 			&i.TimeUtc,
 			&i.Generation,
-			&i.MetricPrefix,
+			&i.UnitPrefixFactor,
 		); err != nil {
 			return nil, err
 		}

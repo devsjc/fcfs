@@ -99,52 +99,53 @@ type LocSiteMetadatum struct {
 	EnergySource int16
 }
 
-// Observed generation data.
+// Observed generation data, in factors of Watts.
 type ObsObservation struct {
 	// Unique identifier for the observation.
-	ID int32
+	ObservationID int32
 	// Location of the observed generation.
 	LocationID int32
 	// Time of the observation in UTC.
 	TimeUtc pgtype.Timestamp
-	// Observed generation numeric value. Convert to Watts by combining with the metric_prefix.
+	// Numeric value associated with generation. Multiply by 10 to the power of unit_prefix_factor to get the actual value.
 	Generation int16
-	// Metric prefix for the generation value.
-	MetricPrefix interface{}
+	// Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.
+	UnitPrefixFactor int16
 }
 
 // Metadata for a forecast
 type PredForecast struct {
 	// Unique identifier for a forecast
-	ID int32
+	ForecastID int32
 	// Location the forecast is for
 	LocationID int32
 	// Time the forecast was created
 	CreatedUtc pgtype.Timestamp
 	// Initialization time of the forecast
 	InitTimeUtc pgtype.Timestamp
-	// Model used to generate the forecast
-	ForecastModelID int32
+	// Name of the forecast model
+	ModelName string
+	// Version of the forecast model
+	ModelVersion string
 }
 
 // Model used to generate a forecast
-type PredForecastModel struct {
-	// Unique identifier for a forecast model
-	ID int32
+type PredModel struct {
 	// Name of the forecast model
 	Name string
 	// Version of the forecast model
 	Version string
+	// Time the model was created
+	CreatedAtUtc pgtype.Timestamp
 }
 
-// Predicted generation values
+// Predicted generation data, in factors of Watts
 type PredPredictedGeneration struct {
 	// Unique identifier for a forecast
 	ForecastID int32
 	// Time horizon in mins for generation value
 	HorizonMins int16
-	// Predicted generation value
-	Generation int16
-	// Units of the generation value
-	GenerationUnits int16
+	// Numeric value associated with predicted generation. Multiply by 10 raised to the power of unit_prefix_factor to get the actual value in Watts
+	Generation       int16
+	UnitPrefixFactor int16
 }

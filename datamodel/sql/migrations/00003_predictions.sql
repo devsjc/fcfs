@@ -29,7 +29,7 @@ CREATE TABLE pred.models (
     version TEXT NOT NULL
         CHECK ( LENGTH(version) > 0 and LENGTH(version) < 64 ),
     created_at_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (name, version),
+    PRIMARY KEY (name, version)
 );
 COMMENT ON TABLE pred.models IS 'Model used to generate a forecast';
 COMMENT ON COLUMN pred.models.name IS 'Name of the forecast model';
@@ -60,7 +60,7 @@ CREATE TABLE pred.forecasts (
     UNIQUE (location_id, init_time_utc, forecast_model_id)
 );
 COMMENT ON TABLE pred.forecasts IS 'Metadata for a forecast';
-COMMENT ON COLUMN pred.forecasts.id IS 'Unique identifier for a forecast';
+COMMENT ON COLUMN pred.forecasts.forecast_id IS 'Unique identifier for a forecast';
 COMMENT ON COLUMN pred.forecasts.location_id IS 'Location the forecast is for';
 COMMENT ON COLUMN pred.forecasts.created_utc IS 'Time the forecast was created';
 COMMENT ON COLUMN pred.forecasts.init_time_utc IS 'Initialization time of the forecast';
@@ -86,17 +86,16 @@ CREATE TABLE pred.predicted_generation (
     CHECK (horizon_mins >= 0),
     generation SMALLINT NOT NULL,
     CHECK (generation >= 0),
-    generation_units SMALLINT NOT NULL
-        REFERENCES obs.power_units(id)
-        ON DELETE RESTRICT
-        ON UPDATE RESTRICT,
+    unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
+        CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12) ),
     PRIMARY KEY (forecast_id, horizon_mins)
 );
-COMMENT ON TABLE pred.predicted_generation IS 'Predicted generation values';
+COMMENT ON TABLE pred.predicted_generation IS 'Predicted generation data, in factors of Watts';
 COMMENT ON COLUMN pred.predicted_generation.forecast_id IS 'Unique identifier for a forecast';
 COMMENT ON COLUMN pred.predicted_generation.horizon_mins IS 'Time horizon in mins for generation value';
-COMMENT ON COLUMN pred.predicted_generation.generation IS 'Predicted generation value';
-COMMENT ON COLUMN pred.predicted_generation.generation_units IS 'Units of the generation value';
+COMMENT ON COLUMN pred.predicted_generation.generation IS 'Numeric value associated with predicted generation. Multiply by 10 raised to the power of unit_prefix_factor to get the actual value in Watts';
+COMMENT ON COLUMN obs.observations.unit_prefix_factor IS 'Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.';
+
 
 -- +goose StatementEnd
 
