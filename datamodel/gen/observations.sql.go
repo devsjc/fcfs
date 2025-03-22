@@ -13,17 +13,17 @@ import (
 
 const createObservation = `-- name: CreateObservation :one
 INSERT INTO obs.observations (
-    location_id, time_utc, generation, unit_prefix_factor
+    location_id, time_utc, generation, generation_unit_prefix_factor
 ) VALUES (
     $1, $2, $3, $4
 ) RETURNING observation_id
 `
 
 type CreateObservationParams struct {
-	LocationID       int32
-	TimeUtc          pgtype.Timestamp
-	Generation       int16
-	UnitPrefixFactor int16
+	LocationID                 int32
+	TimeUtc                    pgtype.Timestamp
+	Generation                 int16
+	GenerationUnitPrefixFactor int16
 }
 
 func (q *Queries) CreateObservation(ctx context.Context, db DBTX, arg CreateObservationParams) (int32, error) {
@@ -31,7 +31,7 @@ func (q *Queries) CreateObservation(ctx context.Context, db DBTX, arg CreateObse
 		arg.LocationID,
 		arg.TimeUtc,
 		arg.Generation,
-		arg.UnitPrefixFactor,
+		arg.GenerationUnitPrefixFactor,
 	)
 	var observation_id int32
 	err := row.Scan(&observation_id)
@@ -39,10 +39,10 @@ func (q *Queries) CreateObservation(ctx context.Context, db DBTX, arg CreateObse
 }
 
 type CreateObservationsParams struct {
-	LocationID       int32
-	TimeUtc          pgtype.Timestamp
-	Generation       int16
-	UnitPrefixFactor int16
+	LocationID                 int32
+	TimeUtc                    pgtype.Timestamp
+	Generation                 int16
+	GenerationUnitPrefixFactor int16
 }
 
 const listObservations = `-- name: ListObservations :many
@@ -51,7 +51,7 @@ SELECT
     obs.observations.location_id,
     obs.observations.time_utc,
     obs.observations.generation,
-    obs.observations.unit_prefix_factor
+    obs.observations.generation_unit_prefix_factor
 FROM obs.observations
 `
 
@@ -69,7 +69,7 @@ func (q *Queries) ListObservations(ctx context.Context, db DBTX) ([]ObsObservati
 			&i.LocationID,
 			&i.TimeUtc,
 			&i.Generation,
-			&i.UnitPrefixFactor,
+			&i.GenerationUnitPrefixFactor,
 		); err != nil {
 			return nil, err
 		}

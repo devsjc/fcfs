@@ -28,27 +28,15 @@ COMMENT ON SCHEMA loc IS 'Locations schema';
 
 /*- Lookups -----------------------------------------------------------------------------------*/
 
-CREATE TABLE loc.location_subtypes(
-    id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
-    subtype TEXT NOT NULL
-        CHECK ( LENGTH(subtype) <= 15 ),
-    PRIMARY KEY (id)
-);
-INSERT INTO loc.location_subtypes (subtype) VALUES ('site'), ('region');
-COMMENT ON TABLE loc.location_subtypes IS 'Location subtypes';
-COMMENT ON COLUMN loc.location_subtypes.id IS 'Unique identifier for subtype';
-COMMENT ON COLUMN loc.location_subtypes.subtype IS 'Representation of the subtype';
-
-
 CREATE TABLE loc.energy_sources(
-    id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    source_id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
     source TEXT NOT NULL
         CHECK ( LENGTH(source) <= 15 ),
     PRIMARY KEY (id)
 );
 INSERT INTO loc.energy_sources (source) VALUES ('solar'), ('wind');
 COMMENT ON TABLE loc.energy_sources IS 'Energy sources';
-COMMENT ON COLUMN loc.energy_sources.id IS 'Unique identifier for energy source';
+COMMENT ON COLUMN loc.energy_sources.source_id IS 'Unique identifier for energy source';
 COMMENT ON COLUMN loc.energy_sources.source IS 'Representation of the energy source';
 
 
@@ -65,10 +53,8 @@ CREATE TABLE loc.locations (
         CHECK ( capacity_kw >= 0 ),
     capacity_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
         CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12) ),
-    location_type SMALLINT NOT NULL
-        REFERENCES loc.location_subtypes(id),
     created_utc TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
+    PRIMARY KEY (location_id),
     UNIQUE (name, latitude, longitude, location_type)
 );
 COMMENT ON TABLE loc.locations IS 'Supertype table for locations.';
@@ -79,12 +65,11 @@ COMMENT ON COLUMN loc.locations.longitude IS 'Longitude associated with the loca
 COMMENT ON COLUMN loc.locations.capacity IS 'Capacity of the location in factors of Watts. Multiply by 10 to the power of unit_prefix_factor to get the actual value.';
 COMMENT ON COLUMN loc.locations.capacity_unit_prefix_factor IS 'Factor defining the metric prefix of the capacity value. Raise 10 to the power of this value to get the prefix.';
 COMMENT ON COLUMN loc.locations.created_utc IS 'Timestamp of the creation of the site.';
-COMMENT ON COLUMN loc.locations.location_type IS 'Type of location.';
 
 
 CREATE TABLE loc.site_metadata (
     location_id INTEGER NOT NULL
-        REFERENCES loc.locations(id),
+        REFERENCES loc.locations(location_id),
     client_name TEXT NOT NULL
         CHECK ( client_name IS NULL OR LENGTH(client_name) <= 64 ),
     client_site_id TEXT NOT NULL
@@ -107,7 +92,7 @@ COMMENT ON COLUMN loc.site_metadata.pitch_degrees IS 'Pitch of the site in degre
 
 CREATE TABLE loc.region_metadata (
     location_id INTEGER NOT NULL
-        REFERENCES loc.locations(id),
+        REFERENCES loc.locations(location_id),
     region_name TEXT NOT NULL CHECK ( LENGTH(region_name) <= 64 ),
     boundary_geojson JSONB NOT NULL,
     PRIMARY KEY (location_id)

@@ -12,78 +12,65 @@ import (
 )
 
 const createLocationRegion = `-- name: CreateLocationRegion :one
-WITH
-    region_subtype AS (
-        SELECT id FROM loc.location_subtypes WHERE subtype = 'region'
-    ),
-    new_loc_id AS (
-        INSERT INTO loc.locations (
-            name, latitude, longitude, capacity_kw, location_type
-        ) VALUES (
-            $1, $2, $3, $4, region_subtype
-        ) RETURNING id
-    )
+WITH new_loc_id AS (
+    INSERT INTO loc.locations (
+        name, latitude, longitude, capacity, capacity_unit_prefix_factor
+    ) VALUES (
+        $1, $2, $3, $4, $5
+    ) RETURNING location_id
+)
 INSERT INTO loc.region_metadata (
-    location_id, created_utc, region_name, boundary_geojson
+    location_id, region_name, boundary_geojson
 ) VALUES (
-    new_loc_id, $5, $6, $7
-) RETURNING location_id, id AS region_id
+    new_loc_id, $6, $7
+) RETURNING location_id
 `
 
 type CreateLocationRegionParams struct {
-	Name            string
-	Latitude        float32
-	Longitude       float32
-	CapacityKw      int32
-	CreatedUtc      pgtype.Timestamp
-	RegionName      string
-	BoundaryGeojson []byte
+	Name                     string
+	Latitude                 float32
+	Longitude                float32
+	Capacity                 int16
+	CapacityUnitPrefixFactor int16
+	RegionName               string
+	BoundaryGeojson          []byte
 }
 
-type CreateLocationRegionRow struct {
-	LocationID int32
-	RegionID   int32
-}
-
-func (q *Queries) CreateLocationRegion(ctx context.Context, db DBTX, arg CreateLocationRegionParams) (CreateLocationRegionRow, error) {
+func (q *Queries) CreateLocationRegion(ctx context.Context, db DBTX, arg CreateLocationRegionParams) (int32, error) {
 	row := db.QueryRow(ctx, createLocationRegion,
 		arg.Name,
 		arg.Latitude,
 		arg.Longitude,
-		arg.CapacityKw,
-		arg.CreatedUtc,
+		arg.Capacity,
+		arg.CapacityUnitPrefixFactor,
 		arg.RegionName,
 		arg.BoundaryGeojson,
 	)
-	var i CreateLocationRegionRow
-	err := row.Scan(&i.LocationID, &i.RegionID)
-	return i, err
+	var location_id int32
+	err := row.Scan(&location_id)
+	return location_id, err
 }
 
 const createLocationSite = `-- name: CreateLocationSite :one
-WITH 
-    site_subtype AS (
-        SELECT id FROM loc.location_subtypes WHERE subtype = 'site'
-    ),
-    new_loc_id AS (
-        INSERT INTO loc.locations (
-            name, latitude, longitude, capacity_kw, location_type
-        ) VALUES (
-            $1, $2, $3, $4, site_subtype
-        ) RETURNING id
-    )
+WITH new_loc_id AS (
+    INSERT INTO loc.locations (
+        name, latitude, longitude, capacity, capicity_unit_prefix_factor
+    ) VALUES (
+        $1, $2, $3, $4, $5
+    ) RETURNING location_id
+)
 INSERT INTO loc.site_metadata (
     location_id, client_name, client_site_id, yaw_degrees, pitch_degrees, energy_source
 ) VALUES (
     new_loc_id, $5, $6, $7, $8, $9
-) RETURNING location_id, id AS site_id
+) RETURNING location_id
 `
 
 type CreateLocationSiteParams struct {
 	Name         string
 	Latitude     float32
 	Longitude    float32
-	CapacityKw   int32
+	Capacity     int16
 	ClientName   string
 	ClientSiteID string
 	YawDegrees   *int16
@@ -91,31 +78,26 @@ type CreateLocationSiteParams struct {
 	EnergySource int16
 }
 
-type CreateLocationSiteRow struct {
-	LocationID int32
-	SiteID     int32
-}
-
-func (q *Queries) CreateLocationSite(ctx context.Context, db DBTX, arg CreateLocationSiteParams) (CreateLocationSiteRow, error) {
+func (q *Queries) CreateLocationSite(ctx context.Context, db DBTX, arg CreateLocationSiteParams) (int32, error) {
 	row := db.QueryRow(ctx, createLocationSite,
 		arg.Name,
 		arg.Latitude,
 		arg.Longitude,
-		arg.CapacityKw,
+		arg.Capacity,
 		arg.ClientName,
 		arg.ClientSiteID,
 		arg.YawDegrees,
 		arg.PitchDegrees,
 		arg.EnergySource,
 	)
-	var i CreateLocationSiteRow
-	err := row.Scan(&i.LocationID, &i.SiteID)
-	return i, err
+	var location_id int32
+	err := row.Scan(&location_id)
+	return location_id, err
 }
 
 const listLocations = `-- name: ListLocations :many
-SELECT id, name, latitude, longitude, capacity_kw, location_type FROM loc.locations
-ORDER BY id
+SELECT location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, created_utc FROM loc.locations
+ORDER BY location_id
 `
 
 func (q *Queries) ListLocations(ctx context.Context, db DBTX) ([]LocLocation, error) {
@@ -128,12 +110,13 @@ func (q *Queries) ListLocations(ctx context.Context, db DBTX) ([]LocLocation, er
 	for rows.Next() {
 		var i LocLocation
 		if err := rows.Scan(
-			&i.ID,
+			&i.LocationID,
 			&i.Name,
 			&i.Latitude,
 			&i.Longitude,
-			&i.CapacityKw,
-			&i.LocationType,
+			&i.Capacity,
+			&i.CapacityUnitPrefixFactor,
+			&i.CreatedUtc,
 		); err != nil {
 			return nil, err
 		}
@@ -146,27 +129,44 @@ func (q *Queries) ListLocations(ctx context.Context, db DBTX) ([]LocLocation, er
 }
 
 const listRegions = `-- name: ListRegions :many
-SELECT location_id, name, latitude, longitude, capacity_kw, created_utc, region_id FROM loc.regions
-ORDER BY location_id
+SELECT l.location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, created_utc, region_metadata.location_id, region_name, boundary_geojson FROM loc.locations as l
+LEFT OUTER JOIN loc.region_metadata USING (location_id)
+ORDER BY l.location_id
 `
 
-func (q *Queries) ListRegions(ctx context.Context, db DBTX) ([]LocRegion, error) {
+type ListRegionsRow struct {
+	LocationID               int32
+	Name                     string
+	Latitude                 float32
+	Longitude                float32
+	Capacity                 int16
+	CapacityUnitPrefixFactor int16
+	CreatedUtc               pgtype.Timestamp
+	LocationID_2             *int32
+	RegionName               *string
+	BoundaryGeojson          []byte
+}
+
+func (q *Queries) ListRegions(ctx context.Context, db DBTX) ([]ListRegionsRow, error) {
 	rows, err := db.Query(ctx, listRegions)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []LocRegion{}
+	items := []ListRegionsRow{}
 	for rows.Next() {
-		var i LocRegion
+		var i ListRegionsRow
 		if err := rows.Scan(
 			&i.LocationID,
 			&i.Name,
 			&i.Latitude,
 			&i.Longitude,
-			&i.CapacityKw,
+			&i.Capacity,
+			&i.CapacityUnitPrefixFactor,
 			&i.CreatedUtc,
-			&i.RegionID,
+			&i.LocationID_2,
+			&i.RegionName,
+			&i.BoundaryGeojson,
 		); err != nil {
 			return nil, err
 		}
@@ -179,29 +179,50 @@ func (q *Queries) ListRegions(ctx context.Context, db DBTX) ([]LocRegion, error)
 }
 
 const listSites = `-- name: ListSites :many
-SELECT location_id, name, latitude, longitude, capacity_kw, site_id, client_name, client_site_id, created_utc FROM loc.sites
-ORDER BY location_id
+SELECT l.location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, created_utc, site_metadata.location_id, client_name, client_site_id, yaw_degrees, pitch_degrees, energy_source FROM loc.locations as l
+LEFT OUTER JOIN loc.site_metadata USING (location_id)
+ORDER BY l.location_id
 `
 
-func (q *Queries) ListSites(ctx context.Context, db DBTX) ([]LocSite, error) {
+type ListSitesRow struct {
+	LocationID               int32
+	Name                     string
+	Latitude                 float32
+	Longitude                float32
+	Capacity                 int16
+	CapacityUnitPrefixFactor int16
+	CreatedUtc               pgtype.Timestamp
+	LocationID_2             *int32
+	ClientName               *string
+	ClientSiteID             *string
+	YawDegrees               *int16
+	PitchDegrees             *int16
+	EnergySource             *int16
+}
+
+func (q *Queries) ListSites(ctx context.Context, db DBTX) ([]ListSitesRow, error) {
 	rows, err := db.Query(ctx, listSites)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []LocSite{}
+	items := []ListSitesRow{}
 	for rows.Next() {
-		var i LocSite
+		var i ListSitesRow
 		if err := rows.Scan(
 			&i.LocationID,
 			&i.Name,
 			&i.Latitude,
 			&i.Longitude,
-			&i.CapacityKw,
-			&i.SiteID,
+			&i.Capacity,
+			&i.CapacityUnitPrefixFactor,
+			&i.CreatedUtc,
+			&i.LocationID_2,
 			&i.ClientName,
 			&i.ClientSiteID,
-			&i.CreatedUtc,
+			&i.YawDegrees,
+			&i.PitchDegrees,
+			&i.EnergySource,
 		); err != nil {
 			return nil, err
 		}

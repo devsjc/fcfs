@@ -11,7 +11,7 @@ import (
 // Energy sources
 type LocEnergySource struct {
 	// Unique identifier for energy source
-	ID int16
+	SourceID int16
 	// Representation of the energy source
 	Source string
 }
@@ -19,35 +19,19 @@ type LocEnergySource struct {
 // Supertype table for locations.
 type LocLocation struct {
 	// Primary key for the location.
-	ID int32
+	LocationID int32
 	// Name of the location.
 	Name string
 	// Latitude associated with the location.
 	Latitude float32
 	// Longitude associated with the location.
 	Longitude float32
-	// Capacity of the location in kilowatts.
-	CapacityKw int32
-	// Type of location.
-	LocationType int16
-}
-
-// Location subtypes
-type LocLocationSubtype struct {
-	// Unique identifier for subtype
-	ID int16
-	// Representation of the subtype
-	Subtype string
-}
-
-type LocRegion struct {
-	LocationID int32
-	Name       string
-	Latitude   float32
-	Longitude  float32
-	CapacityKw int32
+	// Capacity of the location in factors of Watts. Multiply by 10 to the power of unit_prefix_factor to get the actual value.
+	Capacity int16
+	// Factor defining the metric prefix of the capacity value. Raise 10 to the power of this value to get the prefix.
+	CapacityUnitPrefixFactor int16
+	// Timestamp of the creation of the site.
 	CreatedUtc pgtype.Timestamp
-	RegionID   int32
 }
 
 // Subtype table for region-level locations.
@@ -55,43 +39,24 @@ type LocRegion struct {
 //	These are bounded locations containing multiple sources such as DNOs or even whole countries.
 //	The supertype lat/long refers to their center point.
 type LocRegionMetadatum struct {
-	// Primary key for the region.
-	ID int32
 	// Foreign key to the location table.
 	LocationID int32
-	CreatedUtc pgtype.Timestamp
 	// Name of the region.
 	RegionName string
 	// GeoJSON representation of the region boundary.
 	BoundaryGeojson []byte
 }
 
-type LocSite struct {
-	LocationID   int32
-	Name         string
-	Latitude     float32
-	Longitude    float32
-	CapacityKw   int32
-	SiteID       int32
-	ClientName   string
-	ClientSiteID string
-	CreatedUtc   pgtype.Timestamp
-}
-
 // Subtype table for site-level locations.
 //
 //	These are typically single renewable generation sources identifiable via their lat/long.
 type LocSiteMetadatum struct {
-	// Primary key for the site.
-	ID int32
 	// Foreign key to the location table.
 	LocationID int32
 	// Name of the client associated with the site.
 	ClientName string
 	// ID of the site as given by the client.
 	ClientSiteID string
-	// Timestamp of the creation of the site.
-	CreatedUtc pgtype.Timestamp
 	// Yaw of the site in degrees (0: N, 90: E, 180: S, 270: W)
 	YawDegrees *int16
 	// Pitch of the site in degrees (0: Points directly downwards, 180: Points directly upwards)
@@ -109,8 +74,8 @@ type ObsObservation struct {
 	TimeUtc pgtype.Timestamp
 	// Numeric value associated with generation. Multiply by 10 to the power of unit_prefix_factor to get the actual value.
 	Generation int16
-	// Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.
-	UnitPrefixFactor int16
+	// Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the prefix.
+	GenerationUnitPrefixFactor int16
 }
 
 // Metadata for a forecast
@@ -146,6 +111,7 @@ type PredPredictedGeneration struct {
 	// Time horizon in mins for generation value
 	HorizonMins int16
 	// Numeric value associated with predicted generation. Multiply by 10 raised to the power of unit_prefix_factor to get the actual value in Watts
-	Generation       int16
-	UnitPrefixFactor int16
+	Generation int16
+	// Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.
+	GenerationUnitPrefixFactor int16
 }
