@@ -96,7 +96,7 @@ func (q *Queries) CreateLocationSite(ctx context.Context, db DBTX, arg CreateLoc
 }
 
 const listLocations = `-- name: ListLocations :many
-SELECT location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, created_utc FROM loc.locations
+SELECT location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, sys_period FROM loc.locations
 ORDER BY location_id
 `
 
@@ -116,7 +116,7 @@ func (q *Queries) ListLocations(ctx context.Context, db DBTX) ([]LocLocation, er
 			&i.Longitude,
 			&i.Capacity,
 			&i.CapacityUnitPrefixFactor,
-			&i.CreatedUtc,
+			&i.SysPeriod,
 		); err != nil {
 			return nil, err
 		}
@@ -129,7 +129,7 @@ func (q *Queries) ListLocations(ctx context.Context, db DBTX) ([]LocLocation, er
 }
 
 const listRegions = `-- name: ListRegions :many
-SELECT l.location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, created_utc, region_metadata.location_id, region_name, boundary_geojson FROM loc.locations as l
+SELECT l.location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, sys_period, region_metadata.location_id, region_name, boundary_geojson FROM loc.locations as l
 LEFT OUTER JOIN loc.region_metadata USING (location_id)
 ORDER BY l.location_id
 `
@@ -141,7 +141,7 @@ type ListRegionsRow struct {
 	Longitude                float32
 	Capacity                 int16
 	CapacityUnitPrefixFactor int16
-	CreatedUtc               pgtype.Timestamp
+	SysPeriod                pgtype.Range[pgtype.Timestamptz]
 	LocationID_2             *int32
 	RegionName               *string
 	BoundaryGeojson          []byte
@@ -163,7 +163,7 @@ func (q *Queries) ListRegions(ctx context.Context, db DBTX) ([]ListRegionsRow, e
 			&i.Longitude,
 			&i.Capacity,
 			&i.CapacityUnitPrefixFactor,
-			&i.CreatedUtc,
+			&i.SysPeriod,
 			&i.LocationID_2,
 			&i.RegionName,
 			&i.BoundaryGeojson,
@@ -179,7 +179,7 @@ func (q *Queries) ListRegions(ctx context.Context, db DBTX) ([]ListRegionsRow, e
 }
 
 const listSites = `-- name: ListSites :many
-SELECT l.location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, created_utc, site_metadata.location_id, client_name, client_site_id, yaw_degrees, pitch_degrees, energy_source FROM loc.locations as l
+SELECT l.location_id, name, latitude, longitude, capacity, capacity_unit_prefix_factor, sys_period, site_metadata.location_id, client_name, client_site_id, yaw_degrees, pitch_degrees, energy_source FROM loc.locations as l
 LEFT OUTER JOIN loc.site_metadata USING (location_id)
 ORDER BY l.location_id
 `
@@ -191,7 +191,7 @@ type ListSitesRow struct {
 	Longitude                float32
 	Capacity                 int16
 	CapacityUnitPrefixFactor int16
-	CreatedUtc               pgtype.Timestamp
+	SysPeriod                pgtype.Range[pgtype.Timestamptz]
 	LocationID_2             *int32
 	ClientName               *string
 	ClientSiteID             *string
@@ -216,7 +216,7 @@ func (q *Queries) ListSites(ctx context.Context, db DBTX) ([]ListSitesRow, error
 			&i.Longitude,
 			&i.Capacity,
 			&i.CapacityUnitPrefixFactor,
-			&i.CreatedUtc,
+			&i.SysPeriod,
 			&i.LocationID_2,
 			&i.ClientName,
 			&i.ClientSiteID,

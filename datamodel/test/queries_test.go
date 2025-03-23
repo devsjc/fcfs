@@ -1,4 +1,4 @@
-package test
+package main
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/devsjc/fcfs/datamodel/sdk/locations"
+	"github.com/devsjc/fcfs/datamodel/gen"
 )
 
 // setupPostgres starts a postgres container to run tests against.
@@ -51,10 +51,9 @@ func TestQueries(t *testing.T) {
 	conn, teardown := setupPostgres(t, ctx)
 	defer teardown(t)
 
-	locationQuerier, err := locations.New(conn)
-
 	// List all locations
-	locations, err := queries.GetLocationByID(ctx, conn, 1)
+	querier := gen.New()
+	locations, err := querier.ListSites(ctx, conn)
 	require.NoError(t, err)
 	require.Equal(t, 0, locations.ID)
 

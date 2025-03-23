@@ -53,7 +53,7 @@ CREATE TABLE loc.locations (
         CHECK ( capacity_kw >= 0 ),
     capacity_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
         CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12) ),
-    created_utc TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sys_period TSTZRANGE NOT NULL DEFAULT TSTZRANGE(CURRENT_TIMESTAMP, NULL),
     PRIMARY KEY (location_id),
     UNIQUE (name, latitude, longitude, location_type)
 );
@@ -64,8 +64,14 @@ COMMENT ON COLUMN loc.locations.latitude IS 'Latitude associated with the locati
 COMMENT ON COLUMN loc.locations.longitude IS 'Longitude associated with the location.';
 COMMENT ON COLUMN loc.locations.capacity IS 'Capacity of the location in factors of Watts. Multiply by 10 to the power of unit_prefix_factor to get the actual value.';
 COMMENT ON COLUMN loc.locations.capacity_unit_prefix_factor IS 'Factor defining the metric prefix of the capacity value. Raise 10 to the power of this value to get the prefix.';
-COMMENT ON COLUMN loc.locations.created_utc IS 'Timestamp of the creation of the site.';
 
+CREATE TABLE loc.locations_history(LIKE loc.locations);
+COMMENT ON TABLE loc.locations_history IS 'History table for the locations supertype table.';
+CREATE TRIGGER versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON loc.locations
+FOR EACH ROW EXECUTE PROCEDURE versioning(
+  'sys_period', 'loc.locations_history', true
+);
 
 CREATE TABLE loc.site_metadata (
     location_id INTEGER NOT NULL

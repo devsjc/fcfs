@@ -39,3 +39,4 @@ ORDER BY l.location_id;
 SELECT * FROM loc.locations as l
 LEFT OUTER JOIN loc.site_metadata USING (location_id)
 ORDER BY l.location_id;
+
