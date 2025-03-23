@@ -40,6 +40,6 @@ func (r iteratorForCreateObservations) Err() error {
 	return nil
 }
 
-func (q *Queries) CreateObservations(ctx context.Context, db DBTX, arg []CreateObservationsParams) (int64, error) {
-	return db.CopyFrom(ctx, []string{"obs", "observations"}, []string{"location_id", "time_utc", "generation", "generation_unit_prefix_factor"}, &iteratorForCreateObservations{rows: arg})
+func (q *Queries) CreateObservations(ctx context.Context, arg []CreateObservationsParams) (int64, error) {
+	return q.db.CopyFrom(ctx, []string{"obs", "observations"}, []string{"location_id", "time_utc", "generation", "generation_unit_prefix_factor"}, &iteratorForCreateObservations{rows: arg})
 }

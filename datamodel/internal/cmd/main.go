@@ -7,6 +7,8 @@ import (
 	"log"
 )
 
+//go:generate sqlc generate
+
 func main() {
 	m, err := migrate.New(
 		"file://migrations",

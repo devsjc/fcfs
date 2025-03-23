@@ -22,16 +22,31 @@ COMMENT ON SCHEMA pred IS 'Data for predicted generation';
 CREATE OR REPLACE FUNCTION update_crosssection() RETURNS TRIGGER AS $update_crossection$
 BEGIN
     INSERT INTO pred.predicted_generation_crossections(
-        forecast_id, location_id, target_time_utc, horizon_mins, model_id
-    ) SELECT (
         forecast_id,
-        f.location_id,
-        init_time_utc + horizon_mins * INTERVAL '1 minute' AS target_time_utc,
+        location_id,
+        target_time_utc,
+        generation,
+        generation_unit_prefix_factor,
         horizon_mins,
+        model_id
+    ) SELECT (
+        NEW.forecast_id,
+        f.location_id,
+        f.init_time_utc + new.horizon_mins * INTERVAL '1 minute' AS target_time_utc,
+        NEW.generation,
+        NEW.generation_unit_prefix_factor,
+        NEW.horizon_mins,
         f.model_id
-    ) FROM new JOIN pred.forecasts as f USING (forecast_id);
+    ) FROM NEW JOIN pred.forecasts as f USING (forecast_id)
+    ON CONFLICT (location_id, target_time_utc, model_id)
+    DO UPDATE SET 
+        generation = EXCLUDED.generation,
+        generation_unit_prefix_factor = EXCLUDED.generation_unit_prefix_factor;
+
+    -- Clean up old cross-section data
     DELETE FROM pred.predicted_generation_crossections
     WHERE target_time_utc < CURRENT_TIMESTAMP - INTERVAL '5 days';
+
     RETURN NULL; -- This is an After trigger so don't return anything
 END;
 $update_crossection$ language plpgsql;
@@ -134,13 +149,24 @@ CREATE TABLE pred.predicted_generation_crosssections (
     target_time_utc TIMESTAMP NOT NULL,
     horizon_mins SMALLINT NOT NULL,
         CHECK (horizon_mins >= 0),
+    generation SMALLINT NOT NULL,
+        CHECK (generation >= 0),
+    generation_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
+        CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12) ),
     model_id INT NOT NULL
         REFERENCES pred.models(id)
         ON DELETE CASCADE
-        ON UPDATE CASCADE
+        ON UPDATE CASCADE,
+    PRIMARY KEY (location_id, target_time_utc, model_id)
 );
 COMMENT ON TABLE pred.predicted_generation_crosssections IS 'Cross-section of predicted generation data for locations';
-
+COMMENT ON COLUMN pred.predicted_generation_crosssections.forecast_id IS 'Unique identifier for a forecast';
+COMMENT ON COLUMN pred.predicted_generation_crosssections.location_id IS 'Location the forecast is for';
+COMMENT ON COLUMN pred.predicted_generation_crosssections.target_time_utc IS 'Time the generation was predicted for';
+COMMENT ON COLUMN pred.predicted_generation_crosssections.horizon_mins IS 'Time horizon in mins for generation value';
+COMMENT ON COLUMN pred.predicted_generation_crosssections.generation IS 'Numeric value associated with predicted generation. Multiply by 10 raised to the power of unit_prefix_factor to get the actual value in Watts';
+COMMENT ON COLUMN pred.predicted_generation_crosssections.generation_unit_prefix_factor IS 'Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.';
+COMMENT ON COLUMN pred.predicted_generation_crosssections.model_id IS 'Model used to generate the forecast';
 
 
 -- +goose StatementEnd

@@ -36,8 +36,8 @@ type CreateLocationRegionParams struct {
 	BoundaryGeojson          []byte
 }
 
-func (q *Queries) CreateLocationRegion(ctx context.Context, db DBTX, arg CreateLocationRegionParams) (int32, error) {
-	row := db.QueryRow(ctx, createLocationRegion,
+func (q *Queries) CreateLocationRegion(ctx context.Context, arg CreateLocationRegionParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createLocationRegion,
 		arg.Name,
 		arg.Latitude,
 		arg.Longitude,
@@ -78,8 +78,8 @@ type CreateLocationSiteParams struct {
 	EnergySource int16
 }
 
-func (q *Queries) CreateLocationSite(ctx context.Context, db DBTX, arg CreateLocationSiteParams) (int32, error) {
-	row := db.QueryRow(ctx, createLocationSite,
+func (q *Queries) CreateLocationSite(ctx context.Context, arg CreateLocationSiteParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createLocationSite,
 		arg.Name,
 		arg.Latitude,
 		arg.Longitude,
@@ -100,8 +100,8 @@ SELECT location_id, name, latitude, longitude, capacity, capacity_unit_prefix_fa
 ORDER BY location_id
 `
 
-func (q *Queries) ListLocations(ctx context.Context, db DBTX) ([]LocLocation, error) {
-	rows, err := db.Query(ctx, listLocations)
+func (q *Queries) ListLocations(ctx context.Context) ([]LocLocation, error) {
+	rows, err := q.db.Query(ctx, listLocations)
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +147,8 @@ type ListRegionsRow struct {
 	BoundaryGeojson          []byte
 }
 
-func (q *Queries) ListRegions(ctx context.Context, db DBTX) ([]ListRegionsRow, error) {
-	rows, err := db.Query(ctx, listRegions)
+func (q *Queries) ListRegions(ctx context.Context) ([]ListRegionsRow, error) {
+	rows, err := q.db.Query(ctx, listRegions)
 	if err != nil {
 		return nil, err
 	}
@@ -200,8 +200,8 @@ type ListSitesRow struct {
 	EnergySource             *int16
 }
 
-func (q *Queries) ListSites(ctx context.Context, db DBTX) ([]ListSitesRow, error) {
-	rows, err := db.Query(ctx, listSites)
+func (q *Queries) ListSites(ctx context.Context) ([]ListSitesRow, error) {
+	rows, err := q.db.Query(ctx, listSites)
 	if err != nil {
 		return nil, err
 	}

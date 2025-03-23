@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pressly/goose"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -49,28 +48,25 @@ func setupPostgres(t *testing.T, ctx context.Context) (*pgx.Conn, func(*testing.
 func TestQueries(t *testing.T) {
 	ctx := context.Background()
 	conn, teardown := setupPostgres(t, ctx)
+	querier := gen.New(conn)
 	defer teardown(t)
 
 	// List all locations
-	querier := gen.New()
-	locations, err := querier.ListSites(ctx, conn)
-	require.NoError(t, err)
-	require.Equal(t, 0, locations.ID)
+	results, err := querier.ListSites(ctx)
+	require.Equal(t, 0, len(results))
 
 	// Add a site location
-	result, err := queries.CreateLocationSite(ctx, conn, sdk.CreateLocationSiteParams{
+	result, err := querier.CreateLocationSite(ctx, gen.CreateLocationSiteParams{
 		Name: "Site 1",
 		Latitude: 66.6,
 		Longitude: 77.7,
-		CapacityKw: 100,
+		Capacity: 100,
 		ClientName: "acme-solar",
 		ClientSiteID: "test-site-1",
 		EnergySource: 1,
 	})
 	require.NoError(t, err)
-	require.Equal(t, result.LocationID, 1)
-	require.Equal(t, result.SiteID, 1)
-		
+	require.Equal(t, result, 1)	
 
 	require.Contains(t, "postgres://postgres:postgres@localhost", conn)
 }

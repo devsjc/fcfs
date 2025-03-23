@@ -26,8 +26,8 @@ type CreateObservationParams struct {
 	GenerationUnitPrefixFactor int16
 }
 
-func (q *Queries) CreateObservation(ctx context.Context, db DBTX, arg CreateObservationParams) (int32, error) {
-	row := db.QueryRow(ctx, createObservation,
+func (q *Queries) CreateObservation(ctx context.Context, arg CreateObservationParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createObservation,
 		arg.LocationID,
 		arg.TimeUtc,
 		arg.Generation,
@@ -55,8 +55,8 @@ SELECT
 FROM obs.observations
 `
 
-func (q *Queries) ListObservations(ctx context.Context, db DBTX) ([]ObsObservation, error) {
-	rows, err := db.Query(ctx, listObservations)
+func (q *Queries) ListObservations(ctx context.Context) ([]ObsObservation, error) {
+	rows, err := q.db.Query(ctx, listObservations)
 	if err != nil {
 		return nil, err
 	}
