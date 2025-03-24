@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/devsjc/fcfs/datamodel/gen"
+	"github.com/devsjc/fcfs/datamodel/gen/datamodel"
 )
 
 // setupPostgres starts a postgres container to run tests against.
@@ -48,7 +48,7 @@ func setupPostgres(t *testing.T, ctx context.Context) (*pgx.Conn, func(*testing.
 func TestQueries(t *testing.T) {
 	ctx := context.Background()
 	conn, teardown := setupPostgres(t, ctx)
-	querier := gen.New(conn)
+	querier := datamodel.New(conn)
 	defer teardown(t)
 
 	// List all locations
@@ -56,7 +56,7 @@ func TestQueries(t *testing.T) {
 	require.Equal(t, 0, len(results))
 
 	// Add a site location
-	result, err := querier.CreateLocationSite(ctx, gen.CreateLocationSiteParams{
+	result, err := querier.CreateLocationSite(ctx, datamodel.CreateLocationSiteParams{
 		Name: "Site 1",
 		Latitude: 66.6,
 		Longitude: 77.7,
