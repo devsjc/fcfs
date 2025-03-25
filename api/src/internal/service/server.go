@@ -10,7 +10,7 @@ import (
 
 type APIServer struct {
 	pb.UnimplementedQuartzAPIServer
-	DBS internal.DatabaseService
+	DBS internal.DatabaseRepository
 }
 
 func (s *APIServer) GetPredictedTimeseries(req *pb.GetPredictedTimeseriesRequest, stream pb.QuartzAPI_GetPredictedTimeseriesServer) (err error) {
