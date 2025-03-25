@@ -3,12 +3,9 @@ package main
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/jackc/pgx/v5"
 
@@ -25,11 +22,7 @@ func setupPostgres(t *testing.T, ctx context.Context) (*pgx.Conn, func(*testing.
 		postgres.WithUsername("postgres"),
 		postgres.WithPassword("postgres"),
 		postgres.WithInitScripts("sql/migrations/*.sql"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-			WithOccurrence(2).
-			WithStartupTimeout(45*time.Second),
-		),
+		postgres.BasicWaitStrategies(),
 	)
 	require.NoErrorf(t, err, "failed to start postgres container: %s", err)
 	conn, err := pgx.Connect(ctx, postgresContainer.MustConnectionString(ctx))
@@ -48,8 +41,10 @@ func setupPostgres(t *testing.T, ctx context.Context) (*pgx.Conn, func(*testing.
 func TestQueries(t *testing.T) {
 	ctx := context.Background()
 	conn, teardown := setupPostgres(t, ctx)
-	querier := datamodel.New(conn)
+	require.Contains(t, "postgres://postgres:postgres@localhost", conn)
 	defer teardown(t)
+
+	querier := datamodel.New(conn)
 
 	// List all locations
 	results, err := querier.ListSites(ctx)
@@ -68,5 +63,4 @@ func TestQueries(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, result, 1)	
 
-	require.Contains(t, "postgres://postgres:postgres@localhost", conn)
 }
