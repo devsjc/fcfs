@@ -4,7 +4,7 @@ import (
 	"context"
 
 	internal "github.com/devsjc/fcfs/api/src/internal"
-	pb "github.com/devsjc/fcfs/api/src/gen/proto"
+	pb "github.com/devsjc/fcfs/api/src/gen"
 	"github.com/rs/zerolog/log"
 )
 

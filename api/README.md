@@ -35,22 +35,27 @@ They should also be imported or copied into external codebases to create type-sa
 
 The server then implements custom logic to serve the generated interface
 via the use of an abstraction, representing a data repository.
-This interface, or boundary layer, between the API logic and the data layer, is defined in `src/internal/models.go`, along with other models relevant to the internal logic of the API.
+This interface - or boundary layer - between the API logic and the data layer
+is defined in `src/internal/models.go`, along with other models relevant to the internal logic of the API.
 
-By seperating the layers like this, the API can be easily tested and extended without needing to change the underlying data layer; similarly, data layers can be swapped out or modified without breaking the API contract.
-
-## ASCII DIAGRAM
+By separating the layers like this,
+the API can be easily tested and extended without needing to change the underlying data layer;
+similarly, data layers can be swapped out or modified without breaking the API contract.
 
 ```
-+----------+                     +----------+
-|  Client  |  <--(proto api)-->  |  Server  |  <--(database interface)--> Data Repository
-+----------+                     +----------+
-            
-            |<-----------------------Defined in API repository-------------------------->|
++----------+                     +----------+                             + - - - - - - - - +
+|  Client  |  <--- GRPC API -->  |  Server  |  <-- Database Interface --> : Data Repository :
++----------+                     +----------+                             + - - - - - - - - +
+
+|<--Uses generated bindings-->|  |<------------Logic in the the API repository------------->|          
 ```
+
+Currently [postgres](https://www.postgresql.org/) is the only concrete data repository implementation,
+but there is also a dummy repository for testing purposes. These are found in `src/internal/repository`.
 
 ## Example usage
 
 ```bash
 $ go run src/cmd/main/go
 ```
+
