@@ -3,7 +3,7 @@
 //   sqlc v1.28.0
 // source: observations.sql
 
-package datamodel
+package gen
 
 import (
 	"context"

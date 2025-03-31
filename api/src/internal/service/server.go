@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+
 type APIServer struct {
 	pb.UnimplementedQuartzAPIServer
 	DBS internal.DatabaseRepository

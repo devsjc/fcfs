@@ -3,7 +3,7 @@
 //   sqlc v1.28.0
 // source: locations.sql
 
-package datamodel
+package gen
 
 import (
 	"context"
