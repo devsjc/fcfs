@@ -8,76 +8,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// Energy sources
-type LocEnergySource struct {
-	// Unique identifier for energy source
-	SourceID int16
-	// Representation of the energy source
-	Source string
-}
-
-// Supertype table for locations.
 type LocLocation struct {
-	// Primary key for the location.
-	LocationID int32
-	// Name of the location.
-	Name string
-	// Latitude associated with the location.
-	Latitude float32
-	// Longitude associated with the location.
-	Longitude float32
-	// Capacity of the location in factors of Watts. Multiply by 10 to the power of unit_prefix_factor to get the actual value.
-	Capacity int16
-	// Factor defining the metric prefix of the capacity value. Raise 10 to the power of this value to get the prefix.
+	LocationID     int32
+	Name           string
+	Geom           interface{}
+	LocationTypeID int16
+}
+
+type LocLocationSource struct {
+	RecordID                 int32
+	LocationID               int32
+	SourceTypeID             int16
+	Capacity                 int16
 	CapacityUnitPrefixFactor int16
-	SysPeriod                pgtype.Range[pgtype.Timestamptz]
+	Metadata                 []byte
+	SysPeriod                pgtype.Range[pgtype.Timestamp]
 }
 
-// History table for the locations supertype table.
-type LocLocationsHistory struct {
-	// Primary key for the location.
-	LocationID int32
-	// Name of the location.
-	Name string
-	// Latitude associated with the location.
-	Latitude float32
-	// Longitude associated with the location.
-	Longitude float32
-	// Capacity of the location in factors of Watts. Multiply by 10 to the power of unit_prefix_factor to get the actual value.
-	Capacity int16
-	// Factor defining the metric prefix of the capacity value. Raise 10 to the power of this value to get the prefix.
-	CapacityUnitPrefixFactor int16
-	SysPeriod                pgtype.Range[pgtype.Timestamptz]
+type LocLocationType struct {
+	LocationTypeID int16
+	Name           string
 }
 
-// Subtype table for region-level locations.
-//
-//	These are bounded locations containing multiple sources such as DNOs or even whole countries.
-//	The supertype lat/long refers to their center point.
-type LocRegionMetadatum struct {
-	// Foreign key to the location table.
-	LocationID int32
-	// Name of the region.
-	RegionName string
-	// GeoJSON representation of the region boundary.
-	BoundaryGeojson []byte
-}
-
-// Subtype table for site-level locations.
-//
-//	These are typically single renewable generation sources identifiable via their lat/long.
-type LocSiteMetadatum struct {
-	// Foreign key to the location table.
-	LocationID int32
-	// Name of the client associated with the site.
-	ClientName string
-	// ID of the site as given by the client.
-	ClientSiteID string
-	// Yaw of the site in degrees (0: N, 90: E, 180: S, 270: W)
-	YawDegrees *int16
-	// Pitch of the site in degrees (0: Points directly downwards, 180: Points directly upwards)
-	PitchDegrees *int16
-	EnergySource int16
+type LocSourceType struct {
+	SourceTypeID int16
+	Name         string
 }
 
 // Observed generation data, in factors of Watts.

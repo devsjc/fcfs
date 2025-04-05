@@ -19,7 +19,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to listen")
 	}
 	s := grpc.NewServer()
-	apiServer := &service.APIServer{DBS: &repository.DummyClient{}}
+	apiServer := &service.QuartzAPIServer{DBS: &repository.DummyClient{}}
 	pb.RegisterQuartzAPIServer(s, apiServer)
 	reflection.Register(s)
 	s.Serve(lis)
