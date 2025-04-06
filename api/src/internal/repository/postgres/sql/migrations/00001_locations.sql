@@ -69,11 +69,15 @@ CREATE TABLE loc.location_sources (
     source_type_id SMALLINT NOT NULL
         REFERENCES loc.source_types(source_type_id)
         ON DELETE RESTRICT,
+    -- Capacity in factors of Watts
     capacity SMALLINT NOT NULL
         CHECK ( capacity >= 0 ),
     -- Factor defining power of 10 to multiply the capacity by
     capacity_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
         CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12, 15) ),
+    -- Capacity cap, measured in same units as capacity (e.g. curtailment)
+    capacity_limit SMALLINT
+        CHECK ( capacity_limit IS NULL OR capacity_limit >= 0 ),
     metadata JSONB,
     sys_period TSRANGE NOT NULL
         DEFAULT TSRANGE(NOW(), NULL, '[)')
@@ -107,7 +111,8 @@ BEGIN
         IF (
             OLD.capacity IS DISTINCT FROM NEW.capacity OR
             OLD.capacity_unit_prefix_factor IS DISTINCT FROM NEW.capacity_unit_prefix_factor OR
-            OLD.metadata IS DISTINCT FROM NEW.metadata
+            OLD.metadata IS DISTINCT FROM NEW.metadata OR
+            OLD.capacity_limit IS DISTINCT FROM NEW.capacity_limit
         ) THEN
             -- Close the validity period of the old record to current_ts (exclusive end)
             UPDATE loc.location_sources
@@ -116,10 +121,11 @@ BEGIN
             -- Insert a new record with the updated values
             NEW.sys_period = TSRANGE(current_ts, NULL, '[]');
             INSERT INTO loc.location_sources (
-                location_id, source_type_id, capacity, capacity_unit_prefix_factor, metadata, sys_period
+                location_id, source_type_id, capacity, capacity_unit_prefix_factor,
+                capacity_limit, metadata, sys_period
             ) VALUES (
-                NEW.location_id, NEW.source_type_id, NEW.capacity,
-                NEW.capacity_unit_prefix_factor, NEW.metadata, NEW.sys_period
+                NEW.location_id, NEW.source_type_id, NEW.capacity, NEW.capacity_unit_prefix_factor,
+                NEW.capacity_limit, NEW.metadata, NEW.sys_period
             );
             -- Cancel the original update action
             RETURN NULL;
