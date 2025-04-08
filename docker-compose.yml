@@ -4,10 +4,12 @@ networks:
   fcfs-net:
     driver: bridge
 
+volumes:
+  pgdata:
+
 services:
 
   envoy-proxy:
-    container_name: envoy-proxy
     ports:
       - "80:80"
       - "8088:8088"
@@ -19,7 +21,6 @@ services:
       - fcfs-net
 
   api:
-    container_name: api
     build:
       context: ./api
       dockerfile: Containerfile
@@ -30,7 +31,6 @@ services:
       - fcfs-net
 
   frontend:
-    container_name: frontend
     build:
       context: ./frontend
       dockerfile: Containerfile
@@ -43,16 +43,49 @@ services:
     networks:
       - fcfs-net
 
-  #database:
-  #  container_name: database
-  #  image: postgres:17
-  #  environment:
-  #    POSTGRES_USER: postgres
-  #    POSTGRES_PASSWORD: postgres
-  #    POSTGRES_DB: postgres
-  #  ports:
-  #    - "5432:5432"
-  #  networks:
-  #    - fcfs-net
+  database:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16 AS extension_builder
+        RUN wget -O /tmp/pgpartman.zip https://github.com/pgpartman/pg_partman/archive/refs/tags/v5.2.4.zip && \
+          unzip /tmp/pgpartman.zip -d /tmp && \
+          cd /tmp/pg_partman-5.2.4 && \
+          make && \
+          make install
+        FROM postgres:16
+        COPY --from=extension_builder /usr/lib/postgresql/16/lib /usr/lib/postgresql/16/lib
+        COPY --from=extension_builder /usr/share/postgresql/16/extension /usr/share/postgresql/16/extension
+    command: postgres -c config_file=/etc/postgresql.conf
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    configs:
+      - source: postgresql.conf
+        target: /etc/postgresql.conf
+        mode: 0644
+    ports:
+      - "5400:5432"
+    networks:
+      - fcfs-net
 
+configs:
+  postgresql.conf:
+    content: |
+      listen_addresses = '*'
+      max_connections = 100                   # (change requires restart)
+      shared_buffers = 128MB                  # min 128kB
+      dynamic_shared_memory_type = posix
+      max_wal_size = 1GB
+      min_wal_size = 80MB
+      log_timezone = 'Etc/UTC'
+      datestyle = 'iso, mdy'
+      timezone = 'Etc/UTC'
+      lc_messages = 'en_US.utf8'              # locale for system error message
+      lc_monetary = 'en_US.utf8'              # locale for monetary formatting
+      lc_numeric = 'en_US.utf8'               # locale for number formatting
+      lc_time = 'en_US.utf8'                  # locale for time formatting
+      default_text_search_config = 'pg_catalog.english'
+      shared_preload_libraries = 'pg_partman_bgw'
 

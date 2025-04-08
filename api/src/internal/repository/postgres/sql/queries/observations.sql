@@ -3,19 +3,19 @@ WITH source_type_id AS (
     SELECT source_type_id FROM loc.source_types
     WHERE source_type = $2
 )
-INSERT INTO obs.observations (
+INSERT INTO obs.observed_generation_values (
     location_id, source_type_id, time_utc, generation, generation_unit_prefix_factor
 ) VALUES (
     $1, source_type_id, $3, $4, $5
 ) RETURNING observation_id;
 
 -- name: CreateObservations :copyfrom
-INSERT INTO obs.observations (
+INSERT INTO obs.observed_generation_values (
     location_id, source_type_id, time_utc, generation, generation_unit_prefix_factor
 ) VALUES (
     $1, $2, $3, $4, $5
 );
 
 -- name: ListObservationsByLocationId :many
-SELECT * FROM obs.observations
+SELECT * FROM obs.observed_generation_values
 WHERE location_id = $1

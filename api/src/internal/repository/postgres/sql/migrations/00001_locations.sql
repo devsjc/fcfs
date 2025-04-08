@@ -1,3 +1,5 @@
+-- +goose Up
+
 /*
 Schema and tables to handle location-based data.
 
@@ -10,11 +12,9 @@ the generated power as a fraction of the capacity of the location, as well as al
 to represent the data on a map.
 */
 
--- +goose Up
--- +goose StatementBegin
-
 CREATE SCHEMA loc;
-CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS "btree_gist";
+CREATE EXTENSION IF NOT EXISTS "postgis";
 
 /*- Lookups -----------------------------------------------------------------------------------*/
 
@@ -22,8 +22,8 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE TABLE loc.source_types(
     source_type_id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
     name TEXT NOT NULL
-        CHECK ( LENGTH(name) <= 24 AND source == LOWER(name) ),
-    PRIMARY KEY (id),
+        CHECK ( LENGTH(name) <= 24 AND name = LOWER(name) ),
+    PRIMARY KEY (source_type_id),
     UNIQUE (name)
 );
 INSERT INTO loc.source_types (name) VALUES ('solar'), ('wind');
@@ -32,8 +32,8 @@ INSERT INTO loc.source_types (name) VALUES ('solar'), ('wind');
 CREATE TABLE loc.location_types(
     location_type_id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
     name TEXT NOT NULL
-        CHECK ( LENGTH(name) <= 24 AND source == LOWER(name) ),
-    PRIMARY KEY (id),
+        CHECK ( LENGTH(name) <= 24 AND name = LOWER(name) ),
+    PRIMARY KEY (location_type_id),
     UNIQUE (name)
 );
 INSERT INTO loc.location_types (name) VALUES ('site'), ('gsp'), ('dno');
@@ -74,15 +74,15 @@ CREATE TABLE loc.location_sources (
         CHECK ( capacity >= 0 ),
     -- Factor defining power of 10 to multiply the capacity by
     capacity_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
-        CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12, 15) ),
+        CHECK ( capacity_unit_prefix_factor IN (0, 3, 6, 9, 12, 15) ),
     -- Capacity cap, measured in same units as capacity (e.g. curtailment)
     capacity_limit SMALLINT
         CHECK ( capacity_limit IS NULL OR capacity_limit >= 0 ),
     metadata JSONB,
     sys_period TSRANGE NOT NULL
-        DEFAULT TSRANGE(NOW(), NULL, '[)')
+        DEFAULT TSRANGE(NOW()::TIMESTAMP, NULL, '[)')
         CHECK ( sys_period <> 'empty'::tsrange ),
-    PRIMARY KEY (generator_snapshot_id),
+    PRIMARY KEY (record_id),
     -- Prevent overlapping records for the same location and energy type
     EXCLUDE USING GIST (
         location_id WITH =,
@@ -100,6 +100,7 @@ CREATE INDEX ON loc.location_sources USING GIST (sys_period);
 
 /*- Triggers --------------------------------------------------------------------------------*/
 
+-- +goose StatementBegin
 -- Function to ensure a properly kept historic record
 CREATE OR REPLACE FUNCTION handle_location_source_change()
 RETURNS TRIGGER AS $$

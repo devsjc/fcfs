@@ -1,3 +1,5 @@
+-- +goose Up
+
 /*
 Schema and tables to handle observed generation data.
 
@@ -7,18 +9,15 @@ Partnerships with these providers provide access to the data in order to
 test the accuracy of predictions.
 */
 
--- +goose Up
--- +goose StatementBegin
-
 CREATE SCHEMA obs;
 
 /*- Tables ----------------------------------------------------------------------------------*/
 
 -- Table to store observed generation values
-CREATE TABLE obs.observations (
+CREATE TABLE obs.observed_generation_values (
     observation_id INT GENERATED ALWAYS AS IDENTITY NOT NULL,
     location_id INT NOT NULL
-        REFERENCES loc.locations(id)
+        REFERENCES loc.locations(location_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     source_type_id SMALLINT NOT NULL
@@ -31,12 +30,10 @@ CREATE TABLE obs.observations (
         CHECK ( generation >= 0 ),
     -- Factor definiing power of 10 to multiply the generation by
     generation_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
-        CHECK ( unit_prefix_factor IN (0, 3, 6, 9, 12) ),
-    PRIMARY KEY (id),
+        CHECK ( generation_unit_prefix_factor IN (0, 3, 6, 9, 12, 15, 18) ),
+    PRIMARY KEY (observation_id),
     UNIQUE (location_id, time_utc)
 );
-
--- +goose StatementEnd
 
 -- +goose Down
 DROP SCHEMA obs CASCADE;
