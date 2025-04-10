@@ -14,6 +14,17 @@ type QuartzAPIServer struct {
 	DBS internal.DatabaseRepository
 }
 
+func NewQuartzAPIServer(dbs internal.DatabaseRepository) *QuartzAPIServer {
+	err := dbs.Migrate()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to migrate database")
+	}
+	log.Debug().Msg("Backend up to date")
+	return &QuartzAPIServer{
+		DBS: dbs,
+	}
+}
+
 func (s *QuartzAPIServer) GetPredictedTimeseries(req *pb.GetPredictedTimeseriesRequest, stream pb.QuartzAPI_GetPredictedTimeseriesServer) (err error) {
 	log.Info().Msg("GetPredictedTimeseries called")
 
