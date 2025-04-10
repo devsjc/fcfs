@@ -52,21 +52,22 @@ type PredForecast struct {
 	InitTimeUtc  pgtype.Timestamp
 }
 
-type PredModel struct {
-	ModelID      int32
-	Name         string
-	Version      string
-	CreatedAtUtc pgtype.Timestamp
-}
-
-type PredPredictedGenerationTimeseries struct {
+type PredFutureTimeseriesHorizonView struct {
 	LocationID    int32
+	ForecastID    int32
 	TargetTimeUtc pgtype.Timestamp
 	HorizonMins   int16
 	P10           *int16
 	P50           int16
 	P90           *int16
 	Metadata      []byte
+}
+
+type PredModel struct {
+	ModelID      int32
+	Name         string
+	Version      string
+	CreatedAtUtc pgtype.Timestamp
 }
 
 type PredPredictedGenerationValue struct {
