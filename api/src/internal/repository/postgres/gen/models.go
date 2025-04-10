@@ -21,6 +21,7 @@ type LocLocationSource struct {
 	SourceTypeID             int16
 	Capacity                 int16
 	CapacityUnitPrefixFactor int16
+	CapacityLimit            *int16
 	Metadata                 []byte
 	SysPeriod                pgtype.Range[pgtype.Timestamp]
 }
@@ -35,71 +36,46 @@ type LocSourceType struct {
 	Name         string
 }
 
-// Observed generation data, in factors of Watts.
-type ObsObservation struct {
-	// Unique identifier for the observation.
+type ObsObservedGenerationValue struct {
+	Value         int16
+	SourceTypeID  int16
 	ObservationID int32
-	// Location of the observed generation.
-	LocationID int32
-	// Time of the observation in UTC.
-	TimeUtc pgtype.Timestamp
-	// Numeric value associated with generation. Multiply by 10 to the power of unit_prefix_factor to get the actual value.
-	Generation int16
-	// Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the prefix.
-	GenerationUnitPrefixFactor int16
+	LocationID    int32
+	TimeUtc       pgtype.Timestamp
 }
 
-// Metadata for a forecast
 type PredForecast struct {
-	// Unique identifier for a forecast
-	ForecastID int32
-	// Location the forecast is for
-	LocationID int32
-	// Initialization time of the forecast
-	InitTimeUtc pgtype.Timestamp
-	// Model used to generate the forecast
-	ModelID int32
+	SourceTypeID int16
+	ForecastID   int32
+	LocationID   int32
+	ModelID      int32
+	InitTimeUtc  pgtype.Timestamp
 }
 
-// Model used to generate a forecast
 type PredModel struct {
-	// Unique identifier for a forecast model
-	ModelID int32
-	// Name of the forecast model
-	Name string
-	// Version of the forecast model
-	Version string
-	// Time the model was created
+	ModelID      int32
+	Name         string
+	Version      string
 	CreatedAtUtc pgtype.Timestamp
 }
 
-// Cross-section of predicted generation data for locations
-type PredPredictedGenerationCrosssection struct {
-	// Unique identifier for a forecast
-	ForecastID int32
-	// Location the forecast is for
-	LocationID int32
-	// Time the generation was predicted for
+type PredPredictedGenerationTimeseries struct {
+	LocationID    int32
 	TargetTimeUtc pgtype.Timestamp
-	// Time horizon in mins for generation value
-	HorizonMins int16
-	// Numeric value associated with predicted generation. Multiply by 10 raised to the power of unit_prefix_factor to get the actual value in Watts
-	Generation int16
-	// Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.
-	GenerationUnitPrefixFactor int16
-	// Model used to generate the forecast
-	ModelID int32
+	HorizonMins   int16
+	P10           *int16
+	P50           int16
+	P90           *int16
+	Metadata      []byte
 }
 
-// Predicted generation data, in factors of Watts
 type PredPredictedGenerationValue struct {
-	// Unique identifier for a forecast
+	HorizonMins   int16
+	P10           *int16
+	P50           int16
+	P90           *int16
 	ForecastID    int32
+	LocationID    int32
 	TargetTimeUtc pgtype.Timestamp
-	// Time horizon in mins for generation value
-	HorizonMins int16
-	// Numeric value associated with predicted generation. Multiply by 10 raised to the power of unit_prefix_factor to get the actual value in Watts
-	Generation int16
-	// Factor defining the metric prefix of the generation value. Raise 10 to the power of this value to get the metric prefix.
-	GenerationUnitPrefixFactor int16
+	Metadata      []byte
 }

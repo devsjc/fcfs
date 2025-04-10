@@ -15,22 +15,20 @@ CREATE SCHEMA obs;
 
 -- Table to store observed generation values
 CREATE TABLE obs.observed_generation_values (
-    observation_id INT GENERATED ALWAYS AS IDENTITY NOT NULL,
-    location_id INT NOT NULL
-        REFERENCES loc.locations(location_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+    -- The generation value as a percentage of the location capacity
+    value SMALLINT NOT NULL
+        CHECK ( value >= 0 AND value <= 110 ),
     source_type_id SMALLINT NOT NULL
         REFERENCES loc.source_types(source_type_id)
         ON DELETE RESTRICT,
+    observation_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
+    location_id INTEGER NOT NULL
+        REFERENCES loc.locations(location_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     time_utc TIMESTAMP NOT NULL
         CHECK ( time_utc <= CURRENT_TIMESTAMP ),
     -- Observed generation in factors of Watts
-    generation SMALLINT NOT NULL
-        CHECK ( generation >= 0 ),
-    -- Factor definiing power of 10 to multiply the generation by
-    generation_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
-        CHECK ( generation_unit_prefix_factor IN (0, 3, 6, 9, 12, 15, 18) ),
     PRIMARY KEY (observation_id),
     UNIQUE (location_id, time_utc)
 );

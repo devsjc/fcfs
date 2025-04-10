@@ -23,7 +23,7 @@ type Querier interface {
 	// Currently active record
 	ListLocationSourceHistoryByType(ctx context.Context, arg ListLocationSourceHistoryByTypeParams) ([]interface{}, error)
 	ListLocationsByType(ctx context.Context, name string) ([]LocLocation, error)
-	ListObservations(ctx context.Context) ([]ObsObservation, error)
+	ListObservationsByLocationId(ctx context.Context, locationID int32) ([]ObsObservedGenerationValue, error)
 	// Currently active record
 	UpdateLocationSource(ctx context.Context, arg UpdateLocationSourceParams) error
 	UpdateLocationSourceCapacity(ctx context.Context, arg UpdateLocationSourceCapacityParams) error
