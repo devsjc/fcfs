@@ -4,8 +4,8 @@
 package postgres
 
 import (
-	"embed"
 	"context"
+	"embed"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,7 +27,7 @@ type PostgresClient struct {
 	pool *pgxpool.Pool
 }
 
-// // NewPostgresClient creates a new PostgresClient instance and connects to the database
+// NewPostgresClient creates a new PostgresClient instance and connects to the database
 func NewPostgresClient() *PostgresClient {
 	pool, err := pgxpool.New(
 		context.Background(), os.Getenv("DATABASE_URL"),
@@ -39,13 +39,15 @@ func NewPostgresClient() *PostgresClient {
 	return &PostgresClient{pool: pool}
 }
 
-func Migrate(c *PostgresClient) error {
+// Migrate implements internal.DatabaseRepository.
+func (p *PostgresClient) Migrate() error {
+	log.Debug().Msg("Running migrations")
 	goose.SetBaseFS(embedMigrations)
 	err := goose.SetDialect("postgres")
 	if err != nil {
 		return err
 	}
-	db := stdlib.OpenDBFromPool(c.pool)
+	db := stdlib.OpenDBFromPool(p.pool)
 	err = goose.Up(db, migrationsDir)
 	if err != nil {
 		return err
@@ -59,27 +61,22 @@ func Migrate(c *PostgresClient) error {
 
 // GetActualYieldForLocations implements internal.DatabaseRepository.
 func (p *PostgresClient) GetActualYieldForLocations(locIDs []string, timeUnix int64) ([]internal.DBActualLocalisedYield, error) {
-	panic("unimplemented")
+	panic("GetActualYieldForLocations not implemented")
 }
 
 // GetActualYieldsForLocation implements internal.DatabaseRepository.
 func (p *PostgresClient) GetActualYieldsForLocation(locID string) ([]internal.DBActualYield, error) {
-	panic("unimplemented")
+	panic("GetActualYieldsForLocation not implemented")
 }
 
 // GetPredictedYieldForLocations implements internal.DatabaseRepository.
 func (p *PostgresClient) GetPredictedYieldForLocations(locIDs []string, timeUnix int64) ([]internal.DBPredictedLocalisedYield, error) {
-	panic("unimplemented")
+	panic("GetPredictedYieldForLocations not implemented")
 }
 
 // GetPredictedYieldsForLocation implements internal.DatabaseRepository.
 func (p *PostgresClient) GetPredictedYieldsForLocation(locID string) ([]internal.DBPredictedYield, error) {
-	panic("unimplemented")
-}
-
-// Migrate implements internal.DatabaseRepository.
-func (p *PostgresClient) Migrate() error {
-	panic("unimplemented")
+	panic("GetPredictedYieldsForLocation not implemented")
 }
 
 // Compile check to ensure that the DummyClient implements the DatabaseService interface.

@@ -10,16 +10,16 @@ volumes:
 services:
 
   api:
-    build:
-      context: ./api
-      dockerfile: Containerfile
-    ports:
-      - "50051:50051"
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@database:5432/postgres
-      DATABASE_TYPE: postgres
-    networks:
-      - fcfs-net
+     build:
+       context: ./api
+       dockerfile: Containerfile
+     ports:
+       - "50051:50051"
+     environment:
+       DATABASE_URL: postgresql://postgres:postgres@database:5432/postgres
+       DATABASE_TYPE: postgres
+     networks:
+       - fcfs-net
 
   envoy-proxy:
     ports:
