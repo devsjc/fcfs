@@ -18,6 +18,10 @@ services:
      environment:
        DATABASE_URL: postgresql://postgres:postgres@database:5432/postgres
        DATABASE_TYPE: postgres
+     depends_on:
+       database:
+         condition: service_healthy
+         restart: true
      networks:
        - fcfs-net
 
@@ -45,20 +49,9 @@ services:
       - fcfs-net
 
   database:
-    image: postgres:16
-    # build:
-    #   context: .
-    #   dockerfile_inline: |
-    #     FROM postgres:16 AS extension_builder
-    #     RUN wget -O /tmp/pgpartman.zip https://github.com/pgpartman/pg_partman/archive/refs/tags/v5.2.4.zip && \
-    #       unzip /tmp/pgpartman.zip -d /tmp && \
-    #       cd /tmp/pg_partman-5.2.4 && \
-    #       make && \
-    #       make install
-    #     FROM postgres:16
-    #     COPY --from=extension_builder /usr/lib/postgresql/16/lib /usr/lib/postgresql/16/lib
-    #     COPY --from=extension_builder /usr/share/postgresql/16/extension /usr/share/postgresql/16/extension
-    # command: postgres -c config_file=/etc/postgresql.conf
+    build:
+      context: ./api/src/internal/repository/postgres/infra
+      dockerfile: Containerfile
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -71,6 +64,12 @@ services:
       - "5400:5432"
     networks:
       - fcfs-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      retries: 5
+      start_period: 15s
+      timeout: 10s
 
 configs:
   postgresql.conf:

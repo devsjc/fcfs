@@ -13,7 +13,6 @@ for a given location.
 */
 
 CREATE SCHEMA pred;
-CREATE EXTENSION IF NOT EXISTS pg_partman WITH SCHEMA partman;
 
 /*- Tables ----------------------------------------------------------------------------------*/
 
@@ -49,7 +48,7 @@ CREATE TABLE pred.forecasts (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     model_id INTEGER NOT NULL
-        REFERENCES pred.models(id)
+        REFERENCES pred.models(model_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     init_time_utc TIMESTAMP NOT NULL,
@@ -93,7 +92,7 @@ CREATE TABLE pred.predicted_generation_values (
     target_time_utc TIMESTAMP NOT NULL,
     metadata JSONB
         CHECK (metadata IS NULL or metadata != '{}'),
-    PRIMARY KEY (horizon_mins, forecast_id)
+    PRIMARY KEY (target_time_utc, horizon_mins, forecast_id)
 )
 -- Native partitioning. Note that unique indexes will only work if they include
 -- the partition key.
@@ -106,12 +105,13 @@ CREATE INDEX ON pred.predicted_generation_values (location_id, target_time_utc, 
 -- Index for getting specific forecast values
 CREATE INDEX ON pred.predicted_generation_values (forecast_id, target_time_utc, horizon_mins);
 
+
 -- Manage partitions with pg_partman
 SELECT partman.create_parent(
     p_parent_table => 'pred.predicted_generation_values',
     p_control => 'target_time_utc',
     p_type => 'range',
-    p_interval => 'daily',
+    p_interval => '1 week',
     p_automatic_maintenance => 'on',
     p_jobmon => false,
     p_premake => 7
@@ -124,6 +124,7 @@ SET retention = '1 month',
     -- Retain the detatched partitions so they can be processed
     infinite_time_partitions = true
 WHERE parent_table = 'public.predicted_generation_values';
+
 
 /*- Views ------------------------------------------------------------------------------*/
 
@@ -151,7 +152,7 @@ future_horizon_forecast AS (
             (NOW() - make_interval(hours => v.desired_horizon_hours + 1))
             AND (NOW() - make_interval(hours => v.desired_horizon_hours))
     ORDER BY
-        f.init_time_utc DESC
+        location_id, f.init_time_utc DESC
     LIMIT 1
 )
 SELECT
