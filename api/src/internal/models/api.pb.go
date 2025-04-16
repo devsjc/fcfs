@@ -21,59 +21,10 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type LocationType int32
-
-const (
-	LocationType_UNKNOWN LocationType = 0
-	LocationType_SITE    LocationType = 1
-	LocationType_REGION  LocationType = 2
-)
-
-// Enum value maps for LocationType.
-var (
-	LocationType_name = map[int32]string{
-		0: "UNKNOWN",
-		1: "SITE",
-		2: "REGION",
-	}
-	LocationType_value = map[string]int32{
-		"UNKNOWN": 0,
-		"SITE":    1,
-		"REGION":  2,
-	}
-)
-
-func (x LocationType) Enum() *LocationType {
-	p := new(LocationType)
-	*p = x
-	return p
-}
-
-func (x LocationType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (LocationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_enumTypes[0].Descriptor()
-}
-
-func (LocationType) Type() protoreflect.EnumType {
-	return &file_api_proto_enumTypes[0]
-}
-
-func (x LocationType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use LocationType.Descriptor instead.
-func (LocationType) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{0}
-}
-
 // --- GetPredictedTimeseries --------------------------------------------------------
 type GetPredictedTimeseriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationIDs   []string               `protobuf:"bytes,1,rep,name=locationIDs,proto3" json:"locationIDs,omitempty"`
+	LocationIds   []string               `protobuf:"bytes,1,rep,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -108,16 +59,16 @@ func (*GetPredictedTimeseriesRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GetPredictedTimeseriesRequest) GetLocationIDs() []string {
+func (x *GetPredictedTimeseriesRequest) GetLocationIds() []string {
 	if x != nil {
-		return x.LocationIDs
+		return x.LocationIds
 	}
 	return nil
 }
 
 type GetPredictedTimeseriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationID    string                 `protobuf:"bytes,1,opt,name=locationID,proto3" json:"locationID,omitempty"`
+	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	Yields        []*PredictedYield      `protobuf:"bytes,2,rep,name=yields,proto3" json:"yields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -153,9 +104,9 @@ func (*GetPredictedTimeseriesResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetPredictedTimeseriesResponse) GetLocationID() string {
+func (x *GetPredictedTimeseriesResponse) GetLocationId() string {
 	if x != nil {
-		return x.LocationID
+		return x.LocationId
 	}
 	return ""
 }
@@ -282,7 +233,7 @@ func (x *PredictedYieldUncertainty) GetUpperKw() int32 {
 // --- GetActualTimeseries -----------------------------------------------------------
 type GetActualTimeseriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationIDs   []string               `protobuf:"bytes,1,rep,name=locationIDs,proto3" json:"locationIDs,omitempty"`
+	LocationIds   []string               `protobuf:"bytes,1,rep,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -317,16 +268,16 @@ func (*GetActualTimeseriesRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetActualTimeseriesRequest) GetLocationIDs() []string {
+func (x *GetActualTimeseriesRequest) GetLocationIds() []string {
 	if x != nil {
-		return x.LocationIDs
+		return x.LocationIds
 	}
 	return nil
 }
 
 type GetActualTimeseriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationID    string                 `protobuf:"bytes,1,opt,name=locationID,proto3" json:"locationID,omitempty"`
+	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	Yields        []*ActualYield         `protobuf:"bytes,2,rep,name=yields,proto3" json:"yields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -362,9 +313,9 @@ func (*GetActualTimeseriesResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetActualTimeseriesResponse) GetLocationID() string {
+func (x *GetActualTimeseriesResponse) GetLocationId() string {
 	if x != nil {
-		return x.LocationID
+		return x.LocationId
 	}
 	return ""
 }
@@ -431,7 +382,7 @@ func (x *ActualYield) GetTimestampUnix() int64 {
 // --- GetPredictedCrossSection ------------------------------------------------------
 type GetPredictedCrossSectionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationIDs   []string               `protobuf:"bytes,1,rep,name=locationIDs,proto3" json:"locationIDs,omitempty"`
+	LocationIds   []string               `protobuf:"bytes,1,rep,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
 	TimestampUnix int64                  `protobuf:"varint,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -467,9 +418,9 @@ func (*GetPredictedCrossSectionRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetPredictedCrossSectionRequest) GetLocationIDs() []string {
+func (x *GetPredictedCrossSectionRequest) GetLocationIds() []string {
 	if x != nil {
-		return x.LocationIDs
+		return x.LocationIds
 	}
 	return nil
 }
@@ -535,7 +486,7 @@ func (x *GetPredictedCrossSectionResponse) GetYields() []*PredictedYieldAtLocati
 
 type PredictedYieldAtLocation struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
-	LocationID    string                     `protobuf:"bytes,1,opt,name=locationID,proto3" json:"locationID,omitempty"`
+	LocationId    string                     `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	YieldKw       int32                      `protobuf:"varint,2,opt,name=yield_kw,json=yieldKw,proto3" json:"yield_kw,omitempty"`
 	Uncertainty   *PredictedYieldUncertainty `protobuf:"bytes,3,opt,name=uncertainty,proto3" json:"uncertainty,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -572,9 +523,9 @@ func (*PredictedYieldAtLocation) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *PredictedYieldAtLocation) GetLocationID() string {
+func (x *PredictedYieldAtLocation) GetLocationId() string {
 	if x != nil {
-		return x.LocationID
+		return x.LocationId
 	}
 	return ""
 }
@@ -596,7 +547,7 @@ func (x *PredictedYieldAtLocation) GetUncertainty() *PredictedYieldUncertainty {
 // --- GetActualCrossSection ---------------------------------------------------------
 type GetActualCrossSectionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationIDs   []string               `protobuf:"bytes,1,rep,name=locationIDs,proto3" json:"locationIDs,omitempty"`
+	LocationIds   []string               `protobuf:"bytes,1,rep,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
 	TimestampUnix int64                  `protobuf:"varint,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -632,9 +583,9 @@ func (*GetActualCrossSectionRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *GetActualCrossSectionRequest) GetLocationIDs() []string {
+func (x *GetActualCrossSectionRequest) GetLocationIds() []string {
 	if x != nil {
-		return x.LocationIDs
+		return x.LocationIds
 	}
 	return nil
 }
@@ -700,7 +651,7 @@ func (x *GetActualCrossSectionResponse) GetYields() []*ActualYieldAtLocation {
 
 type ActualYieldAtLocation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationID    string                 `protobuf:"bytes,1,opt,name=locationID,proto3" json:"locationID,omitempty"`
+	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	YieldKw       int32                  `protobuf:"varint,2,opt,name=yield_kw,json=yieldKw,proto3" json:"yield_kw,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -736,9 +687,9 @@ func (*ActualYieldAtLocation) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *ActualYieldAtLocation) GetLocationID() string {
+func (x *ActualYieldAtLocation) GetLocationId() string {
 	if x != nil {
-		return x.LocationID
+		return x.LocationId
 	}
 	return ""
 }
@@ -750,28 +701,32 @@ func (x *ActualYieldAtLocation) GetYieldKw() int32 {
 	return 0
 }
 
-// --- GetLocationMetadata -----------------------------------------------------------
-type GetLocationMetadataRequest struct {
+// --- Locations ----------------------------------------------------------------
+type CreateSiteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationID    string                 `protobuf:"bytes,1,opt,name=locationID,proto3" json:"locationID,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Latitude      float32                `protobuf:"fixed32,2,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude     float32                `protobuf:"fixed32,3,opt,name=longitude,proto3" json:"longitude,omitempty"`
+	CapacityKw    int64                  `protobuf:"varint,4,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
+	Metadata      string                 `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetLocationMetadataRequest) Reset() {
-	*x = GetLocationMetadataRequest{}
+func (x *CreateSiteRequest) Reset() {
+	*x = CreateSiteRequest{}
 	mi := &file_api_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetLocationMetadataRequest) String() string {
+func (x *CreateSiteRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetLocationMetadataRequest) ProtoMessage() {}
+func (*CreateSiteRequest) ProtoMessage() {}
 
-func (x *GetLocationMetadataRequest) ProtoReflect() protoreflect.Message {
+func (x *CreateSiteRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -783,194 +738,71 @@ func (x *GetLocationMetadataRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetLocationMetadataRequest.ProtoReflect.Descriptor instead.
-func (*GetLocationMetadataRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateSiteRequest.ProtoReflect.Descriptor instead.
+func (*CreateSiteRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *GetLocationMetadataRequest) GetLocationID() string {
+func (x *CreateSiteRequest) GetName() string {
 	if x != nil {
-		return x.LocationID
+		return x.Name
 	}
 	return ""
 }
 
-type GetLocationMetadataResponse struct {
-	state          protoimpl.MessageState  `protogen:"open.v1"`
-	LocationID     string                  `protobuf:"bytes,1,opt,name=locationID,proto3" json:"locationID,omitempty"`
-	LocationType   LocationType            `protobuf:"varint,2,opt,name=locationType,proto3,enum=api.LocationType" json:"locationType,omitempty"`
-	SiteMetadata   *SiteLocationMetadata   `protobuf:"bytes,3,opt,name=siteMetadata,proto3" json:"siteMetadata,omitempty"`
-	RegionMetadata *RegionLocationMetadata `protobuf:"bytes,4,opt,name=regionMetadata,proto3" json:"regionMetadata,omitempty"`
-	NationMetadata *NationLocationMetadata `protobuf:"bytes,5,opt,name=nationMetadata,proto3" json:"nationMetadata,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *GetLocationMetadataResponse) Reset() {
-	*x = GetLocationMetadataResponse{}
-	mi := &file_api_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetLocationMetadataResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetLocationMetadataResponse) ProtoMessage() {}
-
-func (x *GetLocationMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetLocationMetadataResponse.ProtoReflect.Descriptor instead.
-func (*GetLocationMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *GetLocationMetadataResponse) GetLocationID() string {
-	if x != nil {
-		return x.LocationID
-	}
-	return ""
-}
-
-func (x *GetLocationMetadataResponse) GetLocationType() LocationType {
-	if x != nil {
-		return x.LocationType
-	}
-	return LocationType_UNKNOWN
-}
-
-func (x *GetLocationMetadataResponse) GetSiteMetadata() *SiteLocationMetadata {
-	if x != nil {
-		return x.SiteMetadata
-	}
-	return nil
-}
-
-func (x *GetLocationMetadataResponse) GetRegionMetadata() *RegionLocationMetadata {
-	if x != nil {
-		return x.RegionMetadata
-	}
-	return nil
-}
-
-func (x *GetLocationMetadataResponse) GetNationMetadata() *NationLocationMetadata {
-	if x != nil {
-		return x.NationMetadata
-	}
-	return nil
-}
-
-type SiteLocationMetadata struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Latitude       float32                `protobuf:"fixed32,2,opt,name=latitude,proto3" json:"latitude,omitempty"`
-	Longitude      float32                `protobuf:"fixed32,3,opt,name=longitude,proto3" json:"longitude,omitempty"`
-	OrientationDeg int32                  `protobuf:"varint,4,opt,name=orientation_deg,json=orientationDeg,proto3" json:"orientation_deg,omitempty"`
-	TiltDeg        int32                  `protobuf:"varint,5,opt,name=tilt_deg,json=tiltDeg,proto3" json:"tilt_deg,omitempty"`
-	CapacityKw     int32                  `protobuf:"varint,6,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *SiteLocationMetadata) Reset() {
-	*x = SiteLocationMetadata{}
-	mi := &file_api_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SiteLocationMetadata) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SiteLocationMetadata) ProtoMessage() {}
-
-func (x *SiteLocationMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SiteLocationMetadata.ProtoReflect.Descriptor instead.
-func (*SiteLocationMetadata) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *SiteLocationMetadata) GetLatitude() float32 {
+func (x *CreateSiteRequest) GetLatitude() float32 {
 	if x != nil {
 		return x.Latitude
 	}
 	return 0
 }
 
-func (x *SiteLocationMetadata) GetLongitude() float32 {
+func (x *CreateSiteRequest) GetLongitude() float32 {
 	if x != nil {
 		return x.Longitude
 	}
 	return 0
 }
 
-func (x *SiteLocationMetadata) GetOrientationDeg() int32 {
-	if x != nil {
-		return x.OrientationDeg
-	}
-	return 0
-}
-
-func (x *SiteLocationMetadata) GetTiltDeg() int32 {
-	if x != nil {
-		return x.TiltDeg
-	}
-	return 0
-}
-
-func (x *SiteLocationMetadata) GetCapacityKw() int32 {
+func (x *CreateSiteRequest) GetCapacityKw() int64 {
 	if x != nil {
 		return x.CapacityKw
 	}
 	return 0
 }
 
-type RegionLocationMetadata struct {
+func (x *CreateSiteRequest) GetMetadata() string {
+	if x != nil {
+		return x.Metadata
+	}
+	return ""
+}
+
+type CreateGspRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RegionName    string                 `protobuf:"bytes,1,opt,name=regionName,proto3" json:"regionName,omitempty"`
-	GspName       string                 `protobuf:"bytes,2,opt,name=gspName,proto3" json:"gspName,omitempty"`
-	CapacityKw    string                 `protobuf:"bytes,3,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Geometry      string                 `protobuf:"bytes,2,opt,name=geometry,proto3" json:"geometry,omitempty"`
+	CapacityKw    int64                  `protobuf:"varint,3,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
+	Metadata      string                 `protobuf:"bytes,4,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RegionLocationMetadata) Reset() {
-	*x = RegionLocationMetadata{}
-	mi := &file_api_proto_msgTypes[16]
+func (x *CreateGspRequest) Reset() {
+	*x = CreateGspRequest{}
+	mi := &file_api_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegionLocationMetadata) String() string {
+func (x *CreateGspRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegionLocationMetadata) ProtoMessage() {}
+func (*CreateGspRequest) ProtoMessage() {}
 
-func (x *RegionLocationMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_msgTypes[16]
+func (x *CreateGspRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -981,55 +813,61 @@ func (x *RegionLocationMetadata) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RegionLocationMetadata.ProtoReflect.Descriptor instead.
-func (*RegionLocationMetadata) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{16}
+// Deprecated: Use CreateGspRequest.ProtoReflect.Descriptor instead.
+func (*CreateGspRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *RegionLocationMetadata) GetRegionName() string {
+func (x *CreateGspRequest) GetName() string {
 	if x != nil {
-		return x.RegionName
+		return x.Name
 	}
 	return ""
 }
 
-func (x *RegionLocationMetadata) GetGspName() string {
+func (x *CreateGspRequest) GetGeometry() string {
 	if x != nil {
-		return x.GspName
+		return x.Geometry
 	}
 	return ""
 }
 
-func (x *RegionLocationMetadata) GetCapacityKw() string {
+func (x *CreateGspRequest) GetCapacityKw() int64 {
 	if x != nil {
 		return x.CapacityKw
 	}
+	return 0
+}
+
+func (x *CreateGspRequest) GetMetadata() string {
+	if x != nil {
+		return x.Metadata
+	}
 	return ""
 }
 
-type NationLocationMetadata struct {
+type CreateLocationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	NationName    string                 `protobuf:"bytes,1,opt,name=nationName,proto3" json:"nationName,omitempty"`
-	CapacityKw    string                 `protobuf:"bytes,2,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
+	LocationId    int64                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *NationLocationMetadata) Reset() {
-	*x = NationLocationMetadata{}
-	mi := &file_api_proto_msgTypes[17]
+func (x *CreateLocationResponse) Reset() {
+	*x = CreateLocationResponse{}
+	mi := &file_api_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *NationLocationMetadata) String() string {
+func (x *CreateLocationResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NationLocationMetadata) ProtoMessage() {}
+func (*CreateLocationResponse) ProtoMessage() {}
 
-func (x *NationLocationMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_msgTypes[17]
+func (x *CreateLocationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1040,36 +878,28 @@ func (x *NationLocationMetadata) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NationLocationMetadata.ProtoReflect.Descriptor instead.
-func (*NationLocationMetadata) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{17}
+// Deprecated: Use CreateLocationResponse.ProtoReflect.Descriptor instead.
+func (*CreateLocationResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *NationLocationMetadata) GetNationName() string {
+func (x *CreateLocationResponse) GetLocationId() int64 {
 	if x != nil {
-		return x.NationName
+		return x.LocationId
 	}
-	return ""
-}
-
-func (x *NationLocationMetadata) GetCapacityKw() string {
-	if x != nil {
-		return x.CapacityKw
-	}
-	return ""
+	return 0
 }
 
 var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
 	"\n" +
-	"\tapi.proto\x12\x03api\"A\n" +
-	"\x1dGetPredictedTimeseriesRequest\x12 \n" +
-	"\vlocationIDs\x18\x01 \x03(\tR\vlocationIDs\"m\n" +
-	"\x1eGetPredictedTimeseriesResponse\x12\x1e\n" +
-	"\n" +
-	"locationID\x18\x01 \x01(\tR\n" +
-	"locationID\x12+\n" +
+	"\tapi.proto\x12\x03api\"B\n" +
+	"\x1dGetPredictedTimeseriesRequest\x12!\n" +
+	"\flocation_ids\x18\x01 \x03(\tR\vlocationIds\"n\n" +
+	"\x1eGetPredictedTimeseriesResponse\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\x12+\n" +
 	"\x06yields\x18\x02 \x03(\v2\x13.api.PredictedYieldR\x06yields\"\x94\x01\n" +
 	"\x0ePredictedYield\x12\x19\n" +
 	"\byield_kw\x18\x01 \x01(\x05R\ayieldKw\x12%\n" +
@@ -1077,83 +907,62 @@ const file_api_proto_rawDesc = "" +
 	"\vuncertainty\x18\x03 \x01(\v2\x1e.api.PredictedYieldUncertaintyR\vuncertainty\"Q\n" +
 	"\x19PredictedYieldUncertainty\x12\x19\n" +
 	"\blower_kw\x18\x01 \x01(\x05R\alowerKw\x12\x19\n" +
-	"\bupper_kw\x18\x02 \x01(\x05R\aupperKw\">\n" +
-	"\x1aGetActualTimeseriesRequest\x12 \n" +
-	"\vlocationIDs\x18\x01 \x03(\tR\vlocationIDs\"g\n" +
-	"\x1bGetActualTimeseriesResponse\x12\x1e\n" +
-	"\n" +
-	"locationID\x18\x01 \x01(\tR\n" +
-	"locationID\x12(\n" +
+	"\bupper_kw\x18\x02 \x01(\x05R\aupperKw\"?\n" +
+	"\x1aGetActualTimeseriesRequest\x12!\n" +
+	"\flocation_ids\x18\x01 \x03(\tR\vlocationIds\"h\n" +
+	"\x1bGetActualTimeseriesResponse\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\x12(\n" +
 	"\x06yields\x18\x02 \x03(\v2\x10.api.ActualYieldR\x06yields\"O\n" +
 	"\vActualYield\x12\x19\n" +
 	"\byield_kw\x18\x01 \x01(\x05R\ayieldKw\x12%\n" +
-	"\x0etimestamp_unix\x18\x02 \x01(\x03R\rtimestampUnix\"j\n" +
-	"\x1fGetPredictedCrossSectionRequest\x12 \n" +
-	"\vlocationIDs\x18\x01 \x03(\tR\vlocationIDs\x12%\n" +
+	"\x0etimestamp_unix\x18\x02 \x01(\x03R\rtimestampUnix\"k\n" +
+	"\x1fGetPredictedCrossSectionRequest\x12!\n" +
+	"\flocation_ids\x18\x01 \x03(\tR\vlocationIds\x12%\n" +
 	"\x0etimestamp_unix\x18\x02 \x01(\x03R\rtimestampUnix\"\x80\x01\n" +
 	" GetPredictedCrossSectionResponse\x12%\n" +
 	"\x0etimestamp_unix\x18\x01 \x01(\x03R\rtimestampUnix\x125\n" +
-	"\x06yields\x18\x02 \x03(\v2\x1d.api.PredictedYieldAtLocationR\x06yields\"\x97\x01\n" +
-	"\x18PredictedYieldAtLocation\x12\x1e\n" +
-	"\n" +
-	"locationID\x18\x01 \x01(\tR\n" +
-	"locationID\x12\x19\n" +
+	"\x06yields\x18\x02 \x03(\v2\x1d.api.PredictedYieldAtLocationR\x06yields\"\x98\x01\n" +
+	"\x18PredictedYieldAtLocation\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\x12\x19\n" +
 	"\byield_kw\x18\x02 \x01(\x05R\ayieldKw\x12@\n" +
-	"\vuncertainty\x18\x03 \x01(\v2\x1e.api.PredictedYieldUncertaintyR\vuncertainty\"g\n" +
-	"\x1cGetActualCrossSectionRequest\x12 \n" +
-	"\vlocationIDs\x18\x01 \x03(\tR\vlocationIDs\x12%\n" +
+	"\vuncertainty\x18\x03 \x01(\v2\x1e.api.PredictedYieldUncertaintyR\vuncertainty\"h\n" +
+	"\x1cGetActualCrossSectionRequest\x12!\n" +
+	"\flocation_ids\x18\x01 \x03(\tR\vlocationIds\x12%\n" +
 	"\x0etimestamp_unix\x18\x02 \x01(\x03R\rtimestampUnix\"z\n" +
 	"\x1dGetActualCrossSectionResponse\x12%\n" +
 	"\x0etimestamp_unix\x18\x01 \x01(\x03R\rtimestampUnix\x122\n" +
-	"\x06yields\x18\x02 \x03(\v2\x1a.api.ActualYieldAtLocationR\x06yields\"R\n" +
-	"\x15ActualYieldAtLocation\x12\x1e\n" +
-	"\n" +
-	"locationID\x18\x01 \x01(\tR\n" +
-	"locationID\x12\x19\n" +
-	"\byield_kw\x18\x02 \x01(\x05R\ayieldKw\"<\n" +
-	"\x1aGetLocationMetadataRequest\x12\x1e\n" +
-	"\n" +
-	"locationID\x18\x01 \x01(\tR\n" +
-	"locationID\"\xbd\x02\n" +
-	"\x1bGetLocationMetadataResponse\x12\x1e\n" +
-	"\n" +
-	"locationID\x18\x01 \x01(\tR\n" +
-	"locationID\x125\n" +
-	"\flocationType\x18\x02 \x01(\x0e2\x11.api.LocationTypeR\flocationType\x12=\n" +
-	"\fsiteMetadata\x18\x03 \x01(\v2\x19.api.SiteLocationMetadataR\fsiteMetadata\x12C\n" +
-	"\x0eregionMetadata\x18\x04 \x01(\v2\x1b.api.RegionLocationMetadataR\x0eregionMetadata\x12C\n" +
-	"\x0enationMetadata\x18\x05 \x01(\v2\x1b.api.NationLocationMetadataR\x0enationMetadata\"\xb5\x01\n" +
-	"\x14SiteLocationMetadata\x12\x1a\n" +
+	"\x06yields\x18\x02 \x03(\v2\x1a.api.ActualYieldAtLocationR\x06yields\"S\n" +
+	"\x15ActualYieldAtLocation\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\x12\x19\n" +
+	"\byield_kw\x18\x02 \x01(\x05R\ayieldKw\"\x9e\x01\n" +
+	"\x11CreateSiteRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\blatitude\x18\x02 \x01(\x02R\blatitude\x12\x1c\n" +
-	"\tlongitude\x18\x03 \x01(\x02R\tlongitude\x12'\n" +
-	"\x0forientation_deg\x18\x04 \x01(\x05R\x0eorientationDeg\x12\x19\n" +
-	"\btilt_deg\x18\x05 \x01(\x05R\atiltDeg\x12\x1f\n" +
-	"\vcapacity_kw\x18\x06 \x01(\x05R\n" +
-	"capacityKw\"s\n" +
-	"\x16RegionLocationMetadata\x12\x1e\n" +
-	"\n" +
-	"regionName\x18\x01 \x01(\tR\n" +
-	"regionName\x12\x18\n" +
-	"\agspName\x18\x02 \x01(\tR\agspName\x12\x1f\n" +
-	"\vcapacity_kw\x18\x03 \x01(\tR\n" +
-	"capacityKw\"Y\n" +
-	"\x16NationLocationMetadata\x12\x1e\n" +
-	"\n" +
-	"nationName\x18\x01 \x01(\tR\n" +
-	"nationName\x12\x1f\n" +
-	"\vcapacity_kw\x18\x02 \x01(\tR\n" +
-	"capacityKw*1\n" +
-	"\fLocationType\x12\v\n" +
-	"\aUNKNOWN\x10\x00\x12\b\n" +
-	"\x04SITE\x10\x01\x12\n" +
-	"\n" +
-	"\x06REGION\x10\x022\xf9\x03\n" +
+	"\tlongitude\x18\x03 \x01(\x02R\tlongitude\x12\x1f\n" +
+	"\vcapacity_kw\x18\x04 \x01(\x03R\n" +
+	"capacityKw\x12\x1a\n" +
+	"\bmetadata\x18\x05 \x01(\tR\bmetadata\"\x7f\n" +
+	"\x10CreateGspRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"\bgeometry\x18\x02 \x01(\tR\bgeometry\x12\x1f\n" +
+	"\vcapacity_kw\x18\x03 \x01(\x03R\n" +
+	"capacityKw\x12\x1a\n" +
+	"\bmetadata\x18\x04 \x01(\tR\bmetadata\"9\n" +
+	"\x16CreateLocationResponse\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\x03R\n" +
+	"locationId2\xbf\x05\n" +
 	"\tQuartzAPI\x12e\n" +
 	"\x16GetPredictedTimeseries\x12\".api.GetPredictedTimeseriesRequest\x1a#.api.GetPredictedTimeseriesResponse\"\x000\x01\x12\\\n" +
 	"\x13GetActualTimeseries\x12\x1f.api.GetActualTimeseriesRequest\x1a .api.GetActualTimeseriesResponse\"\x000\x01\x12`\n" +
 	"\x15GetActualCrossSection\x12!.api.GetActualCrossSectionRequest\x1a\".api.GetActualCrossSectionResponse\"\x00\x12i\n" +
-	"\x18GetPredictedCrossSection\x12$.api.GetPredictedCrossSectionRequest\x1a%.api.GetPredictedCrossSectionResponse\"\x00\x12Z\n" +
-	"\x13GetLocationMetadata\x12\x1f.api.GetLocationMetadataRequest\x1a .api.GetLocationMetadataResponse\"\x00B&Z$github.com/devsjc/fcfs/api/src/protob\x06proto3"
+	"\x18GetPredictedCrossSection\x12$.api.GetPredictedCrossSectionRequest\x1a%.api.GetPredictedCrossSectionResponse\"\x00\x12H\n" +
+	"\x0fCreateSolarSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12G\n" +
+	"\x0eCreateWindSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12F\n" +
+	"\x0eCreateSolarGsp\x12\x15.api.CreateGspRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12E\n" +
+	"\rCreateWindGsp\x12\x15.api.CreateGspRequest\x1a\x1b.api.CreateLocationResponse\"\x00B&Z$github.com/devsjc/fcfs/api/src/protob\x06proto3"
 
 var (
 	file_api_proto_rawDescOnce sync.Once
@@ -1167,55 +976,53 @@ func file_api_proto_rawDescGZIP() []byte {
 	return file_api_proto_rawDescData
 }
 
-var file_api_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_api_proto_goTypes = []any{
-	(LocationType)(0),                        // 0: api.LocationType
-	(*GetPredictedTimeseriesRequest)(nil),    // 1: api.GetPredictedTimeseriesRequest
-	(*GetPredictedTimeseriesResponse)(nil),   // 2: api.GetPredictedTimeseriesResponse
-	(*PredictedYield)(nil),                   // 3: api.PredictedYield
-	(*PredictedYieldUncertainty)(nil),        // 4: api.PredictedYieldUncertainty
-	(*GetActualTimeseriesRequest)(nil),       // 5: api.GetActualTimeseriesRequest
-	(*GetActualTimeseriesResponse)(nil),      // 6: api.GetActualTimeseriesResponse
-	(*ActualYield)(nil),                      // 7: api.ActualYield
-	(*GetPredictedCrossSectionRequest)(nil),  // 8: api.GetPredictedCrossSectionRequest
-	(*GetPredictedCrossSectionResponse)(nil), // 9: api.GetPredictedCrossSectionResponse
-	(*PredictedYieldAtLocation)(nil),         // 10: api.PredictedYieldAtLocation
-	(*GetActualCrossSectionRequest)(nil),     // 11: api.GetActualCrossSectionRequest
-	(*GetActualCrossSectionResponse)(nil),    // 12: api.GetActualCrossSectionResponse
-	(*ActualYieldAtLocation)(nil),            // 13: api.ActualYieldAtLocation
-	(*GetLocationMetadataRequest)(nil),       // 14: api.GetLocationMetadataRequest
-	(*GetLocationMetadataResponse)(nil),      // 15: api.GetLocationMetadataResponse
-	(*SiteLocationMetadata)(nil),             // 16: api.SiteLocationMetadata
-	(*RegionLocationMetadata)(nil),           // 17: api.RegionLocationMetadata
-	(*NationLocationMetadata)(nil),           // 18: api.NationLocationMetadata
+	(*GetPredictedTimeseriesRequest)(nil),    // 0: api.GetPredictedTimeseriesRequest
+	(*GetPredictedTimeseriesResponse)(nil),   // 1: api.GetPredictedTimeseriesResponse
+	(*PredictedYield)(nil),                   // 2: api.PredictedYield
+	(*PredictedYieldUncertainty)(nil),        // 3: api.PredictedYieldUncertainty
+	(*GetActualTimeseriesRequest)(nil),       // 4: api.GetActualTimeseriesRequest
+	(*GetActualTimeseriesResponse)(nil),      // 5: api.GetActualTimeseriesResponse
+	(*ActualYield)(nil),                      // 6: api.ActualYield
+	(*GetPredictedCrossSectionRequest)(nil),  // 7: api.GetPredictedCrossSectionRequest
+	(*GetPredictedCrossSectionResponse)(nil), // 8: api.GetPredictedCrossSectionResponse
+	(*PredictedYieldAtLocation)(nil),         // 9: api.PredictedYieldAtLocation
+	(*GetActualCrossSectionRequest)(nil),     // 10: api.GetActualCrossSectionRequest
+	(*GetActualCrossSectionResponse)(nil),    // 11: api.GetActualCrossSectionResponse
+	(*ActualYieldAtLocation)(nil),            // 12: api.ActualYieldAtLocation
+	(*CreateSiteRequest)(nil),                // 13: api.CreateSiteRequest
+	(*CreateGspRequest)(nil),                 // 14: api.CreateGspRequest
+	(*CreateLocationResponse)(nil),           // 15: api.CreateLocationResponse
 }
 var file_api_proto_depIdxs = []int32{
-	3,  // 0: api.GetPredictedTimeseriesResponse.yields:type_name -> api.PredictedYield
-	4,  // 1: api.PredictedYield.uncertainty:type_name -> api.PredictedYieldUncertainty
-	7,  // 2: api.GetActualTimeseriesResponse.yields:type_name -> api.ActualYield
-	10, // 3: api.GetPredictedCrossSectionResponse.yields:type_name -> api.PredictedYieldAtLocation
-	4,  // 4: api.PredictedYieldAtLocation.uncertainty:type_name -> api.PredictedYieldUncertainty
-	13, // 5: api.GetActualCrossSectionResponse.yields:type_name -> api.ActualYieldAtLocation
-	0,  // 6: api.GetLocationMetadataResponse.locationType:type_name -> api.LocationType
-	16, // 7: api.GetLocationMetadataResponse.siteMetadata:type_name -> api.SiteLocationMetadata
-	17, // 8: api.GetLocationMetadataResponse.regionMetadata:type_name -> api.RegionLocationMetadata
-	18, // 9: api.GetLocationMetadataResponse.nationMetadata:type_name -> api.NationLocationMetadata
-	1,  // 10: api.QuartzAPI.GetPredictedTimeseries:input_type -> api.GetPredictedTimeseriesRequest
-	5,  // 11: api.QuartzAPI.GetActualTimeseries:input_type -> api.GetActualTimeseriesRequest
-	11, // 12: api.QuartzAPI.GetActualCrossSection:input_type -> api.GetActualCrossSectionRequest
-	8,  // 13: api.QuartzAPI.GetPredictedCrossSection:input_type -> api.GetPredictedCrossSectionRequest
-	14, // 14: api.QuartzAPI.GetLocationMetadata:input_type -> api.GetLocationMetadataRequest
-	2,  // 15: api.QuartzAPI.GetPredictedTimeseries:output_type -> api.GetPredictedTimeseriesResponse
-	6,  // 16: api.QuartzAPI.GetActualTimeseries:output_type -> api.GetActualTimeseriesResponse
-	12, // 17: api.QuartzAPI.GetActualCrossSection:output_type -> api.GetActualCrossSectionResponse
-	9,  // 18: api.QuartzAPI.GetPredictedCrossSection:output_type -> api.GetPredictedCrossSectionResponse
-	15, // 19: api.QuartzAPI.GetLocationMetadata:output_type -> api.GetLocationMetadataResponse
-	15, // [15:20] is the sub-list for method output_type
-	10, // [10:15] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	2,  // 0: api.GetPredictedTimeseriesResponse.yields:type_name -> api.PredictedYield
+	3,  // 1: api.PredictedYield.uncertainty:type_name -> api.PredictedYieldUncertainty
+	6,  // 2: api.GetActualTimeseriesResponse.yields:type_name -> api.ActualYield
+	9,  // 3: api.GetPredictedCrossSectionResponse.yields:type_name -> api.PredictedYieldAtLocation
+	3,  // 4: api.PredictedYieldAtLocation.uncertainty:type_name -> api.PredictedYieldUncertainty
+	12, // 5: api.GetActualCrossSectionResponse.yields:type_name -> api.ActualYieldAtLocation
+	0,  // 6: api.QuartzAPI.GetPredictedTimeseries:input_type -> api.GetPredictedTimeseriesRequest
+	4,  // 7: api.QuartzAPI.GetActualTimeseries:input_type -> api.GetActualTimeseriesRequest
+	10, // 8: api.QuartzAPI.GetActualCrossSection:input_type -> api.GetActualCrossSectionRequest
+	7,  // 9: api.QuartzAPI.GetPredictedCrossSection:input_type -> api.GetPredictedCrossSectionRequest
+	13, // 10: api.QuartzAPI.CreateSolarSite:input_type -> api.CreateSiteRequest
+	13, // 11: api.QuartzAPI.CreateWindSite:input_type -> api.CreateSiteRequest
+	14, // 12: api.QuartzAPI.CreateSolarGsp:input_type -> api.CreateGspRequest
+	14, // 13: api.QuartzAPI.CreateWindGsp:input_type -> api.CreateGspRequest
+	1,  // 14: api.QuartzAPI.GetPredictedTimeseries:output_type -> api.GetPredictedTimeseriesResponse
+	5,  // 15: api.QuartzAPI.GetActualTimeseries:output_type -> api.GetActualTimeseriesResponse
+	11, // 16: api.QuartzAPI.GetActualCrossSection:output_type -> api.GetActualCrossSectionResponse
+	8,  // 17: api.QuartzAPI.GetPredictedCrossSection:output_type -> api.GetPredictedCrossSectionResponse
+	15, // 18: api.QuartzAPI.CreateSolarSite:output_type -> api.CreateLocationResponse
+	15, // 19: api.QuartzAPI.CreateWindSite:output_type -> api.CreateLocationResponse
+	15, // 20: api.QuartzAPI.CreateSolarGsp:output_type -> api.CreateLocationResponse
+	15, // 21: api.QuartzAPI.CreateWindGsp:output_type -> api.CreateLocationResponse
+	14, // [14:22] is the sub-list for method output_type
+	6,  // [6:14] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_init() }
@@ -1228,14 +1035,13 @@ func file_api_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   18,
+			NumEnums:      0,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_api_proto_goTypes,
 		DependencyIndexes: file_api_proto_depIdxs,
-		EnumInfos:         file_api_proto_enumTypes,
 		MessageInfos:      file_api_proto_msgTypes,
 	}.Build()
 	File_api_proto = out.File

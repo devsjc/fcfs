@@ -8,6 +8,7 @@ package proto
 //go:generate npm install -g @protobuf-ts/plugin
 //go:generate protoc --version
 
-//go:generate protoc --go_out=../gen --go_opt=paths=source_relative api.proto
-//go:generate protoc --go-grpc_out=../gen --go-grpc_opt=paths=source_relative api.proto
-//go:generate protoc --ts_out=../gen --ts_opt=output_javascript api.proto
+//go:generate protoc --go_out=../internal/models --go_opt=paths=source_relative api.proto
+//go:generate protoc --go-grpc_out=require_unimplemented_servers=false:../internal/models --go-grpc_opt=paths=source_relative api.proto
+//go:generate protoc --ts_out=../sdk/javascript --ts_opt=output_javascript api.proto
+//go:generate protoc --python_betterproto_out=../sdk/python api.proto

@@ -21,22 +21,22 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
 -- Lookup table to store different source types
 CREATE TABLE loc.source_types(
     source_type_id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
-    name TEXT NOT NULL
-        CHECK ( LENGTH(name) <= 24 AND name = LOWER(name) ),
+    source_type_name TEXT NOT NULL
+        CHECK ( LENGTH(source_type_name) <= 24 AND source_type_name = LOWER(source_type_name) ),
     PRIMARY KEY (source_type_id),
-    UNIQUE (name)
+    UNIQUE (source_type_name)
 );
 INSERT INTO loc.source_types (name) VALUES ('solar'), ('wind');
 
 -- Lookup table to store different location types
 CREATE TABLE loc.location_types(
     location_type_id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
-    name TEXT NOT NULL
-        CHECK ( LENGTH(name) <= 24 AND name = LOWER(name) ),
+    location_type_name TEXT NOT NULL
+        CHECK ( LENGTH(location_type_name) <= 24 AND name = LOWER(location_type_name) ),
     PRIMARY KEY (location_type_id),
-    UNIQUE (name)
+    UNIQUE (location_type_name)
 );
-INSERT INTO loc.location_types (name) VALUES ('site'), ('gsp'), ('dno');
+INSERT INTO loc.location_types (location_type_name) VALUES ('site'), ('gsp'), ('dno'), ('nation');
 
 
 /*- Tables ----------------------------------------------------------------------------------*/
@@ -44,14 +44,14 @@ INSERT INTO loc.location_types (name) VALUES ('site'), ('gsp'), ('dno');
 -- Table to store spatial data for locations
 CREATE TABLE loc.locations (
     location_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
-    name TEXT NOT NULL,
+    location_name TEXT NOT NULL,
     geom GEOMETRY NOT NULL
         CHECK ( ST_GeometryType(geom) IN ('ST_Point', 'ST_Polygon', 'ST_MultiPolygon') ),
     location_type_id SMALLINT NOT NULL
         REFERENCES loc.location_types(location_type_id)
         ON DELETE RESTRICT,
     PRIMARY KEY (location_id),
-    UNIQUE (name, geom)
+    UNIQUE (location_name, geom)
 );
 -- Required index for efficient spatial-based queries
 CREATE INDEX ON loc.locations USING GIST (geom);
@@ -109,12 +109,13 @@ BEGIN
     -- Handle UPDATE operations representing source improvements
     IF (TG_OP = 'UPDATE') THEN
         -- Check if the capacity, capacity_unit_prefix_factor, or metadata have changed
+        -- without an explicit change to the sys_period
         IF (
             OLD.capacity IS DISTINCT FROM NEW.capacity OR
             OLD.capacity_unit_prefix_factor IS DISTINCT FROM NEW.capacity_unit_prefix_factor OR
             OLD.metadata IS DISTINCT FROM NEW.metadata OR
             OLD.capacity_limit IS DISTINCT FROM NEW.capacity_limit
-        ) THEN
+        THEN
             -- Close the validity period of the old record to current_ts (exclusive end)
             UPDATE loc.location_sources
             SET sys_period = TSRANGE(LOWER(OLD.sys_period), current_ts, '[)')

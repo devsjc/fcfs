@@ -9,34 +9,16 @@ import { WireType } from "@protobuf-ts/runtime";
 import { UnknownFieldHandler } from "@protobuf-ts/runtime";
 import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
-/**
- * @generated from protobuf enum api.LocationType
- */
-export var LocationType;
-(function (LocationType) {
-    /**
-     * @generated from protobuf enum value: UNKNOWN = 0;
-     */
-    LocationType[LocationType["UNKNOWN"] = 0] = "UNKNOWN";
-    /**
-     * @generated from protobuf enum value: SITE = 1;
-     */
-    LocationType[LocationType["SITE"] = 1] = "SITE";
-    /**
-     * @generated from protobuf enum value: REGION = 2;
-     */
-    LocationType[LocationType["REGION"] = 2] = "REGION";
-})(LocationType || (LocationType = {}));
 // @generated message type with reflection information, may provide speed optimized methods
 class GetPredictedTimeseriesRequest$Type extends MessageType {
     constructor() {
         super("api.GetPredictedTimeseriesRequest", [
-            { no: 1, name: "locationIDs", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+            { no: 1, name: "location_ids", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationIDs = [];
+        message.locationIds = [];
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
         return message;
@@ -46,8 +28,8 @@ class GetPredictedTimeseriesRequest$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* repeated string locationIDs */ 1:
-                    message.locationIDs.push(reader.string());
+                case /* repeated string location_ids */ 1:
+                    message.locationIds.push(reader.string());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -61,9 +43,9 @@ class GetPredictedTimeseriesRequest$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* repeated string locationIDs = 1; */
-        for (let i = 0; i < message.locationIDs.length; i++)
-            writer.tag(1, WireType.LengthDelimited).string(message.locationIDs[i]);
+        /* repeated string location_ids = 1; */
+        for (let i = 0; i < message.locationIds.length; i++)
+            writer.tag(1, WireType.LengthDelimited).string(message.locationIds[i]);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -78,13 +60,13 @@ export const GetPredictedTimeseriesRequest = new GetPredictedTimeseriesRequest$T
 class GetPredictedTimeseriesResponse$Type extends MessageType {
     constructor() {
         super("api.GetPredictedTimeseriesResponse", [
-            { no: 1, name: "locationID", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 1, name: "location_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "yields", kind: "message", repeat: 1 /*RepeatType.PACKED*/, T: () => PredictedYield }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationID = "";
+        message.locationId = "";
         message.yields = [];
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -95,8 +77,8 @@ class GetPredictedTimeseriesResponse$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* string locationID */ 1:
-                    message.locationID = reader.string();
+                case /* string location_id */ 1:
+                    message.locationId = reader.string();
                     break;
                 case /* repeated api.PredictedYield yields */ 2:
                     message.yields.push(PredictedYield.internalBinaryRead(reader, reader.uint32(), options));
@@ -113,9 +95,9 @@ class GetPredictedTimeseriesResponse$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* string locationID = 1; */
-        if (message.locationID !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.locationID);
+        /* string location_id = 1; */
+        if (message.locationId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.locationId);
         /* repeated api.PredictedYield yields = 2; */
         for (let i = 0; i < message.yields.length; i++)
             PredictedYield.internalBinaryWrite(message.yields[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
@@ -250,12 +232,12 @@ export const PredictedYieldUncertainty = new PredictedYieldUncertainty$Type();
 class GetActualTimeseriesRequest$Type extends MessageType {
     constructor() {
         super("api.GetActualTimeseriesRequest", [
-            { no: 1, name: "locationIDs", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+            { no: 1, name: "location_ids", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationIDs = [];
+        message.locationIds = [];
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
         return message;
@@ -265,8 +247,8 @@ class GetActualTimeseriesRequest$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* repeated string locationIDs */ 1:
-                    message.locationIDs.push(reader.string());
+                case /* repeated string location_ids */ 1:
+                    message.locationIds.push(reader.string());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -280,9 +262,9 @@ class GetActualTimeseriesRequest$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* repeated string locationIDs = 1; */
-        for (let i = 0; i < message.locationIDs.length; i++)
-            writer.tag(1, WireType.LengthDelimited).string(message.locationIDs[i]);
+        /* repeated string location_ids = 1; */
+        for (let i = 0; i < message.locationIds.length; i++)
+            writer.tag(1, WireType.LengthDelimited).string(message.locationIds[i]);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -297,13 +279,13 @@ export const GetActualTimeseriesRequest = new GetActualTimeseriesRequest$Type();
 class GetActualTimeseriesResponse$Type extends MessageType {
     constructor() {
         super("api.GetActualTimeseriesResponse", [
-            { no: 1, name: "locationID", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 1, name: "location_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "yields", kind: "message", repeat: 1 /*RepeatType.PACKED*/, T: () => ActualYield }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationID = "";
+        message.locationId = "";
         message.yields = [];
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -314,8 +296,8 @@ class GetActualTimeseriesResponse$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* string locationID */ 1:
-                    message.locationID = reader.string();
+                case /* string location_id */ 1:
+                    message.locationId = reader.string();
                     break;
                 case /* repeated api.ActualYield yields */ 2:
                     message.yields.push(ActualYield.internalBinaryRead(reader, reader.uint32(), options));
@@ -332,9 +314,9 @@ class GetActualTimeseriesResponse$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* string locationID = 1; */
-        if (message.locationID !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.locationID);
+        /* string location_id = 1; */
+        if (message.locationId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.locationId);
         /* repeated api.ActualYield yields = 2; */
         for (let i = 0; i < message.yields.length; i++)
             ActualYield.internalBinaryWrite(message.yields[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
@@ -407,13 +389,13 @@ export const ActualYield = new ActualYield$Type();
 class GetPredictedCrossSectionRequest$Type extends MessageType {
     constructor() {
         super("api.GetPredictedCrossSectionRequest", [
-            { no: 1, name: "locationIDs", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
+            { no: 1, name: "location_ids", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "timestamp_unix", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationIDs = [];
+        message.locationIds = [];
         message.timestampUnix = 0n;
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -424,8 +406,8 @@ class GetPredictedCrossSectionRequest$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* repeated string locationIDs */ 1:
-                    message.locationIDs.push(reader.string());
+                case /* repeated string location_ids */ 1:
+                    message.locationIds.push(reader.string());
                     break;
                 case /* int64 timestamp_unix */ 2:
                     message.timestampUnix = reader.int64().toBigInt();
@@ -442,9 +424,9 @@ class GetPredictedCrossSectionRequest$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* repeated string locationIDs = 1; */
-        for (let i = 0; i < message.locationIDs.length; i++)
-            writer.tag(1, WireType.LengthDelimited).string(message.locationIDs[i]);
+        /* repeated string location_ids = 1; */
+        for (let i = 0; i < message.locationIds.length; i++)
+            writer.tag(1, WireType.LengthDelimited).string(message.locationIds[i]);
         /* int64 timestamp_unix = 2; */
         if (message.timestampUnix !== 0n)
             writer.tag(2, WireType.Varint).int64(message.timestampUnix);
@@ -517,14 +499,14 @@ export const GetPredictedCrossSectionResponse = new GetPredictedCrossSectionResp
 class PredictedYieldAtLocation$Type extends MessageType {
     constructor() {
         super("api.PredictedYieldAtLocation", [
-            { no: 1, name: "locationID", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 1, name: "location_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "yield_kw", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
             { no: 3, name: "uncertainty", kind: "message", T: () => PredictedYieldUncertainty }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationID = "";
+        message.locationId = "";
         message.yieldKw = 0;
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -535,8 +517,8 @@ class PredictedYieldAtLocation$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* string locationID */ 1:
-                    message.locationID = reader.string();
+                case /* string location_id */ 1:
+                    message.locationId = reader.string();
                     break;
                 case /* int32 yield_kw */ 2:
                     message.yieldKw = reader.int32();
@@ -556,9 +538,9 @@ class PredictedYieldAtLocation$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* string locationID = 1; */
-        if (message.locationID !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.locationID);
+        /* string location_id = 1; */
+        if (message.locationId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.locationId);
         /* int32 yield_kw = 2; */
         if (message.yieldKw !== 0)
             writer.tag(2, WireType.Varint).int32(message.yieldKw);
@@ -579,13 +561,13 @@ export const PredictedYieldAtLocation = new PredictedYieldAtLocation$Type();
 class GetActualCrossSectionRequest$Type extends MessageType {
     constructor() {
         super("api.GetActualCrossSectionRequest", [
-            { no: 1, name: "locationIDs", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
+            { no: 1, name: "location_ids", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "timestamp_unix", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationIDs = [];
+        message.locationIds = [];
         message.timestampUnix = 0n;
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -596,8 +578,8 @@ class GetActualCrossSectionRequest$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* repeated string locationIDs */ 1:
-                    message.locationIDs.push(reader.string());
+                case /* repeated string location_ids */ 1:
+                    message.locationIds.push(reader.string());
                     break;
                 case /* int64 timestamp_unix */ 2:
                     message.timestampUnix = reader.int64().toBigInt();
@@ -614,9 +596,9 @@ class GetActualCrossSectionRequest$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* repeated string locationIDs = 1; */
-        for (let i = 0; i < message.locationIDs.length; i++)
-            writer.tag(1, WireType.LengthDelimited).string(message.locationIDs[i]);
+        /* repeated string location_ids = 1; */
+        for (let i = 0; i < message.locationIds.length; i++)
+            writer.tag(1, WireType.LengthDelimited).string(message.locationIds[i]);
         /* int64 timestamp_unix = 2; */
         if (message.timestampUnix !== 0n)
             writer.tag(2, WireType.Varint).int64(message.timestampUnix);
@@ -689,13 +671,13 @@ export const GetActualCrossSectionResponse = new GetActualCrossSectionResponse$T
 class ActualYieldAtLocation$Type extends MessageType {
     constructor() {
         super("api.ActualYieldAtLocation", [
-            { no: 1, name: "locationID", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 1, name: "location_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "yield_kw", kind: "scalar", T: 5 /*ScalarType.INT32*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.locationID = "";
+        message.locationId = "";
         message.yieldKw = 0;
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -706,8 +688,8 @@ class ActualYieldAtLocation$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* string locationID */ 1:
-                    message.locationID = reader.string();
+                case /* string location_id */ 1:
+                    message.locationId = reader.string();
                     break;
                 case /* int32 yield_kw */ 2:
                     message.yieldKw = reader.int32();
@@ -724,9 +706,9 @@ class ActualYieldAtLocation$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* string locationID = 1; */
-        if (message.locationID !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.locationID);
+        /* string location_id = 1; */
+        if (message.locationId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.locationId);
         /* int32 yield_kw = 2; */
         if (message.yieldKw !== 0)
             writer.tag(2, WireType.Varint).int32(message.yieldKw);
@@ -741,146 +723,23 @@ class ActualYieldAtLocation$Type extends MessageType {
  */
 export const ActualYieldAtLocation = new ActualYieldAtLocation$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class GetLocationMetadataRequest$Type extends MessageType {
+class CreateSiteRequest$Type extends MessageType {
     constructor() {
-        super("api.GetLocationMetadataRequest", [
-            { no: 1, name: "locationID", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
-        ]);
-    }
-    create(value) {
-        const message = globalThis.Object.create((this.messagePrototype));
-        message.locationID = "";
-        if (value !== undefined)
-            reflectionMergePartial(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target ?? this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* string locationID */ 1:
-                    message.locationID = reader.string();
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* string locationID = 1; */
-        if (message.locationID !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.locationID);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message api.GetLocationMetadataRequest
- */
-export const GetLocationMetadataRequest = new GetLocationMetadataRequest$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class GetLocationMetadataResponse$Type extends MessageType {
-    constructor() {
-        super("api.GetLocationMetadataResponse", [
-            { no: 1, name: "locationID", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "locationType", kind: "enum", T: () => ["api.LocationType", LocationType] },
-            { no: 3, name: "siteMetadata", kind: "message", T: () => SiteLocationMetadata },
-            { no: 4, name: "regionMetadata", kind: "message", T: () => RegionLocationMetadata },
-            { no: 5, name: "nationMetadata", kind: "message", T: () => NationLocationMetadata }
-        ]);
-    }
-    create(value) {
-        const message = globalThis.Object.create((this.messagePrototype));
-        message.locationID = "";
-        message.locationType = 0;
-        if (value !== undefined)
-            reflectionMergePartial(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader, length, options, target) {
-        let message = target ?? this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* string locationID */ 1:
-                    message.locationID = reader.string();
-                    break;
-                case /* api.LocationType locationType */ 2:
-                    message.locationType = reader.int32();
-                    break;
-                case /* api.SiteLocationMetadata siteMetadata */ 3:
-                    message.siteMetadata = SiteLocationMetadata.internalBinaryRead(reader, reader.uint32(), options, message.siteMetadata);
-                    break;
-                case /* api.RegionLocationMetadata regionMetadata */ 4:
-                    message.regionMetadata = RegionLocationMetadata.internalBinaryRead(reader, reader.uint32(), options, message.regionMetadata);
-                    break;
-                case /* api.NationLocationMetadata nationMetadata */ 5:
-                    message.nationMetadata = NationLocationMetadata.internalBinaryRead(reader, reader.uint32(), options, message.nationMetadata);
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message, writer, options) {
-        /* string locationID = 1; */
-        if (message.locationID !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.locationID);
-        /* api.LocationType locationType = 2; */
-        if (message.locationType !== 0)
-            writer.tag(2, WireType.Varint).int32(message.locationType);
-        /* api.SiteLocationMetadata siteMetadata = 3; */
-        if (message.siteMetadata)
-            SiteLocationMetadata.internalBinaryWrite(message.siteMetadata, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
-        /* api.RegionLocationMetadata regionMetadata = 4; */
-        if (message.regionMetadata)
-            RegionLocationMetadata.internalBinaryWrite(message.regionMetadata, writer.tag(4, WireType.LengthDelimited).fork(), options).join();
-        /* api.NationLocationMetadata nationMetadata = 5; */
-        if (message.nationMetadata)
-            NationLocationMetadata.internalBinaryWrite(message.nationMetadata, writer.tag(5, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message api.GetLocationMetadataResponse
- */
-export const GetLocationMetadataResponse = new GetLocationMetadataResponse$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class SiteLocationMetadata$Type extends MessageType {
-    constructor() {
-        super("api.SiteLocationMetadata", [
+        super("api.CreateSiteRequest", [
+            { no: 1, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "latitude", kind: "scalar", T: 2 /*ScalarType.FLOAT*/ },
             { no: 3, name: "longitude", kind: "scalar", T: 2 /*ScalarType.FLOAT*/ },
-            { no: 4, name: "orientation_deg", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
-            { no: 5, name: "tilt_deg", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
-            { no: 6, name: "capacity_kw", kind: "scalar", T: 5 /*ScalarType.INT32*/ }
+            { no: 4, name: "capacity_kw", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 5, name: "metadata", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
+        message.name = "";
         message.latitude = 0;
         message.longitude = 0;
-        message.orientationDeg = 0;
-        message.tiltDeg = 0;
-        message.capacityKw = 0;
+        message.capacityKw = 0n;
+        message.metadata = "";
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
         return message;
@@ -890,20 +749,20 @@ class SiteLocationMetadata$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
+                case /* string name */ 1:
+                    message.name = reader.string();
+                    break;
                 case /* float latitude */ 2:
                     message.latitude = reader.float();
                     break;
                 case /* float longitude */ 3:
                     message.longitude = reader.float();
                     break;
-                case /* int32 orientation_deg */ 4:
-                    message.orientationDeg = reader.int32();
+                case /* int64 capacity_kw */ 4:
+                    message.capacityKw = reader.int64().toBigInt();
                     break;
-                case /* int32 tilt_deg */ 5:
-                    message.tiltDeg = reader.int32();
-                    break;
-                case /* int32 capacity_kw */ 6:
-                    message.capacityKw = reader.int32();
+                case /* string metadata */ 5:
+                    message.metadata = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -917,21 +776,21 @@ class SiteLocationMetadata$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
+        /* string name = 1; */
+        if (message.name !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.name);
         /* float latitude = 2; */
         if (message.latitude !== 0)
             writer.tag(2, WireType.Bit32).float(message.latitude);
         /* float longitude = 3; */
         if (message.longitude !== 0)
             writer.tag(3, WireType.Bit32).float(message.longitude);
-        /* int32 orientation_deg = 4; */
-        if (message.orientationDeg !== 0)
-            writer.tag(4, WireType.Varint).int32(message.orientationDeg);
-        /* int32 tilt_deg = 5; */
-        if (message.tiltDeg !== 0)
-            writer.tag(5, WireType.Varint).int32(message.tiltDeg);
-        /* int32 capacity_kw = 6; */
-        if (message.capacityKw !== 0)
-            writer.tag(6, WireType.Varint).int32(message.capacityKw);
+        /* int64 capacity_kw = 4; */
+        if (message.capacityKw !== 0n)
+            writer.tag(4, WireType.Varint).int64(message.capacityKw);
+        /* string metadata = 5; */
+        if (message.metadata !== "")
+            writer.tag(5, WireType.LengthDelimited).string(message.metadata);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -939,23 +798,25 @@ class SiteLocationMetadata$Type extends MessageType {
     }
 }
 /**
- * @generated MessageType for protobuf message api.SiteLocationMetadata
+ * @generated MessageType for protobuf message api.CreateSiteRequest
  */
-export const SiteLocationMetadata = new SiteLocationMetadata$Type();
+export const CreateSiteRequest = new CreateSiteRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class RegionLocationMetadata$Type extends MessageType {
+class CreateGspRequest$Type extends MessageType {
     constructor() {
-        super("api.RegionLocationMetadata", [
-            { no: 1, name: "regionName", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "gspName", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "capacity_kw", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        super("api.CreateGspRequest", [
+            { no: 1, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "geometry", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "capacity_kw", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 4, name: "metadata", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.regionName = "";
-        message.gspName = "";
-        message.capacityKw = "";
+        message.name = "";
+        message.geometry = "";
+        message.capacityKw = 0n;
+        message.metadata = "";
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
         return message;
@@ -965,14 +826,17 @@ class RegionLocationMetadata$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* string regionName */ 1:
-                    message.regionName = reader.string();
+                case /* string name */ 1:
+                    message.name = reader.string();
                     break;
-                case /* string gspName */ 2:
-                    message.gspName = reader.string();
+                case /* string geometry */ 2:
+                    message.geometry = reader.string();
                     break;
-                case /* string capacity_kw */ 3:
-                    message.capacityKw = reader.string();
+                case /* int64 capacity_kw */ 3:
+                    message.capacityKw = reader.int64().toBigInt();
+                    break;
+                case /* string metadata */ 4:
+                    message.metadata = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -986,15 +850,18 @@ class RegionLocationMetadata$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* string regionName = 1; */
-        if (message.regionName !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.regionName);
-        /* string gspName = 2; */
-        if (message.gspName !== "")
-            writer.tag(2, WireType.LengthDelimited).string(message.gspName);
-        /* string capacity_kw = 3; */
-        if (message.capacityKw !== "")
-            writer.tag(3, WireType.LengthDelimited).string(message.capacityKw);
+        /* string name = 1; */
+        if (message.name !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.name);
+        /* string geometry = 2; */
+        if (message.geometry !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.geometry);
+        /* int64 capacity_kw = 3; */
+        if (message.capacityKw !== 0n)
+            writer.tag(3, WireType.Varint).int64(message.capacityKw);
+        /* string metadata = 4; */
+        if (message.metadata !== "")
+            writer.tag(4, WireType.LengthDelimited).string(message.metadata);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -1002,21 +869,19 @@ class RegionLocationMetadata$Type extends MessageType {
     }
 }
 /**
- * @generated MessageType for protobuf message api.RegionLocationMetadata
+ * @generated MessageType for protobuf message api.CreateGspRequest
  */
-export const RegionLocationMetadata = new RegionLocationMetadata$Type();
+export const CreateGspRequest = new CreateGspRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class NationLocationMetadata$Type extends MessageType {
+class CreateLocationResponse$Type extends MessageType {
     constructor() {
-        super("api.NationLocationMetadata", [
-            { no: 1, name: "nationName", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "capacity_kw", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        super("api.CreateLocationResponse", [
+            { no: 1, name: "location_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
     create(value) {
         const message = globalThis.Object.create((this.messagePrototype));
-        message.nationName = "";
-        message.capacityKw = "";
+        message.locationId = 0n;
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
         return message;
@@ -1026,11 +891,8 @@ class NationLocationMetadata$Type extends MessageType {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* string nationName */ 1:
-                    message.nationName = reader.string();
-                    break;
-                case /* string capacity_kw */ 2:
-                    message.capacityKw = reader.string();
+                case /* int64 location_id */ 1:
+                    message.locationId = reader.int64().toBigInt();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -1044,12 +906,9 @@ class NationLocationMetadata$Type extends MessageType {
         return message;
     }
     internalBinaryWrite(message, writer, options) {
-        /* string nationName = 1; */
-        if (message.nationName !== "")
-            writer.tag(1, WireType.LengthDelimited).string(message.nationName);
-        /* string capacity_kw = 2; */
-        if (message.capacityKw !== "")
-            writer.tag(2, WireType.LengthDelimited).string(message.capacityKw);
+        /* int64 location_id = 1; */
+        if (message.locationId !== 0n)
+            writer.tag(1, WireType.Varint).int64(message.locationId);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -1057,9 +916,9 @@ class NationLocationMetadata$Type extends MessageType {
     }
 }
 /**
- * @generated MessageType for protobuf message api.NationLocationMetadata
+ * @generated MessageType for protobuf message api.CreateLocationResponse
  */
-export const NationLocationMetadata = new NationLocationMetadata$Type();
+export const CreateLocationResponse = new CreateLocationResponse$Type();
 /**
  * @generated ServiceType for protobuf service api.QuartzAPI
  */
@@ -1068,5 +927,8 @@ export const QuartzAPI = new ServiceType("api.QuartzAPI", [
     { name: "GetActualTimeseries", serverStreaming: true, options: {}, I: GetActualTimeseriesRequest, O: GetActualTimeseriesResponse },
     { name: "GetActualCrossSection", options: {}, I: GetActualCrossSectionRequest, O: GetActualCrossSectionResponse },
     { name: "GetPredictedCrossSection", options: {}, I: GetPredictedCrossSectionRequest, O: GetPredictedCrossSectionResponse },
-    { name: "GetLocationMetadata", options: {}, I: GetLocationMetadataRequest, O: GetLocationMetadataResponse }
+    { name: "CreateSolarSite", options: {}, I: CreateSiteRequest, O: CreateLocationResponse },
+    { name: "CreateWindSite", options: {}, I: CreateSiteRequest, O: CreateLocationResponse },
+    { name: "CreateSolarGsp", options: {}, I: CreateGspRequest, O: CreateLocationResponse },
+    { name: "CreateWindGsp", options: {}, I: CreateGspRequest, O: CreateLocationResponse }
 ]);

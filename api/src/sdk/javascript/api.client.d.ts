@@ -3,8 +3,9 @@
 // tslint:disable
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
-import type { GetLocationMetadataResponse } from "./api";
-import type { GetLocationMetadataRequest } from "./api";
+import type { CreateGspRequest } from "./api";
+import type { CreateLocationResponse } from "./api";
+import type { CreateSiteRequest } from "./api";
 import type { GetPredictedCrossSectionResponse } from "./api";
 import type { GetPredictedCrossSectionRequest } from "./api";
 import type { GetActualCrossSectionResponse } from "./api";
@@ -37,28 +38,37 @@ export interface IQuartzAPIClient {
      */
     getActualTimeseries(input: GetActualTimeseriesRequest, options?: RpcOptions): ServerStreamingCall<GetActualTimeseriesRequest, GetActualTimeseriesResponse>;
     /**
-     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
-     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
-     * predicted yields for each location.
+     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
+     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
+     * actual yields for each location.
      *
      * @generated from protobuf rpc: GetActualCrossSection(api.GetActualCrossSectionRequest) returns (api.GetActualCrossSectionResponse);
      */
     getActualCrossSection(input: GetActualCrossSectionRequest, options?: RpcOptions): UnaryCall<GetActualCrossSectionRequest, GetActualCrossSectionResponse>;
     /**
-     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
-     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
-     * actual yields for each location.
+     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
+     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
+     * predicted yields for each location.
      *
      * @generated from protobuf rpc: GetPredictedCrossSection(api.GetPredictedCrossSectionRequest) returns (api.GetPredictedCrossSectionResponse);
      */
     getPredictedCrossSection(input: GetPredictedCrossSectionRequest, options?: RpcOptions): UnaryCall<GetPredictedCrossSectionRequest, GetPredictedCrossSectionResponse>;
     /**
-     * GetLocationMetadataRequest is a request for the metadata for a single location.
-     * The response is a GetLocationMetadataResponse message containing the metadata for the location.
-     *
-     * @generated from protobuf rpc: GetLocationMetadata(api.GetLocationMetadataRequest) returns (api.GetLocationMetadataResponse);
+     * @generated from protobuf rpc: CreateSolarSite(api.CreateSiteRequest) returns (api.CreateLocationResponse);
      */
-    getLocationMetadata(input: GetLocationMetadataRequest, options?: RpcOptions): UnaryCall<GetLocationMetadataRequest, GetLocationMetadataResponse>;
+    createSolarSite(input: CreateSiteRequest, options?: RpcOptions): UnaryCall<CreateSiteRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: CreateWindSite(api.CreateSiteRequest) returns (api.CreateLocationResponse);
+     */
+    createWindSite(input: CreateSiteRequest, options?: RpcOptions): UnaryCall<CreateSiteRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: CreateSolarGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
+     */
+    createSolarGsp(input: CreateGspRequest, options?: RpcOptions): UnaryCall<CreateGspRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: CreateWindGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
+     */
+    createWindGsp(input: CreateGspRequest, options?: RpcOptions): UnaryCall<CreateGspRequest, CreateLocationResponse>;
 }
 /**
  * @generated from protobuf service api.QuartzAPI
@@ -86,26 +96,35 @@ export declare class QuartzAPIClient implements IQuartzAPIClient, ServiceInfo {
      */
     getActualTimeseries(input: GetActualTimeseriesRequest, options?: RpcOptions): ServerStreamingCall<GetActualTimeseriesRequest, GetActualTimeseriesResponse>;
     /**
-     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
-     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
-     * predicted yields for each location.
+     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
+     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
+     * actual yields for each location.
      *
      * @generated from protobuf rpc: GetActualCrossSection(api.GetActualCrossSectionRequest) returns (api.GetActualCrossSectionResponse);
      */
     getActualCrossSection(input: GetActualCrossSectionRequest, options?: RpcOptions): UnaryCall<GetActualCrossSectionRequest, GetActualCrossSectionResponse>;
     /**
-     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
-     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
-     * actual yields for each location.
+     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
+     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
+     * predicted yields for each location.
      *
      * @generated from protobuf rpc: GetPredictedCrossSection(api.GetPredictedCrossSectionRequest) returns (api.GetPredictedCrossSectionResponse);
      */
     getPredictedCrossSection(input: GetPredictedCrossSectionRequest, options?: RpcOptions): UnaryCall<GetPredictedCrossSectionRequest, GetPredictedCrossSectionResponse>;
     /**
-     * GetLocationMetadataRequest is a request for the metadata for a single location.
-     * The response is a GetLocationMetadataResponse message containing the metadata for the location.
-     *
-     * @generated from protobuf rpc: GetLocationMetadata(api.GetLocationMetadataRequest) returns (api.GetLocationMetadataResponse);
+     * @generated from protobuf rpc: CreateSolarSite(api.CreateSiteRequest) returns (api.CreateLocationResponse);
      */
-    getLocationMetadata(input: GetLocationMetadataRequest, options?: RpcOptions): UnaryCall<GetLocationMetadataRequest, GetLocationMetadataResponse>;
+    createSolarSite(input: CreateSiteRequest, options?: RpcOptions): UnaryCall<CreateSiteRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: CreateWindSite(api.CreateSiteRequest) returns (api.CreateLocationResponse);
+     */
+    createWindSite(input: CreateSiteRequest, options?: RpcOptions): UnaryCall<CreateSiteRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: CreateSolarGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
+     */
+    createSolarGsp(input: CreateGspRequest, options?: RpcOptions): UnaryCall<CreateGspRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: CreateWindGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
+     */
+    createWindGsp(input: CreateGspRequest, options?: RpcOptions): UnaryCall<CreateGspRequest, CreateLocationResponse>;
 }

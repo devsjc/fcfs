@@ -14,18 +14,18 @@ import { MessageType } from "@protobuf-ts/runtime";
  */
 export interface GetPredictedTimeseriesRequest {
     /**
-     * @generated from protobuf field: repeated string locationIDs = 1;
+     * @generated from protobuf field: repeated string location_ids = 1;
      */
-    locationIDs: string[];
+    locationIds: string[];
 }
 /**
  * @generated from protobuf message api.GetPredictedTimeseriesResponse
  */
 export interface GetPredictedTimeseriesResponse {
     /**
-     * @generated from protobuf field: string locationID = 1;
+     * @generated from protobuf field: string location_id = 1;
      */
-    locationID: string;
+    locationId: string;
     /**
      * @generated from protobuf field: repeated api.PredictedYield yields = 2;
      */
@@ -68,18 +68,18 @@ export interface PredictedYieldUncertainty {
  */
 export interface GetActualTimeseriesRequest {
     /**
-     * @generated from protobuf field: repeated string locationIDs = 1;
+     * @generated from protobuf field: repeated string location_ids = 1;
      */
-    locationIDs: string[];
+    locationIds: string[];
 }
 /**
  * @generated from protobuf message api.GetActualTimeseriesResponse
  */
 export interface GetActualTimeseriesResponse {
     /**
-     * @generated from protobuf field: string locationID = 1;
+     * @generated from protobuf field: string location_id = 1;
      */
-    locationID: string;
+    locationId: string;
     /**
      * @generated from protobuf field: repeated api.ActualYield yields = 2;
      */
@@ -105,9 +105,9 @@ export interface ActualYield {
  */
 export interface GetPredictedCrossSectionRequest {
     /**
-     * @generated from protobuf field: repeated string locationIDs = 1;
+     * @generated from protobuf field: repeated string location_ids = 1;
      */
-    locationIDs: string[];
+    locationIds: string[];
     /**
      * @generated from protobuf field: int64 timestamp_unix = 2;
      */
@@ -131,9 +131,9 @@ export interface GetPredictedCrossSectionResponse {
  */
 export interface PredictedYieldAtLocation {
     /**
-     * @generated from protobuf field: string locationID = 1;
+     * @generated from protobuf field: string location_id = 1;
      */
-    locationID: string;
+    locationId: string;
     /**
      * @generated from protobuf field: int32 yield_kw = 2;
      */
@@ -150,9 +150,9 @@ export interface PredictedYieldAtLocation {
  */
 export interface GetActualCrossSectionRequest {
     /**
-     * @generated from protobuf field: repeated string locationIDs = 1;
+     * @generated from protobuf field: repeated string location_ids = 1;
      */
-    locationIDs: string[];
+    locationIds: string[];
     /**
      * @generated from protobuf field: int64 timestamp_unix = 2;
      */
@@ -176,54 +176,24 @@ export interface GetActualCrossSectionResponse {
  */
 export interface ActualYieldAtLocation {
     /**
-     * @generated from protobuf field: string locationID = 1;
+     * @generated from protobuf field: string location_id = 1;
      */
-    locationID: string;
+    locationId: string;
     /**
      * @generated from protobuf field: int32 yield_kw = 2;
      */
     yieldKw: number;
 }
 /**
- * --- GetLocationMetadata -----------------------------------------------------------
+ * --- Locations ----------------------------------------------------------------
  *
- * @generated from protobuf message api.GetLocationMetadataRequest
+ * @generated from protobuf message api.CreateSiteRequest
  */
-export interface GetLocationMetadataRequest {
+export interface CreateSiteRequest {
     /**
-     * @generated from protobuf field: string locationID = 1;
+     * @generated from protobuf field: string name = 1;
      */
-    locationID: string;
-}
-/**
- * @generated from protobuf message api.GetLocationMetadataResponse
- */
-export interface GetLocationMetadataResponse {
-    /**
-     * @generated from protobuf field: string locationID = 1;
-     */
-    locationID: string;
-    /**
-     * @generated from protobuf field: api.LocationType locationType = 2;
-     */
-    locationType: LocationType;
-    /**
-     * @generated from protobuf field: api.SiteLocationMetadata siteMetadata = 3;
-     */
-    siteMetadata?: SiteLocationMetadata;
-    /**
-     * @generated from protobuf field: api.RegionLocationMetadata regionMetadata = 4;
-     */
-    regionMetadata?: RegionLocationMetadata;
-    /**
-     * @generated from protobuf field: api.NationLocationMetadata nationMetadata = 5;
-     */
-    nationMetadata?: NationLocationMetadata;
-}
-/**
- * @generated from protobuf message api.SiteLocationMetadata
- */
-export interface SiteLocationMetadata {
+    name: string;
     /**
      * @generated from protobuf field: float latitude = 2;
      */
@@ -233,64 +203,43 @@ export interface SiteLocationMetadata {
      */
     longitude: number;
     /**
-     * @generated from protobuf field: int32 orientation_deg = 4;
+     * @generated from protobuf field: int64 capacity_kw = 4;
      */
-    orientationDeg: number;
+    capacityKw: bigint;
     /**
-     * @generated from protobuf field: int32 tilt_deg = 5;
+     * @generated from protobuf field: string metadata = 5;
      */
-    tiltDeg: number;
-    /**
-     * @generated from protobuf field: int32 capacity_kw = 6;
-     */
-    capacityKw: number;
+    metadata: string;
 }
 /**
- * @generated from protobuf message api.RegionLocationMetadata
+ * @generated from protobuf message api.CreateGspRequest
  */
-export interface RegionLocationMetadata {
+export interface CreateGspRequest {
     /**
-     * @generated from protobuf field: string regionName = 1;
+     * @generated from protobuf field: string name = 1;
      */
-    regionName: string;
+    name: string;
     /**
-     * @generated from protobuf field: string gspName = 2;
+     * @generated from protobuf field: string geometry = 2;
      */
-    gspName: string;
+    geometry: string;
     /**
-     * @generated from protobuf field: string capacity_kw = 3;
+     * @generated from protobuf field: int64 capacity_kw = 3;
      */
-    capacityKw: string;
+    capacityKw: bigint;
+    /**
+     * @generated from protobuf field: string metadata = 4;
+     */
+    metadata: string;
 }
 /**
- * @generated from protobuf message api.NationLocationMetadata
+ * @generated from protobuf message api.CreateLocationResponse
  */
-export interface NationLocationMetadata {
+export interface CreateLocationResponse {
     /**
-     * @generated from protobuf field: string nationName = 1;
+     * @generated from protobuf field: int64 location_id = 1;
      */
-    nationName: string;
-    /**
-     * @generated from protobuf field: string capacity_kw = 2;
-     */
-    capacityKw: string;
-}
-/**
- * @generated from protobuf enum api.LocationType
- */
-export declare enum LocationType {
-    /**
-     * @generated from protobuf enum value: UNKNOWN = 0;
-     */
-    UNKNOWN = 0,
-    /**
-     * @generated from protobuf enum value: SITE = 1;
-     */
-    SITE = 1,
-    /**
-     * @generated from protobuf enum value: REGION = 2;
-     */
-    REGION = 2
+    locationId: bigint;
 }
 declare class GetPredictedTimeseriesRequest$Type extends MessageType<GetPredictedTimeseriesRequest> {
     constructor();
@@ -422,56 +371,36 @@ declare class ActualYieldAtLocation$Type extends MessageType<ActualYieldAtLocati
  * @generated MessageType for protobuf message api.ActualYieldAtLocation
  */
 export declare const ActualYieldAtLocation: ActualYieldAtLocation$Type;
-declare class GetLocationMetadataRequest$Type extends MessageType<GetLocationMetadataRequest> {
+declare class CreateSiteRequest$Type extends MessageType<CreateSiteRequest> {
     constructor();
-    create(value?: PartialMessage<GetLocationMetadataRequest>): GetLocationMetadataRequest;
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetLocationMetadataRequest): GetLocationMetadataRequest;
-    internalBinaryWrite(message: GetLocationMetadataRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
+    create(value?: PartialMessage<CreateSiteRequest>): CreateSiteRequest;
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CreateSiteRequest): CreateSiteRequest;
+    internalBinaryWrite(message: CreateSiteRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
 }
 /**
- * @generated MessageType for protobuf message api.GetLocationMetadataRequest
+ * @generated MessageType for protobuf message api.CreateSiteRequest
  */
-export declare const GetLocationMetadataRequest: GetLocationMetadataRequest$Type;
-declare class GetLocationMetadataResponse$Type extends MessageType<GetLocationMetadataResponse> {
+export declare const CreateSiteRequest: CreateSiteRequest$Type;
+declare class CreateGspRequest$Type extends MessageType<CreateGspRequest> {
     constructor();
-    create(value?: PartialMessage<GetLocationMetadataResponse>): GetLocationMetadataResponse;
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetLocationMetadataResponse): GetLocationMetadataResponse;
-    internalBinaryWrite(message: GetLocationMetadataResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
+    create(value?: PartialMessage<CreateGspRequest>): CreateGspRequest;
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CreateGspRequest): CreateGspRequest;
+    internalBinaryWrite(message: CreateGspRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
 }
 /**
- * @generated MessageType for protobuf message api.GetLocationMetadataResponse
+ * @generated MessageType for protobuf message api.CreateGspRequest
  */
-export declare const GetLocationMetadataResponse: GetLocationMetadataResponse$Type;
-declare class SiteLocationMetadata$Type extends MessageType<SiteLocationMetadata> {
+export declare const CreateGspRequest: CreateGspRequest$Type;
+declare class CreateLocationResponse$Type extends MessageType<CreateLocationResponse> {
     constructor();
-    create(value?: PartialMessage<SiteLocationMetadata>): SiteLocationMetadata;
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SiteLocationMetadata): SiteLocationMetadata;
-    internalBinaryWrite(message: SiteLocationMetadata, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
+    create(value?: PartialMessage<CreateLocationResponse>): CreateLocationResponse;
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CreateLocationResponse): CreateLocationResponse;
+    internalBinaryWrite(message: CreateLocationResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
 }
 /**
- * @generated MessageType for protobuf message api.SiteLocationMetadata
+ * @generated MessageType for protobuf message api.CreateLocationResponse
  */
-export declare const SiteLocationMetadata: SiteLocationMetadata$Type;
-declare class RegionLocationMetadata$Type extends MessageType<RegionLocationMetadata> {
-    constructor();
-    create(value?: PartialMessage<RegionLocationMetadata>): RegionLocationMetadata;
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: RegionLocationMetadata): RegionLocationMetadata;
-    internalBinaryWrite(message: RegionLocationMetadata, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
-}
-/**
- * @generated MessageType for protobuf message api.RegionLocationMetadata
- */
-export declare const RegionLocationMetadata: RegionLocationMetadata$Type;
-declare class NationLocationMetadata$Type extends MessageType<NationLocationMetadata> {
-    constructor();
-    create(value?: PartialMessage<NationLocationMetadata>): NationLocationMetadata;
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NationLocationMetadata): NationLocationMetadata;
-    internalBinaryWrite(message: NationLocationMetadata, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
-}
-/**
- * @generated MessageType for protobuf message api.NationLocationMetadata
- */
-export declare const NationLocationMetadata: NationLocationMetadata$Type;
+export declare const CreateLocationResponse: CreateLocationResponse$Type;
 /**
  * @generated ServiceType for protobuf service api.QuartzAPI
  */

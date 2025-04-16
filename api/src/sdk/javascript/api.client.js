@@ -36,9 +36,9 @@ export class QuartzAPIClient {
         return stackIntercept("serverStreaming", this._transport, method, opt, input);
     }
     /**
-     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
-     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
-     * predicted yields for each location.
+     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
+     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
+     * actual yields for each location.
      *
      * @generated from protobuf rpc: GetActualCrossSection(api.GetActualCrossSectionRequest) returns (api.GetActualCrossSectionResponse);
      */
@@ -47,9 +47,9 @@ export class QuartzAPIClient {
         return stackIntercept("unary", this._transport, method, opt, input);
     }
     /**
-     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
-     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
-     * actual yields for each location.
+     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
+     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
+     * predicted yields for each location.
      *
      * @generated from protobuf rpc: GetPredictedCrossSection(api.GetPredictedCrossSectionRequest) returns (api.GetPredictedCrossSectionResponse);
      */
@@ -58,13 +58,31 @@ export class QuartzAPIClient {
         return stackIntercept("unary", this._transport, method, opt, input);
     }
     /**
-     * GetLocationMetadataRequest is a request for the metadata for a single location.
-     * The response is a GetLocationMetadataResponse message containing the metadata for the location.
-     *
-     * @generated from protobuf rpc: GetLocationMetadata(api.GetLocationMetadataRequest) returns (api.GetLocationMetadataResponse);
+     * @generated from protobuf rpc: CreateSolarSite(api.CreateSiteRequest) returns (api.CreateLocationResponse);
      */
-    getLocationMetadata(input, options) {
+    createSolarSite(input, options) {
         const method = this.methods[4], opt = this._transport.mergeOptions(options);
+        return stackIntercept("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: CreateWindSite(api.CreateSiteRequest) returns (api.CreateLocationResponse);
+     */
+    createWindSite(input, options) {
+        const method = this.methods[5], opt = this._transport.mergeOptions(options);
+        return stackIntercept("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: CreateSolarGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
+     */
+    createSolarGsp(input, options) {
+        const method = this.methods[6], opt = this._transport.mergeOptions(options);
+        return stackIntercept("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: CreateWindGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
+     */
+    createWindGsp(input, options) {
+        const method = this.methods[7], opt = this._transport.mergeOptions(options);
         return stackIntercept("unary", this._transport, method, opt, input);
     }
 }

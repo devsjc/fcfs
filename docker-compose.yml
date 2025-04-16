@@ -10,9 +10,7 @@ volumes:
 services:
 
   api:
-     build:
-       context: ./api
-       dockerfile: Containerfile
+    image: ghcr.io/devsjc/fcfs-api:latest
      ports:
        - "50051:50051"
      environment:
@@ -37,9 +35,7 @@ services:
       - fcfs-net
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Containerfile
+    image: ghcr.io/devsjc/fcfs-frontend:latest
     ports:
       - "5173:5173"
     environment:
@@ -49,9 +45,7 @@ services:
       - fcfs-net
 
   database:
-    build:
-      context: ./api/src/internal/repository/postgres/infra
-      dockerfile: Containerfile
+    image: ghcr.io/devsjc/fcfs-pgdb:latest
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

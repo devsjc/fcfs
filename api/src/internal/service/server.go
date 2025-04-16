@@ -14,6 +14,9 @@ type QuartzAPIServer struct {
 	DBS internal.DatabaseRepository
 }
 
+// Compile check that APIServer implements the pb.QuartzAPIServer interface
+var _ pb.QuartzAPIServer = (*QuartzAPIServer)(nil) 
+
 func NewQuartzAPIServer(dbs internal.DatabaseRepository) *QuartzAPIServer {
 	err := dbs.Migrate()
 	if err != nil {
@@ -28,9 +31,13 @@ func NewQuartzAPIServer(dbs internal.DatabaseRepository) *QuartzAPIServer {
 func (s *QuartzAPIServer) GetPredictedTimeseries(req *pb.GetPredictedTimeseriesRequest, stream pb.QuartzAPI_GetPredictedTimeseriesServer) (err error) {
 	log.Info().Msg("GetPredictedTimeseries called")
 
-	for _, locID := range req.GetLocationIDs() {
+	for _, locID := range req.GetLocationIds() {
 		// Fetch yields using database service
 		fetchedYields, err := s.DBS.GetPredictedYieldsForLocation(locID)
+		if err != nil {
+			log.Warn().Err(err).Str("locationID", locID).Msg("Error fetching data")
+			return err
+		}
 		log.Debug().Str("locationID", locID).Int("numYields", len(fetchedYields)).Msg("Fetched predicted yields")
 
 		// Map fetched yields to protobuf yields
@@ -48,7 +55,7 @@ func (s *QuartzAPIServer) GetPredictedTimeseries(req *pb.GetPredictedTimeseriesR
 
 		// Stream yields for location to client
 		err = stream.Send(&pb.GetPredictedTimeseriesResponse{
-			LocationID: locID,
+			LocationId: locID,
 			Yields:     returnYields,
 		})
 		if err != nil {
@@ -63,7 +70,7 @@ func (s *QuartzAPIServer) GetPredictedTimeseries(req *pb.GetPredictedTimeseriesR
 func (s *QuartzAPIServer) GetActualTimeseries(req *pb.GetActualTimeseriesRequest, stream pb.QuartzAPI_GetActualTimeseriesServer) (err error) {
 	log.Info().Msg("GetActualTimeseries called")
 
-	for _, locID := range req.GetLocationIDs() {
+	for _, locID := range req.GetLocationIds() {
 		// Fetch yields using database service
 		fetchedYields, err := s.DBS.GetActualYieldsForLocation(locID)
 		if err != nil {
@@ -81,7 +88,7 @@ func (s *QuartzAPIServer) GetActualTimeseries(req *pb.GetActualTimeseriesRequest
 
 		// Stream yields for location to client
 		err = stream.Send(&pb.GetActualTimeseriesResponse{
-			LocationID: locID,
+			LocationId: locID,
 			Yields:     returnYields,
 		})
 		if err != nil {
@@ -96,7 +103,9 @@ func (s *QuartzAPIServer) GetPredictedCrossSection(ctx context.Context, req *pb.
 	log.Info().Msg("GetPredictedCrossSection called")
 
 	// Fetch data using database service
-	fetchedYields, err := s.DBS.GetPredictedYieldForLocations(req.GetLocationIDs(), req.GetTimestampUnix())
+	fetchedYields, err := s.DBS.GetPredictedYieldForLocations(
+		req.LocationIds, req.GetTimestampUnix(),
+	)
 	if err != nil {
 		log.Warn().Err(err).Msg("Error fetching data")
 		return nil, err
@@ -106,7 +115,7 @@ func (s *QuartzAPIServer) GetPredictedCrossSection(ctx context.Context, req *pb.
 	returnYields := make([]*pb.PredictedYieldAtLocation, len(fetchedYields))
 	for i, yield := range fetchedYields {
 		returnYields[i] = &pb.PredictedYieldAtLocation{
-			LocationID: yield.LocationID,
+			LocationId: yield.LocationID,
 			YieldKw:    int32(yield.YieldKW),
 			Uncertainty: &pb.PredictedYieldUncertainty{
 				UpperKw: int32(yield.ErrHigh),
@@ -125,7 +134,7 @@ func (s *QuartzAPIServer) GetActualCrossSection(ctx context.Context, req *pb.Get
 	log.Info().Msg("GetActualCrossSection called")
 
 	// Fetch data using database service
-	fetchedYields, err := s.DBS.GetActualYieldForLocations(req.GetLocationIDs(), req.GetTimestampUnix())
+	fetchedYields, err := s.DBS.GetActualYieldForLocations(req.GetLocationIds(), req.GetTimestampUnix())
 	if err != nil {
 		log.Warn().Err(err).Msg("Error fetching data")
 		return nil, err
@@ -135,7 +144,7 @@ func (s *QuartzAPIServer) GetActualCrossSection(ctx context.Context, req *pb.Get
 	returnYields := make([]*pb.ActualYieldAtLocation, len(fetchedYields))
 	for i, yield := range fetchedYields {
 		returnYields[i] = &pb.ActualYieldAtLocation{
-			LocationID: yield.LocationID,
+			LocationId: yield.LocationID,
 			YieldKw:    int32(yield.YieldKW),
 		}
 	}
@@ -146,11 +155,5 @@ func (s *QuartzAPIServer) GetActualCrossSection(ctx context.Context, req *pb.Get
 	}, nil
 }
 
-func (s *QuartzAPIServer) GetLocationMetadata(ctx context.Context, req *pb.GetLocationMetadataRequest) (*pb.GetLocationMetadataResponse, error) {
-	log.Info().Msg("GetLocationMetadata called")
-	return &pb.GetLocationMetadataResponse{}, nil
-}
-
-// Compile check that APIServer implements the pb.QuartzAPIServer interface
-var _ pb.QuartzAPIServer = (*QuartzAPIServer)(nil) 
+func (s *QuartzAPIServer) CreateSolarSite(ctx context.Context, req *pb.CreateSiteRequest) (*pb.CreateLocationResponse, error) {
 
