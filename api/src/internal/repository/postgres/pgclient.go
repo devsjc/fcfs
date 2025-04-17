@@ -27,9 +27,11 @@ var embedMigrations embed.FS
 
 const migrationsDir = "sql/migrations"
 
-// capacityKWToMultiplier return a number, plus the index to raise 10 to the power to
+// capacityKwToValueMultiplier return a number, plus the index to raise 10 to the power to
 // to get the resultant number of Watts, to the closest power of 3.
-func capacityKWToMultiplier(capacityKw int64) (int16, int16, error) {
+// This is an important function which tries to preserve accuracy whilst also enabling a
+// large range of values to be represented by two 16 bit integers.
+func capacityKwToValueMultiplier(capacityKw int64) (int16, int16, error) {
 	if capacityKw < 0 {
 		return 0, 0, fmt.Errorf("input capacity %d cannot be negative", capacityKw)
 	}
@@ -39,9 +41,7 @@ func capacityKWToMultiplier(capacityKw int64) (int16, int16, error) {
 
 	currentValue := capacityKw * 1000 // Convert to Watts
 	exponent := int16(0)
-	const scaleFactor = 1000
-	const halfScaleFactor = scaleFactor / 2
-	const maxExponent = 18 // Limit to ExaWatts
+	const maxExponent = 18 // Limit to ExaWatts - current generation is ~20PW for the whole world!
 
 	// Keep scaling up as long as the value exceeds the int16 limit
 	for currentValue > int64(math.MaxInt16) {
@@ -52,14 +52,14 @@ func capacityKWToMultiplier(capacityKw int64) (int16, int16, error) {
 			)
 		}
 
-		// Perform division with rounding: add half the divisor before dividing.
-		nextValue := (currentValue + halfScaleFactor) / scaleFactor
+		// Divide by 1000 to get to the next SI unit prefix
+		// * add on 500 to round up numbers that are over halfway to the next 10^3
+		nextValue := (currentValue + 500) / 1000
 
-		// Sanity check: If rounding resulted in 0 for a value that was previously > 0.
+		// If rounding resulted in 0 for a value that was previously > 0.
 		// This is very unlikely with rounding unless the number is enormous and precision is lost,
 		// but good to keep a check.
 		if nextValue == 0 && currentValue > 0 {
-			// Use exponent+3 as this would be the exponent if scaling completed
 			return 0, exponent + 3, fmt.Errorf(
 				"scaled value rounded to zero from large input %d at potential exponent %d",
 				capacityKw, exponent+3)
@@ -70,6 +70,13 @@ func capacityKWToMultiplier(capacityKw int64) (int16, int16, error) {
 	}
 
 	// This is safe as currentValue is now less than or equal to int16 max
+	// but I've put a check to really be as safe as possible
+	if currentValue > math.MaxInt16 {
+		return 0, exponent, fmt.Errorf(
+			"scaled value %d exceeds int16 max %d at exponent %d",
+			currentValue, math.MaxInt16, exponent,
+		)
+	}
 	resultValue := int16(currentValue)
 	return resultValue, exponent, nil
 }
@@ -100,7 +107,7 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 		return nil, fmt.Errorf("Failed to create GSP: %v", err)
 	}
 	// Create a Solar source associated with the location
-	capacity, prefix, err := capacityKWToMultiplier(req.CapacityKw)
+	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
 	}
@@ -126,17 +133,140 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 
 // CreateSolarSite implements proto.QuartzAPIServer.
 func (q *QuartzAPIPostgresServer) CreateSolarSite(context.Context, *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
-	panic("unimplemented")
+	log.Info().Msg("CreateSolarSite called")
+	// Establish a transaction with the database
+	tx, err := q.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to begin transaction: %v", err)
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	// Create a new location as a GSP
+	params := db.CreateLocationParams{
+		LocationTypeName:   "site",
+		LocationName:       req.Name,
+		Geom: []byte(fmt.Sprintf(`{"type": "Point", "coordinates": [%f, %f]}`, req.Latitude, req.Longitude)),
+	}
+	locationID, err := querier.CreateLocation(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create Site: %v", err)
+	}
+	// Create a Solar source associated with the location
+	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
+	}
+	sourceParams := db.CreateLocationSourceParams{
+		LocationID:               locationID,
+		SourceTypeName:           "solar",
+		Capacity:                 capacity,
+		CapacityUnitPrefixFactor: prefix,
+		Metadata:                 []byte(req.Metadata),
+	}
+	_, err = querier.CreateLocationSource(ctx, sourceParams)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create source: %v", err)
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to commit transaction: %v", err)
+	}
+	return &models.CreateLocationResponse{
+		LocationId: int64(locationID),
+	}, nil
 }
 
 // CreateWindGsp implements proto.QuartzAPIServer.
 func (q *QuartzAPIPostgresServer) CreateWindGsp(context.Context, *models.CreateGspRequest) (*models.CreateLocationResponse, error) {
-	panic("unimplemented")
+	log.Info().Msg("CreateSolarGsp called")
+	// Establish a transaction with the database
+	tx, err := q.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to begin transaction: %v", err)
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	// Create a new location as a GSP
+	params := db.CreateLocationParams{
+		LocationTypeName:   "gsp",
+		LocationName:       req.Name,
+		Geom:   req.Geometry,
+	}
+	locationID, err := querier.CreateLocation(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create GSP: %v", err)
+	}
+	// Create a Solar source associated with the location
+	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
+	}
+	sourceParams := db.CreateLocationSourceParams{
+		LocationID:               locationID,
+		SourceTypeName:           "wind",
+		Capacity:                 capacity,
+		CapacityUnitPrefixFactor: prefix,
+		Metadata:                 []byte(req.Metadata),
+	}
+	_, err = querier.CreateLocationSource(ctx, sourceParams)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create source: %v", err)
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to commit transaction: %v", err)
+	}
+	return &models.CreateLocationResponse{
+		LocationId: int64(locationID),
+	}, nil
 }
 
 // CreateWindSite implements proto.QuartzAPIServer.
 func (q *QuartzAPIPostgresServer) CreateWindSite(context.Context, *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
-	panic("unimplemented")
+	log.Info().Msg("CreateWindSite called")
+	// Establish a transaction with the database
+	tx, err := q.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to begin transaction: %v", err)
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	// Create a new location as a GSP
+	params := db.CreateLocationParams{
+		LocationTypeName:   "site",
+		LocationName:       req.Name,
+		Geom: []byte(fmt.Sprintf(`{"type": "Point", "coordinates": [%f, %f]}`, req.Latitude, req.Longitude)),
+	}
+	locationID, err := querier.CreateLocation(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create Site: %v", err)
+	}
+	// Create a Solar source associated with the location
+	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
+	}
+	sourceParams := db.CreateLocationSourceParams{
+		LocationID:               locationID,
+		SourceTypeName:           "wind",
+		Capacity:                 capacity,
+		CapacityUnitPrefixFactor: prefix,
+		Metadata:                 []byte(req.Metadata),
+	}
+	_, err = querier.CreateLocationSource(ctx, sourceParams)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create source: %v", err)
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to commit transaction: %v", err)
+	}
+	return &models.CreateLocationResponse{
+		LocationId: int64(locationID),
+	}, nil
 }
 
 // GetActualCrossSection implements proto.QuartzAPIServer.

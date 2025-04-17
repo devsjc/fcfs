@@ -23,11 +23,13 @@ func TestCapacityKWToMultiplier(t *testing.T) {
 		{32767, 32767, 3, false},
 		{32768, 33, 6, false}, // Needs rounding, should go to 33 MW
 		{33000, 33, 6, false},
+		{1000000000, 1000, 9, false}, // 1TW
+		{12345678, 12346, 6, false}, // 12 GW
 	}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("capacityKw=%d", test.capacityKw), func(t *testing.T) {
-			capacity, prefix, err := capacityKWToMultiplier(test.capacityKw)
+			capacity, prefix, err := capacityKwToValueMultiplier(test.capacityKw)
 			if test.shouldError {
 				require.Error(t, err)
 			} else {
