@@ -91,7 +91,7 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to begin transaction: %v", err)
+		return nil, fmt.Errorf("failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
@@ -104,12 +104,12 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 	}
 	locationID, err := querier.CreateLocation(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create GSP: %v", err)
+		return nil, fmt.Errorf("failed to create GSP: %v", err)
 	}
 	// Create a Solar source associated with the location
 	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
+		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
 	sourceParams := db.CreateLocationSourceParams{
 		LocationID:               locationID,
@@ -120,11 +120,11 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 	}
 	_, err = querier.CreateLocationSource(ctx, sourceParams)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create source: %v", err)
+		return nil, fmt.Errorf("failed to create source: %v", err)
 	}
 	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to commit transaction: %v", err)
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
 	}
 	return &models.CreateLocationResponse{
 		LocationId: int64(locationID),
@@ -132,12 +132,12 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 }
 
 // CreateSolarSite implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) CreateSolarSite(context.Context, *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
+func (q *QuartzAPIPostgresServer) CreateSolarSite(ctx context.Context, req *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
 	log.Info().Msg("CreateSolarSite called")
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to begin transaction: %v", err)
+		return nil, fmt.Errorf("failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
@@ -146,16 +146,17 @@ func (q *QuartzAPIPostgresServer) CreateSolarSite(context.Context, *models.Creat
 	params := db.CreateLocationParams{
 		LocationTypeName:   "site",
 		LocationName:       req.Name,
-		Geom: []byte(fmt.Sprintf(`{"type": "Point", "coordinates": [%f, %f]}`, req.Latitude, req.Longitude)),
+		Geom: fmt.Sprintf("POINT(%.8f %.8f)", req.Latitude, req.Longitude),
 	}
+	log.Debug().Msgf("CreateSolarSite params: %v", params)
 	locationID, err := querier.CreateLocation(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Site: %v", err)
+		return nil, fmt.Errorf("failed to create Site: %v", err)
 	}
 	// Create a Solar source associated with the location
 	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
+		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
 	sourceParams := db.CreateLocationSourceParams{
 		LocationID:               locationID,
@@ -166,11 +167,11 @@ func (q *QuartzAPIPostgresServer) CreateSolarSite(context.Context, *models.Creat
 	}
 	_, err = querier.CreateLocationSource(ctx, sourceParams)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create source: %v", err)
+		return nil, fmt.Errorf("failed to create source: %v", err)
 	}
 	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to commit transaction: %v", err)
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
 	}
 	return &models.CreateLocationResponse{
 		LocationId: int64(locationID),
@@ -178,12 +179,12 @@ func (q *QuartzAPIPostgresServer) CreateSolarSite(context.Context, *models.Creat
 }
 
 // CreateWindGsp implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) CreateWindGsp(context.Context, *models.CreateGspRequest) (*models.CreateLocationResponse, error) {
+func (q *QuartzAPIPostgresServer) CreateWindGsp(ctx context.Context, req *models.CreateGspRequest) (*models.CreateLocationResponse, error) {
 	log.Info().Msg("CreateSolarGsp called")
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to begin transaction: %v", err)
+		return nil, fmt.Errorf("failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
@@ -196,12 +197,12 @@ func (q *QuartzAPIPostgresServer) CreateWindGsp(context.Context, *models.CreateG
 	}
 	locationID, err := querier.CreateLocation(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create GSP: %v", err)
+		return nil, fmt.Errorf("failed to create GSP: %v", err)
 	}
 	// Create a Solar source associated with the location
 	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
+		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
 	sourceParams := db.CreateLocationSourceParams{
 		LocationID:               locationID,
@@ -212,11 +213,11 @@ func (q *QuartzAPIPostgresServer) CreateWindGsp(context.Context, *models.CreateG
 	}
 	_, err = querier.CreateLocationSource(ctx, sourceParams)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create source: %v", err)
+		return nil, fmt.Errorf("failed to create source: %v", err)
 	}
 	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to commit transaction: %v", err)
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
 	}
 	return &models.CreateLocationResponse{
 		LocationId: int64(locationID),
@@ -224,12 +225,12 @@ func (q *QuartzAPIPostgresServer) CreateWindGsp(context.Context, *models.CreateG
 }
 
 // CreateWindSite implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) CreateWindSite(context.Context, *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
+func (q *QuartzAPIPostgresServer) CreateWindSite(ctx context.Context, req *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
 	log.Info().Msg("CreateWindSite called")
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to begin transaction: %v", err)
+		return nil, fmt.Errorf("failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
@@ -238,16 +239,16 @@ func (q *QuartzAPIPostgresServer) CreateWindSite(context.Context, *models.Create
 	params := db.CreateLocationParams{
 		LocationTypeName:   "site",
 		LocationName:       req.Name,
-		Geom: []byte(fmt.Sprintf(`{"type": "Point", "coordinates": [%f, %f]}`, req.Latitude, req.Longitude)),
+		Geom: fmt.Sprintf("POINT(%f %f)", req.Latitude, req.Longitude),
 	}
 	locationID, err := querier.CreateLocation(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Site: %v", err)
+		return nil, fmt.Errorf("failed to create Site: %v", err)
 	}
 	// Create a Solar source associated with the location
 	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to convert capacity: %v", err)
+		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
 	sourceParams := db.CreateLocationSourceParams{
 		LocationID:               locationID,
@@ -258,7 +259,7 @@ func (q *QuartzAPIPostgresServer) CreateWindSite(context.Context, *models.Create
 	}
 	_, err = querier.CreateLocationSource(ctx, sourceParams)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create source: %v", err)
+		return nil, fmt.Errorf("failed to create source: %v", err)
 	}
 	err = tx.Commit(ctx)
 	if err != nil {

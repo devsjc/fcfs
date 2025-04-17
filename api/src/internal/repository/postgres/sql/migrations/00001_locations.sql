@@ -26,13 +26,13 @@ CREATE TABLE loc.source_types(
     PRIMARY KEY (source_type_id),
     UNIQUE (source_type_name)
 );
-INSERT INTO loc.source_types (name) VALUES ('solar'), ('wind');
+INSERT INTO loc.source_types (source_type_name) VALUES ('solar'), ('wind');
 
 -- Lookup table to store different location types
 CREATE TABLE loc.location_types(
     location_type_id SMALLINT GENERATED ALWAYS AS IDENTITY NOT NULL,
     location_type_name TEXT NOT NULL
-        CHECK ( LENGTH(location_type_name) <= 24 AND name = LOWER(location_type_name) ),
+        CHECK ( LENGTH(location_type_name) <= 24 AND location_type_name = LOWER(location_type_name) ),
     PRIMARY KEY (location_type_id),
     UNIQUE (location_type_name)
 );
@@ -45,8 +45,15 @@ INSERT INTO loc.location_types (location_type_name) VALUES ('site'), ('gsp'), ('
 CREATE TABLE loc.locations (
     location_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
     location_name TEXT NOT NULL,
-    geom GEOMETRY NOT NULL
-        CHECK ( ST_GeometryType(geom) IN ('ST_Point', 'ST_Polygon', 'ST_MultiPolygon') ),
+    geom GEOMETRY(GEOMETRY, 4326) NOT NULL
+        CHECK (
+            ST_GeometryType(geom) IN ('ST_Point', 'ST_Polygon', 'ST_MultiPolygon')
+            AND ST_SRID(geom) = 4326
+            AND ST_NDIMS(geom) = 2
+            AND ST_ISVALID(geom)
+            AND ST_XMin(geom) >= -180 AND ST_XMax(geom) <= 180
+            AND ST_YMin(geom) >= -90 AND ST_YMax(geom) <= 90
+        ),
     location_type_id SMALLINT NOT NULL
         REFERENCES loc.location_types(location_type_id)
         ON DELETE RESTRICT,
@@ -75,10 +82,11 @@ CREATE TABLE loc.location_sources (
     -- Factor defining power of 10 to multiply the capacity by
     capacity_unit_prefix_factor SMALLINT DEFAULT (0) NOT NULL
         CHECK ( capacity_unit_prefix_factor IN (0, 3, 6, 9, 12, 15) ),
-    -- Capacity cap, measured in same units as capacity (e.g. curtailment)
+    -- Capacity cap, measured in percent of the capacity (e.g. curtailment)
     capacity_limit SMALLINT
-        CHECK ( capacity_limit IS NULL OR capacity_limit >= 0 ),
-    metadata JSONB,
+        CHECK ( capacity_limit IS NULL OR (capacity_limit >= 0 AND capacity_limit < 100) ),
+    metadata JSONB
+        CHECK ( metadata IS NULL OR metadata <> '{}'::jsonb ),
     sys_period TSRANGE NOT NULL
         DEFAULT TSRANGE(NOW()::TIMESTAMP, NULL, '[)')
         CHECK ( sys_period <> 'empty'::tsrange ),
@@ -115,7 +123,7 @@ BEGIN
             OLD.capacity_unit_prefix_factor IS DISTINCT FROM NEW.capacity_unit_prefix_factor OR
             OLD.metadata IS DISTINCT FROM NEW.metadata OR
             OLD.capacity_limit IS DISTINCT FROM NEW.capacity_limit
-        THEN
+        ) THEN
             -- Close the validity period of the old record to current_ts (exclusive end)
             UPDATE loc.location_sources
             SET sys_period = TSRANGE(LOWER(OLD.sys_period), current_ts, '[)')
