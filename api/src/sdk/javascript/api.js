@@ -729,7 +729,7 @@ class CreateSiteRequest$Type extends MessageType {
             { no: 1, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "latitude", kind: "scalar", T: 2 /*ScalarType.FLOAT*/ },
             { no: 3, name: "longitude", kind: "scalar", T: 2 /*ScalarType.FLOAT*/ },
-            { no: 4, name: "capacity_kw", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 4, name: "capacity_kw", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
             { no: 5, name: "metadata", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
@@ -738,7 +738,7 @@ class CreateSiteRequest$Type extends MessageType {
         message.name = "";
         message.latitude = 0;
         message.longitude = 0;
-        message.capacityKw = 0n;
+        message.capacityKw = 0;
         message.metadata = "";
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -758,8 +758,8 @@ class CreateSiteRequest$Type extends MessageType {
                 case /* float longitude */ 3:
                     message.longitude = reader.float();
                     break;
-                case /* int64 capacity_kw */ 4:
-                    message.capacityKw = reader.int64().toBigInt();
+                case /* int32 capacity_kw */ 4:
+                    message.capacityKw = reader.int32();
                     break;
                 case /* string metadata */ 5:
                     message.metadata = reader.string();
@@ -785,9 +785,9 @@ class CreateSiteRequest$Type extends MessageType {
         /* float longitude = 3; */
         if (message.longitude !== 0)
             writer.tag(3, WireType.Bit32).float(message.longitude);
-        /* int64 capacity_kw = 4; */
-        if (message.capacityKw !== 0n)
-            writer.tag(4, WireType.Varint).int64(message.capacityKw);
+        /* int32 capacity_kw = 4; */
+        if (message.capacityKw !== 0)
+            writer.tag(4, WireType.Varint).int32(message.capacityKw);
         /* string metadata = 5; */
         if (message.metadata !== "")
             writer.tag(5, WireType.LengthDelimited).string(message.metadata);
@@ -807,7 +807,7 @@ class CreateGspRequest$Type extends MessageType {
         super("api.CreateGspRequest", [
             { no: 1, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "geometry", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "capacity_kw", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "capacity_mw", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
             { no: 4, name: "metadata", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
@@ -815,7 +815,7 @@ class CreateGspRequest$Type extends MessageType {
         const message = globalThis.Object.create((this.messagePrototype));
         message.name = "";
         message.geometry = "";
-        message.capacityKw = 0n;
+        message.capacityMw = 0;
         message.metadata = "";
         if (value !== undefined)
             reflectionMergePartial(this, message, value);
@@ -832,8 +832,8 @@ class CreateGspRequest$Type extends MessageType {
                 case /* string geometry */ 2:
                     message.geometry = reader.string();
                     break;
-                case /* int64 capacity_kw */ 3:
-                    message.capacityKw = reader.int64().toBigInt();
+                case /* int32 capacity_mw */ 3:
+                    message.capacityMw = reader.int32();
                     break;
                 case /* string metadata */ 4:
                     message.metadata = reader.string();
@@ -856,9 +856,9 @@ class CreateGspRequest$Type extends MessageType {
         /* string geometry = 2; */
         if (message.geometry !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.geometry);
-        /* int64 capacity_kw = 3; */
-        if (message.capacityKw !== 0n)
-            writer.tag(3, WireType.Varint).int64(message.capacityKw);
+        /* int32 capacity_mw = 3; */
+        if (message.capacityMw !== 0)
+            writer.tag(3, WireType.Varint).int32(message.capacityMw);
         /* string metadata = 4; */
         if (message.metadata !== "")
             writer.tag(4, WireType.LengthDelimited).string(message.metadata);
@@ -927,7 +927,7 @@ export const QuartzAPI = new ServiceType("api.QuartzAPI", [
     { name: "GetActualTimeseries", serverStreaming: true, options: {}, I: GetActualTimeseriesRequest, O: GetActualTimeseriesResponse },
     { name: "GetActualCrossSection", options: {}, I: GetActualCrossSectionRequest, O: GetActualCrossSectionResponse },
     { name: "GetPredictedCrossSection", options: {}, I: GetPredictedCrossSectionRequest, O: GetPredictedCrossSectionResponse },
-    { name: "CreateSolarSite", options: {}, I: CreateSiteRequest, O: CreateLocationResponse },
+    { name: "CreateSolarSite", options: { "google.api.http": { post: "/v1/locations/solar", body: "*" } }, I: CreateSiteRequest, O: CreateLocationResponse },
     { name: "CreateWindSite", options: {}, I: CreateSiteRequest, O: CreateLocationResponse },
     { name: "CreateSolarGsp", options: {}, I: CreateGspRequest, O: CreateLocationResponse },
     { name: "CreateWindGsp", options: {}, I: CreateGspRequest, O: CreateLocationResponse }

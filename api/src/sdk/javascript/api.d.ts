@@ -203,9 +203,9 @@ export interface CreateSiteRequest {
      */
     longitude: number;
     /**
-     * @generated from protobuf field: int64 capacity_kw = 4;
+     * @generated from protobuf field: int32 capacity_kw = 4;
      */
-    capacityKw: bigint;
+    capacityKw: number;
     /**
      * @generated from protobuf field: string metadata = 5;
      */
@@ -224,9 +224,9 @@ export interface CreateGspRequest {
      */
     geometry: string;
     /**
-     * @generated from protobuf field: int64 capacity_kw = 3;
+     * @generated from protobuf field: int32 capacity_mw = 3;
      */
-    capacityKw: bigint;
+    capacityMw: number;
     /**
      * @generated from protobuf field: string metadata = 4;
      */

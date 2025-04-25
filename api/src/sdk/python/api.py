@@ -116,7 +116,7 @@ class CreateSiteRequest(betterproto.Message):
     name: str = betterproto.string_field(1)
     latitude: float = betterproto.float_field(2)
     longitude: float = betterproto.float_field(3)
-    capacity_kw: int = betterproto.int64_field(4)
+    capacity_kw: int = betterproto.int32_field(4)
     metadata: str = betterproto.string_field(5)
 
 
@@ -124,7 +124,7 @@ class CreateSiteRequest(betterproto.Message):
 class CreateGspRequest(betterproto.Message):
     name: str = betterproto.string_field(1)
     geometry: str = betterproto.string_field(2)
-    capacity_kw: int = betterproto.int64_field(3)
+    capacity_mw: int = betterproto.int32_field(3)
     metadata: str = betterproto.string_field(4)
 
 
@@ -263,13 +263,13 @@ class QuartzAPIStub(betterproto.ServiceStub):
         *,
         name: str = "",
         geometry: str = "",
-        capacity_kw: int = 0,
+        capacity_mw: int = 0,
         metadata: str = "",
     ) -> CreateLocationResponse:
         request = CreateGspRequest()
         request.name = name
         request.geometry = geometry
-        request.capacity_kw = capacity_kw
+        request.capacity_mw = capacity_mw
         request.metadata = metadata
 
         return await self._unary_unary(
@@ -283,13 +283,13 @@ class QuartzAPIStub(betterproto.ServiceStub):
         *,
         name: str = "",
         geometry: str = "",
-        capacity_kw: int = 0,
+        capacity_mw: int = 0,
         metadata: str = "",
     ) -> CreateLocationResponse:
         request = CreateGspRequest()
         request.name = name
         request.geometry = geometry
-        request.capacity_kw = capacity_kw
+        request.capacity_mw = capacity_mw
         request.metadata = metadata
 
         return await self._unary_unary(

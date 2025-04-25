@@ -1,11 +1,16 @@
 package postgres
 
 import (
-	"testing"
+	"context"
 	"fmt"
+	"net"
+	"path/filepath"
+	"testing"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/stretchr/testify/require"
-
 )
 
 func TestCapacityKWToMultiplier(t *testing.T) {
@@ -39,4 +44,39 @@ func TestCapacityKWToMultiplier(t *testing.T) {
 			}
 		})
 	}
+}
+
+
+func TestMigrate(t *testing.T) {
+	ctx := context.Background()
+
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join(".", "infra"),
+			Dockerfile: "Containerfile",
+		},
+		Env: map[string]string{
+			"POSTGRES_USER":     "postgres",
+			"POSTGRES_PASSWORD": "postgres",
+			"POSTGRES_DB":       "postgres",
+		},
+		Cmd:          []string{"postgres", "-c", "fsync=off"},
+		ExposedPorts: []string{"5432/tcp"},
+		WaitingFor:   wait.ForLog("database system is ready to accept connections"),
+	}
+	pgC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+        ContainerRequest: req,
+        Started:          true,
+    })
+	require.NoError(t, err)
+	containerPort, err := pgC.MappedPort(ctx, "5432/tcp")
+	require.NoError(t, err)
+	host, err := pgC.Host(ctx)
+	require.NoError(t, err)
+
+	connString := fmt.Sprintf("postgres://postgres:postgers@%s/postgres", net.JoinHostPort(host, containerPort))
+
+	server := NewQuartzAPIPostgresServer(connString)
+	
+	testcontainers.CleanupContainer(t, pgC)
 }

@@ -14,7 +14,8 @@ import (
 
 func main() {
 	log.Debug().Str("type", os.Getenv("DATABASE_TYPE")).Msg("Connecting to backend")
-	apiServer := rpgx.NewQuartzAPIPostgresServer()
+	connString := os.Getenv("DATABASE_URL"),
+	apiServer := rpgx.NewQuartzAPIPostgresServer(connString)
 	log.Info().Msg("ApiServer created")
 
 	log.Info().Int("port", 50051).Msg("Starting GRPC server")

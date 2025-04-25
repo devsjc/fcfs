@@ -44,7 +44,7 @@ func capacityKwToValueMultiplier(capacityKw int64) (int16, int16, error) {
 	const maxExponent = 18 // Limit to ExaWatts - current generation is ~20PW for the whole world!
 
 	// Keep scaling up as long as the value exceeds the int16 limit
-	for currentValue > int64(math.MaxInt16) {
+	for currentValue > math.MaxInt16 {
 		if exponent >= maxExponent {
 			return 0, exponent, fmt.Errorf(
 				"input represents a value greater than %d ExaWatts, which is not supported",
@@ -107,7 +107,7 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 		return nil, fmt.Errorf("failed to create GSP: %v", err)
 	}
 	// Create a Solar source associated with the location
-	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
+	capacity, prefix, err := capacityKwToValueMultiplier(int64(req.CapacityMw * 1000))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
@@ -154,7 +154,7 @@ func (q *QuartzAPIPostgresServer) CreateSolarSite(ctx context.Context, req *mode
 		return nil, fmt.Errorf("failed to create Site: %v", err)
 	}
 	// Create a Solar source associated with the location
-	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
+	capacity, prefix, err := capacityKwToValueMultiplier(int64(req.CapacityKw))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
@@ -200,7 +200,7 @@ func (q *QuartzAPIPostgresServer) CreateWindGsp(ctx context.Context, req *models
 		return nil, fmt.Errorf("failed to create GSP: %v", err)
 	}
 	// Create a Solar source associated with the location
-	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
+	capacity, prefix, err := capacityKwToValueMultiplier(int64(req.CapacityMw * 1000))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
@@ -246,7 +246,7 @@ func (q *QuartzAPIPostgresServer) CreateWindSite(ctx context.Context, req *model
 		return nil, fmt.Errorf("failed to create Site: %v", err)
 	}
 	// Create a Solar source associated with the location
-	capacity, prefix, err := capacityKwToValueMultiplier(req.CapacityKw)
+	capacity, prefix, err := capacityKwToValueMultiplier(int64(req.CapacityKw))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert capacity: %v", err)
 	}
@@ -291,9 +291,9 @@ func (q *QuartzAPIPostgresServer) GetPredictedTimeseries(*models.GetPredictedTim
 }
 
 // NewPostgresClient creates a new PostgresClient instance and connects to the database
-func NewQuartzAPIPostgresServer() *QuartzAPIPostgresServer {
+func NewQuartzAPIPostgresServer(connString string) *QuartzAPIPostgresServer {
 	pool, err := pgxpool.New(
-		context.Background(), os.Getenv("DATABASE_URL"),
+		context.Background(), connString,
 	)
 	if err != nil {
 		log.Fatal().Msg("Unable to connect to database. Ensure DATABASE_URL is set correctly")

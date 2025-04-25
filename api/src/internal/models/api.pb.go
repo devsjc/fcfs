@@ -707,7 +707,7 @@ type CreateSiteRequest struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Latitude      float32                `protobuf:"fixed32,2,opt,name=latitude,proto3" json:"latitude,omitempty"`
 	Longitude     float32                `protobuf:"fixed32,3,opt,name=longitude,proto3" json:"longitude,omitempty"`
-	CapacityKw    int64                  `protobuf:"varint,4,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
+	CapacityKw    int32                  `protobuf:"varint,4,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
 	Metadata      string                 `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -764,7 +764,7 @@ func (x *CreateSiteRequest) GetLongitude() float32 {
 	return 0
 }
 
-func (x *CreateSiteRequest) GetCapacityKw() int64 {
+func (x *CreateSiteRequest) GetCapacityKw() int32 {
 	if x != nil {
 		return x.CapacityKw
 	}
@@ -782,7 +782,7 @@ type CreateGspRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Geometry      string                 `protobuf:"bytes,2,opt,name=geometry,proto3" json:"geometry,omitempty"`
-	CapacityKw    int64                  `protobuf:"varint,3,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
+	CapacityMw    int32                  `protobuf:"varint,3,opt,name=capacity_mw,json=capacityMw,proto3" json:"capacity_mw,omitempty"`
 	Metadata      string                 `protobuf:"bytes,4,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -832,9 +832,9 @@ func (x *CreateGspRequest) GetGeometry() string {
 	return ""
 }
 
-func (x *CreateGspRequest) GetCapacityKw() int64 {
+func (x *CreateGspRequest) GetCapacityMw() int32 {
 	if x != nil {
-		return x.CapacityKw
+		return x.CapacityMw
 	}
 	return 0
 }
@@ -894,7 +894,7 @@ var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
 	"\n" +
-	"\tapi.proto\x12\x03api\"B\n" +
+	"\tapi.proto\x12\x03api\x1a\x1cgoogle/api/annotations.proto\"B\n" +
 	"\x1dGetPredictedTimeseriesRequest\x12!\n" +
 	"\flocation_ids\x18\x01 \x03(\tR\vlocationIds\"n\n" +
 	"\x1eGetPredictedTimeseriesResponse\x12\x1f\n" +
@@ -942,24 +942,24 @@ const file_api_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\blatitude\x18\x02 \x01(\x02R\blatitude\x12\x1c\n" +
 	"\tlongitude\x18\x03 \x01(\x02R\tlongitude\x12\x1f\n" +
-	"\vcapacity_kw\x18\x04 \x01(\x03R\n" +
+	"\vcapacity_kw\x18\x04 \x01(\x05R\n" +
 	"capacityKw\x12\x1a\n" +
 	"\bmetadata\x18\x05 \x01(\tR\bmetadata\"\x7f\n" +
 	"\x10CreateGspRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bgeometry\x18\x02 \x01(\tR\bgeometry\x12\x1f\n" +
-	"\vcapacity_kw\x18\x03 \x01(\x03R\n" +
-	"capacityKw\x12\x1a\n" +
+	"\vcapacity_mw\x18\x03 \x01(\x05R\n" +
+	"capacityMw\x12\x1a\n" +
 	"\bmetadata\x18\x04 \x01(\tR\bmetadata\"9\n" +
 	"\x16CreateLocationResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x03R\n" +
-	"locationId2\xbf\x05\n" +
+	"locationId2\xdd\x05\n" +
 	"\tQuartzAPI\x12e\n" +
 	"\x16GetPredictedTimeseries\x12\".api.GetPredictedTimeseriesRequest\x1a#.api.GetPredictedTimeseriesResponse\"\x000\x01\x12\\\n" +
 	"\x13GetActualTimeseries\x12\x1f.api.GetActualTimeseriesRequest\x1a .api.GetActualTimeseriesResponse\"\x000\x01\x12`\n" +
 	"\x15GetActualCrossSection\x12!.api.GetActualCrossSectionRequest\x1a\".api.GetActualCrossSectionResponse\"\x00\x12i\n" +
-	"\x18GetPredictedCrossSection\x12$.api.GetPredictedCrossSectionRequest\x1a%.api.GetPredictedCrossSectionResponse\"\x00\x12H\n" +
-	"\x0fCreateSolarSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12G\n" +
+	"\x18GetPredictedCrossSection\x12$.api.GetPredictedCrossSectionRequest\x1a%.api.GetPredictedCrossSectionResponse\"\x00\x12f\n" +
+	"\x0fCreateSolarSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/locations/solar\x12G\n" +
 	"\x0eCreateWindSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12F\n" +
 	"\x0eCreateSolarGsp\x12\x15.api.CreateGspRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12E\n" +
 	"\rCreateWindGsp\x12\x15.api.CreateGspRequest\x1a\x1b.api.CreateLocationResponse\"\x00B&Z$github.com/devsjc/fcfs/api/src/protob\x06proto3"

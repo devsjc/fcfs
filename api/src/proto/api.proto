@@ -5,26 +5,18 @@ option go_package = "github.com/devsjc/fcfs/api/src/proto";
 package api;
 
 service QuartzAPI {
-  /* GetPredictedTimeseriesRequest is a request for a set of predicted yields for one or more locations.
-   * The response is a stream of GetPredictedTimeseriesResponse messages.
-   * each containing the predicted yields for a single location. */
   rpc GetPredictedTimeseries(GetPredictedTimeseriesRequest) returns (stream GetPredictedTimeseriesResponse) {}
-  /* GetActualTimeseriesRequest is a request for a set of actual yields for one or more locations.
-   * The response is a stream of GetActualTimeseriesResponse messages.
-   * each containing the actual yields for a single location. */
   rpc GetActualTimeseries(GetActualTimeseriesRequest) returns (stream GetActualTimeseriesResponse) {}
-  /* GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
-   * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
-   * actual yields for each location. */
   rpc GetActualCrossSection(GetActualCrossSectionRequest) returns (GetActualCrossSectionResponse) {}
-  /* GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
-   * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
-   * predicted yields for each location. */
   rpc GetPredictedCrossSection(GetPredictedCrossSectionRequest) returns (GetPredictedCrossSectionResponse) {}
+
   rpc CreateSolarSite(CreateSiteRequest) returns (CreateLocationResponse) {}
   rpc CreateWindSite(CreateSiteRequest) returns (CreateLocationResponse) {}
   rpc CreateSolarGsp(CreateGspRequest) returns (CreateLocationResponse) {}
   rpc CreateWindGsp(CreateGspRequest) returns (CreateLocationResponse) {}
+
+  rpc GetSolarSite(GetLocationRequest) returns (GetLocationResponse) {}
+  rpc GetSolarGsp(GetLocationRequest) returns (GetLocationResponse) {}
 
 }
 
@@ -102,18 +94,31 @@ message CreateSiteRequest {
   string name = 1;
   float latitude = 2;
   float longitude = 3;
-  int64 capacity_kw = 4;
+  int32 capacity_kw = 4;
   string metadata = 5;
 }
 
 message CreateGspRequest {
   string name = 1;
   string geometry = 2;
-  int64 capacity_kw = 3;
+  int32 capacity_mw = 3;
   string metadata = 4;
 }
 
 message CreateLocationResponse {
   int64 location_id = 1;
+}
+
+message GetLocationRequest {
+  string location_id = 1;
+}
+
+message GetLocationResponse {
+  string location_id = 1;
+  string name = 2;
+  float latitude = 3;
+  float longitude = 4;
+  int32 capacity_kw = 5;
+  string metadata = 6;
 }
 
