@@ -133,17 +133,25 @@ class CreateLocationResponse(betterproto.Message):
     location_id: int = betterproto.int64_field(1)
 
 
+@dataclass
+class GetLocationRequest(betterproto.Message):
+    location_id: str = betterproto.string_field(1)
+
+
+@dataclass
+class GetLocationResponse(betterproto.Message):
+    location_id: str = betterproto.string_field(1)
+    name: str = betterproto.string_field(2)
+    latitude: float = betterproto.float_field(3)
+    longitude: float = betterproto.float_field(4)
+    capacity_kw: int = betterproto.int32_field(5)
+    metadata: str = betterproto.string_field(6)
+
+
 class QuartzAPIStub(betterproto.ServiceStub):
     async def get_predicted_timeseries(
         self, *, location_ids: List[str] = []
     ) -> AsyncGenerator[GetPredictedTimeseriesResponse, None]:
-        """
-        GetPredictedTimeseriesRequest is a request for a set of predicted
-        yields for one or more locations. The response is a stream of
-        GetPredictedTimeseriesResponse messages. each containing the predicted
-        yields for a single location.
-        """
-
         request = GetPredictedTimeseriesRequest()
         request.location_ids = location_ids
 
@@ -157,13 +165,6 @@ class QuartzAPIStub(betterproto.ServiceStub):
     async def get_actual_timeseries(
         self, *, location_ids: List[str] = []
     ) -> AsyncGenerator[GetActualTimeseriesResponse, None]:
-        """
-        GetActualTimeseriesRequest is a request for a set of actual yields for
-        one or more locations. The response is a stream of
-        GetActualTimeseriesResponse messages. each containing the actual yields
-        for a single location.
-        """
-
         request = GetActualTimeseriesRequest()
         request.location_ids = location_ids
 
@@ -177,13 +178,6 @@ class QuartzAPIStub(betterproto.ServiceStub):
     async def get_actual_cross_section(
         self, *, location_ids: List[str] = [], timestamp_unix: int = 0
     ) -> GetActualCrossSectionResponse:
-        """
-        GetActualCrossSectionRequest is a request for a specific actual yield
-        for one or more locations at a single timestamp. The response is a
-        GetActualCrossSectionResponse message containing the actual yields for
-        each location.
-        """
-
         request = GetActualCrossSectionRequest()
         request.location_ids = location_ids
         request.timestamp_unix = timestamp_unix
@@ -197,13 +191,6 @@ class QuartzAPIStub(betterproto.ServiceStub):
     async def get_predicted_cross_section(
         self, *, location_ids: List[str] = [], timestamp_unix: int = 0
     ) -> GetPredictedCrossSectionResponse:
-        """
-        GetPredictedCrossSectionRequest is a request for a specific predicted
-        yield for one or more locations at a single timestamp. The response is
-        a GetPredictedCrossSectionResponse message containing the predicted
-        yields for each location.
-        """
-
         request = GetPredictedCrossSectionRequest()
         request.location_ids = location_ids
         request.timestamp_unix = timestamp_unix
@@ -296,4 +283,24 @@ class QuartzAPIStub(betterproto.ServiceStub):
             "/api.QuartzAPI/CreateWindGsp",
             request,
             CreateLocationResponse,
+        )
+
+    async def get_solar_site(self, *, location_id: str = "") -> GetLocationResponse:
+        request = GetLocationRequest()
+        request.location_id = location_id
+
+        return await self._unary_unary(
+            "/api.QuartzAPI/GetSolarSite",
+            request,
+            GetLocationResponse,
+        )
+
+    async def get_solar_gsp(self, *, location_id: str = "") -> GetLocationResponse:
+        request = GetLocationRequest()
+        request.location_id = location_id
+
+        return await self._unary_unary(
+            "/api.QuartzAPI/GetSolarGsp",
+            request,
+            GetLocationResponse,
         )

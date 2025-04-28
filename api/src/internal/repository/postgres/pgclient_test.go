@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/devsjc/fcfs/api/src/internal/models"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
@@ -46,14 +47,13 @@ func TestCapacityKWToMultiplier(t *testing.T) {
 	}
 }
 
-
-func TestMigrate(t *testing.T) {
-	ctx := context.Background()
-
+// Build a Postgres container with the relevant extensions and some test data
+func setupSuite(t *testing.T, ctx context.Context) (models.QuartzAPIServer, func(*testing.T)) {
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join(".", "infra"),
 			Dockerfile: "Containerfile",
+			KeepImage: true,
 		},
 		Env: map[string]string{
 			"POSTGRES_USER":     "postgres",
@@ -62,7 +62,12 @@ func TestMigrate(t *testing.T) {
 		},
 		Cmd:          []string{"postgres", "-c", "fsync=off"},
 		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor:   wait.ForLog("database system is ready to accept connections"),
+		WaitingFor:   wait.ForAll(
+			wait.ForLog(
+				"database system is ready to accept connections",
+			).WithOccurrence(2),
+			wait.ForListeningPort("5432/tcp"),
+		),
 	}
 	pgC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
         ContainerRequest: req,
@@ -74,9 +79,39 @@ func TestMigrate(t *testing.T) {
 	host, err := pgC.Host(ctx)
 	require.NoError(t, err)
 
-	connString := fmt.Sprintf("postgres://postgres:postgers@%s/postgres", net.JoinHostPort(host, containerPort))
+	connString := fmt.Sprintf(
+		"postgres://postgres:postgres@%s/postgres",
+		net.JoinHostPort(host, containerPort.Port()),
+	)
 
-	server := NewQuartzAPIPostgresServer(connString)
+	s := NewQuartzAPIPostgresServer(connString)
+	t.Logf("Connected to fully migrated postgres container at %s", connString)
+
+	return s, func(t *testing.T) {
+		t.Logf("Cleaning up postgres container")
+		testcontainers.CleanupContainer(t, pgC)
+	}
+}
+
+func TestMigrate(t *testing.T) {
+	ctx := context.Background()
+	_, cleanup := setupSuite(t, ctx)
+	defer cleanup(t)
+}
+
+func TestInsertGsp(t *testing.T) {
+	ctx := context.Background()
+	s, cleanup := setupSuite(t, ctx)
+	defer cleanup(t)
+
+	resp, err := s.CreateSolarGsp(ctx, &models.CreateGspRequest{
+		Name: "Test GSP",
+		Geometry: "POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))",
+		CapacityMw: 500,
+		Metadata: "{}",
+	})
+
+	require.NoError(t, err, )
+	require.Equal(t, resp.LocationId, "Test GSP")
 	
-	testcontainers.CleanupContainer(t, pgC)
 }

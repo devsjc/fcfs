@@ -241,6 +241,44 @@ export interface CreateLocationResponse {
      */
     locationId: bigint;
 }
+/**
+ * @generated from protobuf message api.GetLocationRequest
+ */
+export interface GetLocationRequest {
+    /**
+     * @generated from protobuf field: string location_id = 1;
+     */
+    locationId: string;
+}
+/**
+ * @generated from protobuf message api.GetLocationResponse
+ */
+export interface GetLocationResponse {
+    /**
+     * @generated from protobuf field: string location_id = 1;
+     */
+    locationId: string;
+    /**
+     * @generated from protobuf field: string name = 2;
+     */
+    name: string;
+    /**
+     * @generated from protobuf field: float latitude = 3;
+     */
+    latitude: number;
+    /**
+     * @generated from protobuf field: float longitude = 4;
+     */
+    longitude: number;
+    /**
+     * @generated from protobuf field: int32 capacity_kw = 5;
+     */
+    capacityKw: number;
+    /**
+     * @generated from protobuf field: string metadata = 6;
+     */
+    metadata: string;
+}
 declare class GetPredictedTimeseriesRequest$Type extends MessageType<GetPredictedTimeseriesRequest> {
     constructor();
     create(value?: PartialMessage<GetPredictedTimeseriesRequest>): GetPredictedTimeseriesRequest;
@@ -401,6 +439,26 @@ declare class CreateLocationResponse$Type extends MessageType<CreateLocationResp
  * @generated MessageType for protobuf message api.CreateLocationResponse
  */
 export declare const CreateLocationResponse: CreateLocationResponse$Type;
+declare class GetLocationRequest$Type extends MessageType<GetLocationRequest> {
+    constructor();
+    create(value?: PartialMessage<GetLocationRequest>): GetLocationRequest;
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetLocationRequest): GetLocationRequest;
+    internalBinaryWrite(message: GetLocationRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
+}
+/**
+ * @generated MessageType for protobuf message api.GetLocationRequest
+ */
+export declare const GetLocationRequest: GetLocationRequest$Type;
+declare class GetLocationResponse$Type extends MessageType<GetLocationResponse> {
+    constructor();
+    create(value?: PartialMessage<GetLocationResponse>): GetLocationResponse;
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetLocationResponse): GetLocationResponse;
+    internalBinaryWrite(message: GetLocationResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter;
+}
+/**
+ * @generated MessageType for protobuf message api.GetLocationResponse
+ */
+export declare const GetLocationResponse: GetLocationResponse$Type;
 /**
  * @generated ServiceType for protobuf service api.QuartzAPI
  */

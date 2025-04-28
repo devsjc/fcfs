@@ -4,7 +4,7 @@
 // 	protoc        v5.29.3
 // source: api.proto
 
-package proto
+package models
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -890,11 +890,139 @@ func (x *CreateLocationResponse) GetLocationId() int64 {
 	return 0
 }
 
+type GetLocationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLocationRequest) Reset() {
+	*x = GetLocationRequest{}
+	mi := &file_api_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLocationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLocationRequest) ProtoMessage() {}
+
+func (x *GetLocationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLocationRequest.ProtoReflect.Descriptor instead.
+func (*GetLocationRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetLocationRequest) GetLocationId() string {
+	if x != nil {
+		return x.LocationId
+	}
+	return ""
+}
+
+type GetLocationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Latitude      float32                `protobuf:"fixed32,3,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude     float32                `protobuf:"fixed32,4,opt,name=longitude,proto3" json:"longitude,omitempty"`
+	CapacityKw    int32                  `protobuf:"varint,5,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
+	Metadata      string                 `protobuf:"bytes,6,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLocationResponse) Reset() {
+	*x = GetLocationResponse{}
+	mi := &file_api_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLocationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLocationResponse) ProtoMessage() {}
+
+func (x *GetLocationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLocationResponse.ProtoReflect.Descriptor instead.
+func (*GetLocationResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetLocationResponse) GetLocationId() string {
+	if x != nil {
+		return x.LocationId
+	}
+	return ""
+}
+
+func (x *GetLocationResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GetLocationResponse) GetLatitude() float32 {
+	if x != nil {
+		return x.Latitude
+	}
+	return 0
+}
+
+func (x *GetLocationResponse) GetLongitude() float32 {
+	if x != nil {
+		return x.Longitude
+	}
+	return 0
+}
+
+func (x *GetLocationResponse) GetCapacityKw() int32 {
+	if x != nil {
+		return x.CapacityKw
+	}
+	return 0
+}
+
+func (x *GetLocationResponse) GetMetadata() string {
+	if x != nil {
+		return x.Metadata
+	}
+	return ""
+}
+
 var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
 	"\n" +
-	"\tapi.proto\x12\x03api\x1a\x1cgoogle/api/annotations.proto\"B\n" +
+	"\tapi.proto\x12\x03api\"B\n" +
 	"\x1dGetPredictedTimeseriesRequest\x12!\n" +
 	"\flocation_ids\x18\x01 \x03(\tR\vlocationIds\"n\n" +
 	"\x1eGetPredictedTimeseriesResponse\x12\x1f\n" +
@@ -953,16 +1081,30 @@ const file_api_proto_rawDesc = "" +
 	"\bmetadata\x18\x04 \x01(\tR\bmetadata\"9\n" +
 	"\x16CreateLocationResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x03R\n" +
-	"locationId2\xdd\x05\n" +
+	"locationId\"5\n" +
+	"\x12GetLocationRequest\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\"\xc1\x01\n" +
+	"\x13GetLocationResponse\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
+	"\blatitude\x18\x03 \x01(\x02R\blatitude\x12\x1c\n" +
+	"\tlongitude\x18\x04 \x01(\x02R\tlongitude\x12\x1f\n" +
+	"\vcapacity_kw\x18\x05 \x01(\x05R\n" +
+	"capacityKw\x12\x1a\n" +
+	"\bmetadata\x18\x06 \x01(\tR\bmetadata2\xc8\x06\n" +
 	"\tQuartzAPI\x12e\n" +
 	"\x16GetPredictedTimeseries\x12\".api.GetPredictedTimeseriesRequest\x1a#.api.GetPredictedTimeseriesResponse\"\x000\x01\x12\\\n" +
 	"\x13GetActualTimeseries\x12\x1f.api.GetActualTimeseriesRequest\x1a .api.GetActualTimeseriesResponse\"\x000\x01\x12`\n" +
 	"\x15GetActualCrossSection\x12!.api.GetActualCrossSectionRequest\x1a\".api.GetActualCrossSectionResponse\"\x00\x12i\n" +
-	"\x18GetPredictedCrossSection\x12$.api.GetPredictedCrossSectionRequest\x1a%.api.GetPredictedCrossSectionResponse\"\x00\x12f\n" +
-	"\x0fCreateSolarSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/locations/solar\x12G\n" +
+	"\x18GetPredictedCrossSection\x12$.api.GetPredictedCrossSectionRequest\x1a%.api.GetPredictedCrossSectionResponse\"\x00\x12H\n" +
+	"\x0fCreateSolarSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12G\n" +
 	"\x0eCreateWindSite\x12\x16.api.CreateSiteRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12F\n" +
 	"\x0eCreateSolarGsp\x12\x15.api.CreateGspRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12E\n" +
-	"\rCreateWindGsp\x12\x15.api.CreateGspRequest\x1a\x1b.api.CreateLocationResponse\"\x00B&Z$github.com/devsjc/fcfs/api/src/protob\x06proto3"
+	"\rCreateWindGsp\x12\x15.api.CreateGspRequest\x1a\x1b.api.CreateLocationResponse\"\x00\x12C\n" +
+	"\fGetSolarSite\x12\x17.api.GetLocationRequest\x1a\x18.api.GetLocationResponse\"\x00\x12B\n" +
+	"\vGetSolarGsp\x12\x17.api.GetLocationRequest\x1a\x18.api.GetLocationResponse\"\x00B0Z.github.com/devsjc/fcfs/api/src/internal/modelsb\x06proto3"
 
 var (
 	file_api_proto_rawDescOnce sync.Once
@@ -976,7 +1118,7 @@ func file_api_proto_rawDescGZIP() []byte {
 	return file_api_proto_rawDescData
 }
 
-var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_api_proto_goTypes = []any{
 	(*GetPredictedTimeseriesRequest)(nil),    // 0: api.GetPredictedTimeseriesRequest
 	(*GetPredictedTimeseriesResponse)(nil),   // 1: api.GetPredictedTimeseriesResponse
@@ -994,6 +1136,8 @@ var file_api_proto_goTypes = []any{
 	(*CreateSiteRequest)(nil),                // 13: api.CreateSiteRequest
 	(*CreateGspRequest)(nil),                 // 14: api.CreateGspRequest
 	(*CreateLocationResponse)(nil),           // 15: api.CreateLocationResponse
+	(*GetLocationRequest)(nil),               // 16: api.GetLocationRequest
+	(*GetLocationResponse)(nil),              // 17: api.GetLocationResponse
 }
 var file_api_proto_depIdxs = []int32{
 	2,  // 0: api.GetPredictedTimeseriesResponse.yields:type_name -> api.PredictedYield
@@ -1010,16 +1154,20 @@ var file_api_proto_depIdxs = []int32{
 	13, // 11: api.QuartzAPI.CreateWindSite:input_type -> api.CreateSiteRequest
 	14, // 12: api.QuartzAPI.CreateSolarGsp:input_type -> api.CreateGspRequest
 	14, // 13: api.QuartzAPI.CreateWindGsp:input_type -> api.CreateGspRequest
-	1,  // 14: api.QuartzAPI.GetPredictedTimeseries:output_type -> api.GetPredictedTimeseriesResponse
-	5,  // 15: api.QuartzAPI.GetActualTimeseries:output_type -> api.GetActualTimeseriesResponse
-	11, // 16: api.QuartzAPI.GetActualCrossSection:output_type -> api.GetActualCrossSectionResponse
-	8,  // 17: api.QuartzAPI.GetPredictedCrossSection:output_type -> api.GetPredictedCrossSectionResponse
-	15, // 18: api.QuartzAPI.CreateSolarSite:output_type -> api.CreateLocationResponse
-	15, // 19: api.QuartzAPI.CreateWindSite:output_type -> api.CreateLocationResponse
-	15, // 20: api.QuartzAPI.CreateSolarGsp:output_type -> api.CreateLocationResponse
-	15, // 21: api.QuartzAPI.CreateWindGsp:output_type -> api.CreateLocationResponse
-	14, // [14:22] is the sub-list for method output_type
-	6,  // [6:14] is the sub-list for method input_type
+	16, // 14: api.QuartzAPI.GetSolarSite:input_type -> api.GetLocationRequest
+	16, // 15: api.QuartzAPI.GetSolarGsp:input_type -> api.GetLocationRequest
+	1,  // 16: api.QuartzAPI.GetPredictedTimeseries:output_type -> api.GetPredictedTimeseriesResponse
+	5,  // 17: api.QuartzAPI.GetActualTimeseries:output_type -> api.GetActualTimeseriesResponse
+	11, // 18: api.QuartzAPI.GetActualCrossSection:output_type -> api.GetActualCrossSectionResponse
+	8,  // 19: api.QuartzAPI.GetPredictedCrossSection:output_type -> api.GetPredictedCrossSectionResponse
+	15, // 20: api.QuartzAPI.CreateSolarSite:output_type -> api.CreateLocationResponse
+	15, // 21: api.QuartzAPI.CreateWindSite:output_type -> api.CreateLocationResponse
+	15, // 22: api.QuartzAPI.CreateSolarGsp:output_type -> api.CreateLocationResponse
+	15, // 23: api.QuartzAPI.CreateWindGsp:output_type -> api.CreateLocationResponse
+	17, // 24: api.QuartzAPI.GetSolarSite:output_type -> api.GetLocationResponse
+	17, // 25: api.QuartzAPI.GetSolarGsp:output_type -> api.GetLocationResponse
+	16, // [16:26] is the sub-list for method output_type
+	6,  // [6:16] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
 	6,  // [6:6] is the sub-list for extension extendee
 	0,  // [0:6] is the sub-list for field type_name
@@ -1036,7 +1184,7 @@ func file_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

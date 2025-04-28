@@ -8,7 +8,6 @@ import (
 	"embed"
 	"fmt"
 	"math"
-	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -85,6 +84,16 @@ type QuartzAPIPostgresServer struct {
 	pool *pgxpool.Pool
 }
 
+// GetSolarGsp implements models.QuartzAPIServer.
+func (q *QuartzAPIPostgresServer) GetSolarGsp(context.Context, *models.GetLocationRequest) (*models.GetLocationResponse, error) {
+	panic("unimplemented")
+}
+
+// GetSolarSite implements models.QuartzAPIServer.
+func (q *QuartzAPIPostgresServer) GetSolarSite(context.Context, *models.GetLocationRequest) (*models.GetLocationResponse, error) {
+	panic("unimplemented")
+}
+
 // CreateSolarGsp implements proto.QuartzAPIServer.
 func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *models.CreateGspRequest) (*models.CreateLocationResponse, error) {
 	log.Info().Msg("CreateSolarGsp called")
@@ -98,9 +107,9 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 
 	// Create a new location as a GSP
 	params := db.CreateLocationParams{
-		LocationTypeName:   "gsp",
-		LocationName:       req.Name,
-		Geom:   req.Geometry,
+		LocationTypeName: "gsp",
+		LocationName:     req.Name,
+		Geom:             req.Geometry,
 	}
 	locationID, err := querier.CreateLocation(ctx, params)
 	if err != nil {
@@ -144,9 +153,9 @@ func (q *QuartzAPIPostgresServer) CreateSolarSite(ctx context.Context, req *mode
 
 	// Create a new location as a GSP
 	params := db.CreateLocationParams{
-		LocationTypeName:   "site",
-		LocationName:       req.Name,
-		Geom: fmt.Sprintf("POINT(%.8f %.8f)", req.Latitude, req.Longitude),
+		LocationTypeName: "site",
+		LocationName:     req.Name,
+		Geom:             fmt.Sprintf("POINT(%.8f %.8f)", req.Latitude, req.Longitude),
 	}
 	log.Debug().Msgf("CreateSolarSite params: %v", params)
 	locationID, err := querier.CreateLocation(ctx, params)
@@ -191,9 +200,9 @@ func (q *QuartzAPIPostgresServer) CreateWindGsp(ctx context.Context, req *models
 
 	// Create a new location as a GSP
 	params := db.CreateLocationParams{
-		LocationTypeName:   "gsp",
-		LocationName:       req.Name,
-		Geom:   req.Geometry,
+		LocationTypeName: "gsp",
+		LocationName:     req.Name,
+		Geom:             req.Geometry,
 	}
 	locationID, err := querier.CreateLocation(ctx, params)
 	if err != nil {
@@ -237,9 +246,9 @@ func (q *QuartzAPIPostgresServer) CreateWindSite(ctx context.Context, req *model
 
 	// Create a new location as a GSP
 	params := db.CreateLocationParams{
-		LocationTypeName:   "site",
-		LocationName:       req.Name,
-		Geom: fmt.Sprintf("POINT(%f %f)", req.Latitude, req.Longitude),
+		LocationTypeName: "site",
+		LocationName:     req.Name,
+		Geom:             fmt.Sprintf("POINT(%f %f)", req.Latitude, req.Longitude),
 	}
 	locationID, err := querier.CreateLocation(ctx, params)
 	if err != nil {
@@ -314,6 +323,5 @@ func NewQuartzAPIPostgresServer(connString string) *QuartzAPIPostgresServer {
 
 	return &QuartzAPIPostgresServer{pool: pool}
 }
-
 
 var _ models.QuartzAPIServer = (*QuartzAPIPostgresServer)(nil)

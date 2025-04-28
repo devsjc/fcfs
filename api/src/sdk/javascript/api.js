@@ -919,6 +919,140 @@ class CreateLocationResponse$Type extends MessageType {
  * @generated MessageType for protobuf message api.CreateLocationResponse
  */
 export const CreateLocationResponse = new CreateLocationResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetLocationRequest$Type extends MessageType {
+    constructor() {
+        super("api.GetLocationRequest", [
+            { no: 1, name: "location_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value) {
+        const message = globalThis.Object.create((this.messagePrototype));
+        message.locationId = "";
+        if (value !== undefined)
+            reflectionMergePartial(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader, length, options, target) {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string location_id */ 1:
+                    message.locationId = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message, writer, options) {
+        /* string location_id = 1; */
+        if (message.locationId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.locationId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api.GetLocationRequest
+ */
+export const GetLocationRequest = new GetLocationRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetLocationResponse$Type extends MessageType {
+    constructor() {
+        super("api.GetLocationResponse", [
+            { no: 1, name: "location_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "latitude", kind: "scalar", T: 2 /*ScalarType.FLOAT*/ },
+            { no: 4, name: "longitude", kind: "scalar", T: 2 /*ScalarType.FLOAT*/ },
+            { no: 5, name: "capacity_kw", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
+            { no: 6, name: "metadata", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value) {
+        const message = globalThis.Object.create((this.messagePrototype));
+        message.locationId = "";
+        message.name = "";
+        message.latitude = 0;
+        message.longitude = 0;
+        message.capacityKw = 0;
+        message.metadata = "";
+        if (value !== undefined)
+            reflectionMergePartial(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader, length, options, target) {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string location_id */ 1:
+                    message.locationId = reader.string();
+                    break;
+                case /* string name */ 2:
+                    message.name = reader.string();
+                    break;
+                case /* float latitude */ 3:
+                    message.latitude = reader.float();
+                    break;
+                case /* float longitude */ 4:
+                    message.longitude = reader.float();
+                    break;
+                case /* int32 capacity_kw */ 5:
+                    message.capacityKw = reader.int32();
+                    break;
+                case /* string metadata */ 6:
+                    message.metadata = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message, writer, options) {
+        /* string location_id = 1; */
+        if (message.locationId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.locationId);
+        /* string name = 2; */
+        if (message.name !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.name);
+        /* float latitude = 3; */
+        if (message.latitude !== 0)
+            writer.tag(3, WireType.Bit32).float(message.latitude);
+        /* float longitude = 4; */
+        if (message.longitude !== 0)
+            writer.tag(4, WireType.Bit32).float(message.longitude);
+        /* int32 capacity_kw = 5; */
+        if (message.capacityKw !== 0)
+            writer.tag(5, WireType.Varint).int32(message.capacityKw);
+        /* string metadata = 6; */
+        if (message.metadata !== "")
+            writer.tag(6, WireType.LengthDelimited).string(message.metadata);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api.GetLocationResponse
+ */
+export const GetLocationResponse = new GetLocationResponse$Type();
 /**
  * @generated ServiceType for protobuf service api.QuartzAPI
  */
@@ -927,8 +1061,10 @@ export const QuartzAPI = new ServiceType("api.QuartzAPI", [
     { name: "GetActualTimeseries", serverStreaming: true, options: {}, I: GetActualTimeseriesRequest, O: GetActualTimeseriesResponse },
     { name: "GetActualCrossSection", options: {}, I: GetActualCrossSectionRequest, O: GetActualCrossSectionResponse },
     { name: "GetPredictedCrossSection", options: {}, I: GetPredictedCrossSectionRequest, O: GetPredictedCrossSectionResponse },
-    { name: "CreateSolarSite", options: { "google.api.http": { post: "/v1/locations/solar", body: "*" } }, I: CreateSiteRequest, O: CreateLocationResponse },
+    { name: "CreateSolarSite", options: {}, I: CreateSiteRequest, O: CreateLocationResponse },
     { name: "CreateWindSite", options: {}, I: CreateSiteRequest, O: CreateLocationResponse },
     { name: "CreateSolarGsp", options: {}, I: CreateGspRequest, O: CreateLocationResponse },
-    { name: "CreateWindGsp", options: {}, I: CreateGspRequest, O: CreateLocationResponse }
+    { name: "CreateWindGsp", options: {}, I: CreateGspRequest, O: CreateLocationResponse },
+    { name: "GetSolarSite", options: {}, I: GetLocationRequest, O: GetLocationResponse },
+    { name: "GetSolarGsp", options: {}, I: GetLocationRequest, O: GetLocationResponse }
 ]);

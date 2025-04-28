@@ -3,6 +3,8 @@
 // tslint:disable
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
+import type { GetLocationResponse } from "./api";
+import type { GetLocationRequest } from "./api";
 import type { CreateGspRequest } from "./api";
 import type { CreateLocationResponse } from "./api";
 import type { CreateSiteRequest } from "./api";
@@ -22,34 +24,18 @@ import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
  */
 export interface IQuartzAPIClient {
     /**
-     * GetPredictedTimeseriesRequest is a request for a set of predicted yields for one or more locations.
-     * The response is a stream of GetPredictedTimeseriesResponse messages.
-     * each containing the predicted yields for a single location.
-     *
      * @generated from protobuf rpc: GetPredictedTimeseries(api.GetPredictedTimeseriesRequest) returns (stream api.GetPredictedTimeseriesResponse);
      */
     getPredictedTimeseries(input: GetPredictedTimeseriesRequest, options?: RpcOptions): ServerStreamingCall<GetPredictedTimeseriesRequest, GetPredictedTimeseriesResponse>;
     /**
-     * GetActualTimeseriesRequest is a request for a set of actual yields for one or more locations.
-     * The response is a stream of GetActualTimeseriesResponse messages.
-     * each containing the actual yields for a single location.
-     *
      * @generated from protobuf rpc: GetActualTimeseries(api.GetActualTimeseriesRequest) returns (stream api.GetActualTimeseriesResponse);
      */
     getActualTimeseries(input: GetActualTimeseriesRequest, options?: RpcOptions): ServerStreamingCall<GetActualTimeseriesRequest, GetActualTimeseriesResponse>;
     /**
-     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
-     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
-     * actual yields for each location.
-     *
      * @generated from protobuf rpc: GetActualCrossSection(api.GetActualCrossSectionRequest) returns (api.GetActualCrossSectionResponse);
      */
     getActualCrossSection(input: GetActualCrossSectionRequest, options?: RpcOptions): UnaryCall<GetActualCrossSectionRequest, GetActualCrossSectionResponse>;
     /**
-     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
-     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
-     * predicted yields for each location.
-     *
      * @generated from protobuf rpc: GetPredictedCrossSection(api.GetPredictedCrossSectionRequest) returns (api.GetPredictedCrossSectionResponse);
      */
     getPredictedCrossSection(input: GetPredictedCrossSectionRequest, options?: RpcOptions): UnaryCall<GetPredictedCrossSectionRequest, GetPredictedCrossSectionResponse>;
@@ -69,6 +55,14 @@ export interface IQuartzAPIClient {
      * @generated from protobuf rpc: CreateWindGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
      */
     createWindGsp(input: CreateGspRequest, options?: RpcOptions): UnaryCall<CreateGspRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: GetSolarSite(api.GetLocationRequest) returns (api.GetLocationResponse);
+     */
+    getSolarSite(input: GetLocationRequest, options?: RpcOptions): UnaryCall<GetLocationRequest, GetLocationResponse>;
+    /**
+     * @generated from protobuf rpc: GetSolarGsp(api.GetLocationRequest) returns (api.GetLocationResponse);
+     */
+    getSolarGsp(input: GetLocationRequest, options?: RpcOptions): UnaryCall<GetLocationRequest, GetLocationResponse>;
 }
 /**
  * @generated from protobuf service api.QuartzAPI
@@ -80,34 +74,18 @@ export declare class QuartzAPIClient implements IQuartzAPIClient, ServiceInfo {
     options: any;
     constructor(_transport: RpcTransport);
     /**
-     * GetPredictedTimeseriesRequest is a request for a set of predicted yields for one or more locations.
-     * The response is a stream of GetPredictedTimeseriesResponse messages.
-     * each containing the predicted yields for a single location.
-     *
      * @generated from protobuf rpc: GetPredictedTimeseries(api.GetPredictedTimeseriesRequest) returns (stream api.GetPredictedTimeseriesResponse);
      */
     getPredictedTimeseries(input: GetPredictedTimeseriesRequest, options?: RpcOptions): ServerStreamingCall<GetPredictedTimeseriesRequest, GetPredictedTimeseriesResponse>;
     /**
-     * GetActualTimeseriesRequest is a request for a set of actual yields for one or more locations.
-     * The response is a stream of GetActualTimeseriesResponse messages.
-     * each containing the actual yields for a single location.
-     *
      * @generated from protobuf rpc: GetActualTimeseries(api.GetActualTimeseriesRequest) returns (stream api.GetActualTimeseriesResponse);
      */
     getActualTimeseries(input: GetActualTimeseriesRequest, options?: RpcOptions): ServerStreamingCall<GetActualTimeseriesRequest, GetActualTimeseriesResponse>;
     /**
-     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
-     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
-     * actual yields for each location.
-     *
      * @generated from protobuf rpc: GetActualCrossSection(api.GetActualCrossSectionRequest) returns (api.GetActualCrossSectionResponse);
      */
     getActualCrossSection(input: GetActualCrossSectionRequest, options?: RpcOptions): UnaryCall<GetActualCrossSectionRequest, GetActualCrossSectionResponse>;
     /**
-     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
-     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
-     * predicted yields for each location.
-     *
      * @generated from protobuf rpc: GetPredictedCrossSection(api.GetPredictedCrossSectionRequest) returns (api.GetPredictedCrossSectionResponse);
      */
     getPredictedCrossSection(input: GetPredictedCrossSectionRequest, options?: RpcOptions): UnaryCall<GetPredictedCrossSectionRequest, GetPredictedCrossSectionResponse>;
@@ -127,4 +105,12 @@ export declare class QuartzAPIClient implements IQuartzAPIClient, ServiceInfo {
      * @generated from protobuf rpc: CreateWindGsp(api.CreateGspRequest) returns (api.CreateLocationResponse);
      */
     createWindGsp(input: CreateGspRequest, options?: RpcOptions): UnaryCall<CreateGspRequest, CreateLocationResponse>;
+    /**
+     * @generated from protobuf rpc: GetSolarSite(api.GetLocationRequest) returns (api.GetLocationResponse);
+     */
+    getSolarSite(input: GetLocationRequest, options?: RpcOptions): UnaryCall<GetLocationRequest, GetLocationResponse>;
+    /**
+     * @generated from protobuf rpc: GetSolarGsp(api.GetLocationRequest) returns (api.GetLocationResponse);
+     */
+    getSolarGsp(input: GetLocationRequest, options?: RpcOptions): UnaryCall<GetLocationRequest, GetLocationResponse>;
 }

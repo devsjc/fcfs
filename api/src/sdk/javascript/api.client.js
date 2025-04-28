@@ -14,10 +14,6 @@ export class QuartzAPIClient {
         this.options = QuartzAPI.options;
     }
     /**
-     * GetPredictedTimeseriesRequest is a request for a set of predicted yields for one or more locations.
-     * The response is a stream of GetPredictedTimeseriesResponse messages.
-     * each containing the predicted yields for a single location.
-     *
      * @generated from protobuf rpc: GetPredictedTimeseries(api.GetPredictedTimeseriesRequest) returns (stream api.GetPredictedTimeseriesResponse);
      */
     getPredictedTimeseries(input, options) {
@@ -25,10 +21,6 @@ export class QuartzAPIClient {
         return stackIntercept("serverStreaming", this._transport, method, opt, input);
     }
     /**
-     * GetActualTimeseriesRequest is a request for a set of actual yields for one or more locations.
-     * The response is a stream of GetActualTimeseriesResponse messages.
-     * each containing the actual yields for a single location.
-     *
      * @generated from protobuf rpc: GetActualTimeseries(api.GetActualTimeseriesRequest) returns (stream api.GetActualTimeseriesResponse);
      */
     getActualTimeseries(input, options) {
@@ -36,10 +28,6 @@ export class QuartzAPIClient {
         return stackIntercept("serverStreaming", this._transport, method, opt, input);
     }
     /**
-     * GetActualCrossSectionRequest is a request for a specific actual yield for one or more locations
-     * at a single timestamp. The response is a GetActualCrossSectionResponse message containing the
-     * actual yields for each location.
-     *
      * @generated from protobuf rpc: GetActualCrossSection(api.GetActualCrossSectionRequest) returns (api.GetActualCrossSectionResponse);
      */
     getActualCrossSection(input, options) {
@@ -47,10 +35,6 @@ export class QuartzAPIClient {
         return stackIntercept("unary", this._transport, method, opt, input);
     }
     /**
-     * GetPredictedCrossSectionRequest is a request for a specific predicted yield for one or more locations
-     * at a single timestamp. The response is a GetPredictedCrossSectionResponse message containing the
-     * predicted yields for each location.
-     *
      * @generated from protobuf rpc: GetPredictedCrossSection(api.GetPredictedCrossSectionRequest) returns (api.GetPredictedCrossSectionResponse);
      */
     getPredictedCrossSection(input, options) {
@@ -83,6 +67,20 @@ export class QuartzAPIClient {
      */
     createWindGsp(input, options) {
         const method = this.methods[7], opt = this._transport.mergeOptions(options);
+        return stackIntercept("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: GetSolarSite(api.GetLocationRequest) returns (api.GetLocationResponse);
+     */
+    getSolarSite(input, options) {
+        const method = this.methods[8], opt = this._transport.mergeOptions(options);
+        return stackIntercept("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: GetSolarGsp(api.GetLocationRequest) returns (api.GetLocationResponse);
+     */
+    getSolarGsp(input, options) {
+        const method = this.methods[9], opt = this._transport.mergeOptions(options);
         return stackIntercept("unary", this._transport, method, opt, input);
     }
 }
