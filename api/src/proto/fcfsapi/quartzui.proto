@@ -1,24 +1,10 @@
+// Messages for the QuartzUI procedures of the QuartzAPI service.
+
 syntax = "proto3";
 
-option go_package = "github.com/devsjc/fcfs/api/src/internal/models";
+package fcfsapi;
 
-package api;
-
-service QuartzAPI {
-  rpc GetPredictedTimeseries(GetPredictedTimeseriesRequest) returns (stream GetPredictedTimeseriesResponse) {}
-  rpc GetActualTimeseries(GetActualTimeseriesRequest) returns (stream GetActualTimeseriesResponse) {}
-  rpc GetActualCrossSection(GetActualCrossSectionRequest) returns (GetActualCrossSectionResponse) {}
-  rpc GetPredictedCrossSection(GetPredictedCrossSectionRequest) returns (GetPredictedCrossSectionResponse) {}
-
-  rpc CreateSolarSite(CreateSiteRequest) returns (CreateLocationResponse) {}
-  rpc CreateWindSite(CreateSiteRequest) returns (CreateLocationResponse) {}
-  rpc CreateSolarGsp(CreateGspRequest) returns (CreateLocationResponse) {}
-  rpc CreateWindGsp(CreateGspRequest) returns (CreateLocationResponse) {}
-
-  rpc GetSolarSite(GetLocationRequest) returns (GetLocationResponse) {}
-  rpc GetSolarGsp(GetLocationRequest) returns (GetLocationResponse) {}
-
-}
+option go_package = "github.com/devsjc/fcfs/api/src/internal/models/fcfsapi;fcfsapi";
 
 // --- GetPredictedTimeseries --------------------------------------------------------
 message GetPredictedTimeseriesRequest {
@@ -87,38 +73,5 @@ message GetActualCrossSectionResponse {
 message ActualYieldAtLocation {
   string location_id = 1;
   int32 yield_kw = 2;
-}
-
-// --- Locations ----------------------------------------------------------------
-message CreateSiteRequest {
-  string name = 1;
-  float latitude = 2;
-  float longitude = 3;
-  int32 capacity_kw = 4;
-  string metadata = 5;
-}
-
-message CreateGspRequest {
-  string name = 1;
-  string geometry = 2;
-  int32 capacity_mw = 3;
-  string metadata = 4;
-}
-
-message CreateLocationResponse {
-  int64 location_id = 1;
-}
-
-message GetLocationRequest {
-  string location_id = 1;
-}
-
-message GetLocationResponse {
-  string location_id = 1;
-  string name = 2;
-  float latitude = 3;
-  float longitude = 4;
-  int32 capacity_kw = 5;
-  string metadata = 6;
 }
 

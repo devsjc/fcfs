@@ -1,5 +1,5 @@
 // Package postgres defines a client for a PostgreSQL database that conforms to the
-// DatabaseRepository interface in models.go. It uses the sqlc package to generate
+// QuartzAPIServer interface generated py protoc. It uses the sqlc package to generate
 // type-safe Go code from pure SQL queries.
 package postgres
 
@@ -8,13 +8,15 @@ import (
 	"embed"
 	"fmt"
 	"math"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"google.golang.org/grpc"
 
-	models "github.com/devsjc/fcfs/api/src/internal/models"
+	"github.com/devsjc/fcfs/api/src/internal/models/fcfsapi"
 	db "github.com/devsjc/fcfs/api/src/internal/repository/postgres/gen"
 
 	"github.com/rs/zerolog/log"
@@ -84,18 +86,100 @@ type QuartzAPIPostgresServer struct {
 	pool *pgxpool.Pool
 }
 
-// GetSolarGsp implements models.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) GetSolarGsp(context.Context, *models.GetLocationRequest) (*models.GetLocationResponse, error) {
+// CreateSolarForecast implements fcfsapi.QuartzAPIServer.
+func (q *QuartzAPIPostgresServer) CreateSolarForecast(ctx context.Context, req *fcfsapi.CreateForecastRequest) (*fcfsapi.CreateForecastResponse, error) {
+	log.Info().Msg("CreateSolarForecast called")
+	// Establish a transaction with the database
+	tx, err := q.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %v", err)
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	// Get the location source metadata
+
+	// Create a new forecast
+	createForecastParams := db.CreateForecastParams{
+		LocationID:     int32(req.Forecast.LocationId),
+		SourceTypeName: "solar",
+		ModelID:        int32(req.Forecast.ModelId),
+		InitTimeUtc:    pgtype.Timestamp{
+			Time:             req.Forecast.InitTimeUtc.AsTime(),
+			Valid: true,
+		},
+	}
+	forecastID, err := querier.CreateForecast(ctx, createForecastParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create forecast: %v", err)
+	}
+	// Create the forecast data
+	predictedGenerationValues := make([]db.CreatePredictedGenerationValuesParams, len(req.PredictedGenerationValues))
+	for i, value := range req.PredictedGenerationValues {
+		p10 := int16(value.P10)
+		p90 := int16(value.P90)
+		predictedGenerationValues[i] = db.CreatePredictedGenerationValuesParams{
+			HorizonMins: int16(value.HorizonMins),
+			P50:         int16(value.P50),
+			ForecastID:  forecastID,
+			LocationID:  int32(req.Forecast.LocationId),
+			TargetTimeUtc: pgtype.Timestamp{
+				Time: req.Forecast.InitTimeUtc.AsTime().Add(
+					time.Duration(value.HorizonMins) * time.Minute,
+				),
+				Valid: true,
+			},
+			Metadata: []byte(value.Metadata),
+			P10:      &p10,
+			P90:      &p90,
+		}
+	}
+
+	_, err = querier.CreatePredictedGenerationValues(ctx, predictedGenerationValues)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create predicted generation values: %v", err)
+	}
+
+	return &fcfsapi.CreateForecastResponse{}, tx.Commit(ctx)
+}
+
+
+// CreateModel implements fcfsapi.QuartzAPIServer.
+func (q *QuartzAPIPostgresServer) CreateModel(ctx context.Context, req *fcfsapi.CreateModelRequest) (*fcfsapi.CreateModelResponse, error) {
+	log.Info().Msg("CreateModel called")
+	// Establish a transaction with the database
+	tx, err := q.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %v", err)
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	// Create a new model
+	params := db.CreateModelParams{
+		Name:    req.Name,
+		Version: req.Version,
+	}
+	modelID, err := querier.CreateModel(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create model: %v", err)
+	}
+
+	return &fcfsapi.CreateModelResponse{ModelId: int64(modelID)}, tx.Commit(ctx)
+}
+
+// GetSolarGsp implements fcfsapi.QuartzAPIServer.
+func (q *QuartzAPIPostgresServer) GetSolarGsp(context.Context, *fcfsapi.GetLocationRequest) (*fcfsapi.GetLocationResponse, error) {
 	panic("unimplemented")
 }
 
-// GetSolarSite implements models.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) GetSolarSite(context.Context, *models.GetLocationRequest) (*models.GetLocationResponse, error) {
+// GetSolarSite implements fcfsapi.QuartzAPIServer.
+func (q *QuartzAPIPostgresServer) GetSolarSite(context.Context, *fcfsapi.GetLocationRequest) (*fcfsapi.GetLocationResponse, error) {
 	panic("unimplemented")
 }
 
 // CreateSolarGsp implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *models.CreateGspRequest) (*models.CreateLocationResponse, error) {
+func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *fcfsapi.CreateGspRequest) (*fcfsapi.CreateLocationResponse, error) {
 	log.Info().Msg("CreateSolarGsp called")
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
@@ -131,17 +215,11 @@ func (q *QuartzAPIPostgresServer) CreateSolarGsp(ctx context.Context, req *model
 	if err != nil {
 		return nil, fmt.Errorf("failed to create source: %v", err)
 	}
-	err = tx.Commit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %v", err)
-	}
-	return &models.CreateLocationResponse{
-		LocationId: int64(locationID),
-	}, nil
+	return &fcfsapi.CreateLocationResponse{LocationId: int64(locationID)}, tx.Commit(ctx)
 }
 
 // CreateSolarSite implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) CreateSolarSite(ctx context.Context, req *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
+func (q *QuartzAPIPostgresServer) CreateSolarSite(ctx context.Context, req *fcfsapi.CreateSiteRequest) (*fcfsapi.CreateLocationResponse, error) {
 	log.Info().Msg("CreateSolarSite called")
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
@@ -178,17 +256,11 @@ func (q *QuartzAPIPostgresServer) CreateSolarSite(ctx context.Context, req *mode
 	if err != nil {
 		return nil, fmt.Errorf("failed to create source: %v", err)
 	}
-	err = tx.Commit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %v", err)
-	}
-	return &models.CreateLocationResponse{
-		LocationId: int64(locationID),
-	}, nil
+	return &fcfsapi.CreateLocationResponse{LocationId: int64(locationID)}, tx.Commit(ctx)
 }
 
 // CreateWindGsp implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) CreateWindGsp(ctx context.Context, req *models.CreateGspRequest) (*models.CreateLocationResponse, error) {
+func (q *QuartzAPIPostgresServer) CreateWindGsp(ctx context.Context, req *fcfsapi.CreateGspRequest) (*fcfsapi.CreateLocationResponse, error) {
 	log.Info().Msg("CreateSolarGsp called")
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
@@ -228,13 +300,11 @@ func (q *QuartzAPIPostgresServer) CreateWindGsp(ctx context.Context, req *models
 	if err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %v", err)
 	}
-	return &models.CreateLocationResponse{
-		LocationId: int64(locationID),
-	}, nil
+	return &fcfsapi.CreateLocationResponse{LocationId: int64(locationID)}, tx.Commit(ctx)
 }
 
 // CreateWindSite implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) CreateWindSite(ctx context.Context, req *models.CreateSiteRequest) (*models.CreateLocationResponse, error) {
+func (q *QuartzAPIPostgresServer) CreateWindSite(ctx context.Context, req *fcfsapi.CreateSiteRequest) (*fcfsapi.CreateLocationResponse, error) {
 	log.Info().Msg("CreateWindSite called")
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
@@ -270,32 +340,26 @@ func (q *QuartzAPIPostgresServer) CreateWindSite(ctx context.Context, req *model
 	if err != nil {
 		return nil, fmt.Errorf("failed to create source: %v", err)
 	}
-	err = tx.Commit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to commit transaction: %v", err)
-	}
-	return &models.CreateLocationResponse{
-		LocationId: int64(locationID),
-	}, nil
+	return &fcfsapi.CreateLocationResponse{LocationId: int64(locationID)}, tx.Commit(ctx)
 }
 
 // GetActualCrossSection implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) GetActualCrossSection(context.Context, *models.GetActualCrossSectionRequest) (*models.GetActualCrossSectionResponse, error) {
+func (q *QuartzAPIPostgresServer) GetActualCrossSection(context.Context, *fcfsapi.GetActualCrossSectionRequest) (*fcfsapi.GetActualCrossSectionResponse, error) {
 	panic("unimplemented")
 }
 
 // GetActualTimeseries implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) GetActualTimeseries(*models.GetActualTimeseriesRequest, grpc.ServerStreamingServer[models.GetActualTimeseriesResponse]) error {
+func (q *QuartzAPIPostgresServer) GetActualTimeseries(*fcfsapi.GetActualTimeseriesRequest, grpc.ServerStreamingServer[fcfsapi.GetActualTimeseriesResponse]) error {
 	panic("unimplemented")
 }
 
 // GetPredictedCrossSection implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) GetPredictedCrossSection(context.Context, *models.GetPredictedCrossSectionRequest) (*models.GetPredictedCrossSectionResponse, error) {
+func (q *QuartzAPIPostgresServer) GetPredictedCrossSection(context.Context, *fcfsapi.GetPredictedCrossSectionRequest) (*fcfsapi.GetPredictedCrossSectionResponse, error) {
 	panic("unimplemented")
 }
 
 // GetPredictedTimeseries implements proto.QuartzAPIServer.
-func (q *QuartzAPIPostgresServer) GetPredictedTimeseries(*models.GetPredictedTimeseriesRequest, grpc.ServerStreamingServer[models.GetPredictedTimeseriesResponse]) error {
+func (q *QuartzAPIPostgresServer) GetPredictedTimeseries(*fcfsapi.GetPredictedTimeseriesRequest, grpc.ServerStreamingServer[fcfsapi.GetPredictedTimeseriesResponse]) error {
 	panic("unimplemented")
 }
 
@@ -324,4 +388,4 @@ func NewQuartzAPIPostgresServer(connString string) *QuartzAPIPostgresServer {
 	return &QuartzAPIPostgresServer{pool: pool}
 }
 
-var _ models.QuartzAPIServer = (*QuartzAPIPostgresServer)(nil)
+var _ fcfsapi.QuartzAPIServer = (*QuartzAPIPostgresServer)(nil)

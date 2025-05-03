@@ -31,6 +31,15 @@ WHERE location_id = $1;
 /*- Queries for the location_sources table --------------------------- */
 -- Get latest active record via the UPPER(sys_period) IS NULL condition
 
+-- name: GetLocationSourceByType :one
+SELECT (
+    record_id, capacity, capacity_unit_prefix_factor, metadata
+) FROM loc.location_sources
+WHERE 
+    location_id = $1
+    AND source_type_id = (SELECT source_type_id FROM loc.source_types WHERE source_type_name = $2)
+    AND UPPER(sys_period) IS NULL;
+
 -- name: CreateLocationSource :one
 INSERT INTO loc.location_sources (
     location_id, source_type_id, capacity,
