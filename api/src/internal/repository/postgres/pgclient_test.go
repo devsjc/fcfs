@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -282,11 +283,31 @@ func TestCreateSolarGSP(t *testing.T) {
 			shouldError: true,
 		},
 		{
-			name: "Create GSP with invalid geometry",
+			name: "Create GSP with invalid geometry 1 (non-WKT)",
 			gsp: &fcfsapi.CreateGspRequest{
 				Name:       "INVALID GEOMETRY GSP",
 				Metadata:   defaultGsp.Metadata,
 				Geometry:   "INVALID GEOMETRY",
+				CapacityMw: defaultGsp.CapacityMw,
+			},
+			shouldError: true,
+		},
+		{
+			name: "Create a GSP with invalid geometry 2 (3D geometry)",
+			gsp: &fcfsapi.CreateGspRequest{
+				Name:       "3D GEOMETRY GSP",
+				Metadata:   defaultGsp.Metadata,
+				Geometry:   "POLYGON((0.0 51.5 0.0, 1.0 51.5 0.0, 1.0 52.0 0.0, 0.0 52.0 0.0, 0.0 51.5 0.0))",
+				CapacityMw: defaultGsp.CapacityMw,
+			},
+			shouldError: true,
+		},
+		{
+			name: "Create GSP with empty geometry",
+			gsp: &fcfsapi.CreateGspRequest{
+				Name:       "EMPTY GEOMETRY GSP",
+				Metadata:   defaultGsp.Metadata,
+				Geometry:   "",
 				CapacityMw: defaultGsp.CapacityMw,
 			},
 			shouldError: true,
@@ -324,6 +345,35 @@ func TestCreateSolarGSP(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestGetLocationsAsGeoJSON(t *testing.T) {
+	ctx := context.Background()
+	s, cleanup := setupSuite(t, ctx)
+	defer cleanup(t)
+
+	// Create some locations
+	siteIds := make([]int32, 3)
+	for i, _ := range siteIds {
+		resp, err := s.CreateSolarSite(ctx, &fcfsapi.CreateSiteRequest{
+			Name:       fmt.Sprintf("TESTSITE%02d", i),
+			Latitude:   51.5 + float32(i)*0.01,
+			Longitude:  -0.1 + float32(i)*0.01,
+			CapacityKw: int64(1000 + i*100),
+			Metadata:   "",
+		})
+		require.NoError(t, err)
+		siteIds[i] = resp.LocationId
+	}	
+
+	geojson, err := s.GetLocationsAsGeoJSON(ctx, &fcfsapi.GetLocationsAsGeoJSONRequest{
+		LocationIds: siteIds,
+	})
+	require.NoError(t, err)
+	var result map[string]any
+	json.Unmarshal([]byte(geojson.Geojson), &result)
+	features := result["features"].([]any)
+	require.Equal(t, len(siteIds), len(features))
+}
+
 
 
 func TestGetPredictedTimeseries(t *testing.T) {
@@ -350,7 +400,7 @@ func TestGetPredictedTimeseries(t *testing.T) {
 		
 		for j := 0; j < 12 * 48; j++ {
 			predictedGenerationValues[j] = &fcfsapi.PredictedGenerationValue{
-				HorizonMins: int64(j * 5),
+				HorizonMins: int32(j * 5),
 				// Each forecast's P50 will be equal to their hour difference from the 
 				P50:         int32(i),
 				P10:         int32(i),
@@ -406,13 +456,13 @@ func BenchmarkCreateForecast(b *testing.B) {
 	num_predictions := 12 * 48 // 12 predictions per hour, 48 hours
 
 	// Create Sites
-	siteIds := make([]int64, num_sites)
+	siteIds := make([]int32, num_sites)
 	for i := range siteIds {
 		createSiteResponse, err := s.CreateSolarSite(ctx, &fcfsapi.CreateSiteRequest{
 			Name:       fmt.Sprintf("TESTSITE%03d", i),
 			Latitude:   55.5,
 			Longitude:  float32(0.05 * float64(i)),
-			CapacityKw: int32(i),
+			CapacityKw: int64(i),
 			Metadata:   `{"group": "test"}`,
 		})
 		require.NoError(b, err)
@@ -431,7 +481,7 @@ func BenchmarkCreateForecast(b *testing.B) {
 	predictedGenerationValues := make([]*fcfsapi.PredictedGenerationValue, num_predictions)
 	for i := range predictedGenerationValues {
 		predictedGenerationValues[i] = &fcfsapi.PredictedGenerationValue{
-			HorizonMins:       int64(i * 5),
+			HorizonMins:       int32(i * 5),
 			P50:               85,
 			P10:               81,
 			P90:               88,
