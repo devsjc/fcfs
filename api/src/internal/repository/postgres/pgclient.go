@@ -88,6 +88,63 @@ type QuartzAPIPostgresServer struct {
 	pool *pgxpool.Pool
 }
 
+// GetLatestForecast implements fcfsapi.QuartzAPIServer.
+func (q *QuartzAPIPostgresServer) GetLatestForecast(ctx context.Context, req *fcfsapi.GetLatestForecastRequest) (*fcfsapi.GetLatestForecastResponse, error) {
+	l := log.With().Str("method", "GetLatestForecast").Logger()
+	l.Info().Str("params", fmt.Sprintf("%+v", "GetLatestForecastRequest")).Msg("recieved method call")
+
+	// Establish a transaction with the database
+	tx, err := q.pool.Begin(ctx)
+	if err != nil {
+		l.Err(err).Msg("failed to begin transaction")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	dbModel, err := querier.GetDefaultModel(ctx)
+	if err != nil {
+		l.Err(err).Msg("querier.GetDefaultModel()")
+		return nil, status.Error(codes.Internal, "Failed to get default model. Ensure a default model is set.")
+	}
+
+	dbForecast, err := querier.GetLatestForecastForLocationAtHorizon(
+		ctx,
+		db.GetLatestForecastForLocationAtHorizonParams{
+			LocationID:     req.LocationId,
+			SourceTypeName: "solar",
+			ModelID:        dbModel.ModelID,
+			HorizonMins:    0,
+		},
+	)
+	if err != nil {
+		l.Err(err).Msgf("querier.GetLatestForecastForLocationAtHorizon({locationID: %d, sourceTypeName: 'solar', modelID: %d, horizonMins: 0})", req.LocationId, dbModel.ModelID)
+		return nil, status.Errorf(codes.NotFound, "No forecast found for location %d", req.LocationId)
+	}
+
+	l.Debug().Msgf("Found forecast with ID %d for location %d", dbForecast.ForecastID, req.LocationId)
+
+	dbValues, err := querier.GetPredictedGenerationValuesForForecast(ctx, dbForecast.ForecastID)
+	if err != nil {
+		l.Err(err).Msgf("querier.GetPredictedGenerationValuesForForecast({forecastID: %d})", dbForecast.ForecastID)
+		return nil, status.Errorf(codes.NotFound, "No predicted generation values found for forecast %d", dbForecast.ForecastID)
+	}
+	l.Debug().Msgf("Found %d predicted generation values for forecast %d", len(dbValues), dbForecast.ForecastID)
+	predictedYield := make([]*fcfsapi.PredictedYield, len(dbValues))
+	for i, value := range dbValues {
+		predictedYield[i] = &fcfsapi.PredictedYield{
+			YieldKw:       int32(value.P50),
+			TimestampUnix: value.TargetTimeUtc.Time.Unix(),
+			Uncertainty:   &fcfsapi.PredictedYieldUncertainty{},
+		}
+	}
+
+	return &fcfsapi.GetLatestForecastResponse{
+		LocationId: int32(req.LocationId),
+		Yields:     predictedYield,
+	}, tx.Commit(ctx)
+}
+
 func (q *QuartzAPIPostgresServer) GetSolarLocation(ctx context.Context, req *fcfsapi.GetLocationRequest) (*fcfsapi.GetLocationResponse, error) {
 	l := log.With().Str("method", "GetLocation").Logger()
 	l.Info().Str("params", fmt.Sprintf("%+v", req)).Msg("recieved method call")
@@ -201,11 +258,14 @@ func (q *QuartzAPIPostgresServer) CreateSolarForecast(ctx context.Context, req *
 }
 
 func (q *QuartzAPIPostgresServer) CreateModel(ctx context.Context, req *fcfsapi.CreateModelRequest) (*fcfsapi.CreateModelResponse, error) {
-	log.Info().Msg("CreateModel called")
+	l := log.With().Str("method", "CreateModel").Logger()
+	l.Info().Str("params", fmt.Sprintf("%+v", req)).Msg("recieved method call")
+
 	// Establish a transaction with the database
 	tx, err := q.pool.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %v", err)
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
@@ -216,11 +276,16 @@ func (q *QuartzAPIPostgresServer) CreateModel(ctx context.Context, req *fcfsapi.
 		ModelVersion: req.Version,
 	}
 	modelID, err := querier.CreateModel(ctx, params)
-	if req.MakeDefault == true {
-		err = querier.SetDefaultModel(ctx, modelID)
-	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to create model: %v", err)
+		l.Err(err).Msgf("querier.CreateModel({ModelName: %s, ModelVersion: %s})", req.Name, req.Version)
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid model. Ensure name and version are not empty and are lowercase")
+	}
+	if req.MakeDefault {
+		err = querier.SetDefaultModel(ctx, modelID)
+		if err != nil {
+			l.Err(err).Msgf("querier.SetDefaultModel({modelID: %d})", modelID)
+			return nil, status.Errorf(codes.NotFound, "Model with ID %d not found to set as default", modelID)
+		}
 	}
 
 	return &fcfsapi.CreateModelResponse{ModelId: modelID}, tx.Commit(ctx)

@@ -714,6 +714,103 @@ func (x *ActualYieldAtLocation) GetYieldKw() int32 {
 	return 0
 }
 
+// --- GetLatestForecast -------------------------------------------------------------
+type GetLatestForecastRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestForecastRequest) Reset() {
+	*x = GetLatestForecastRequest{}
+	mi := &file_fcfsapi_quartzui_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestForecastRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestForecastRequest) ProtoMessage() {}
+
+func (x *GetLatestForecastRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fcfsapi_quartzui_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestForecastRequest.ProtoReflect.Descriptor instead.
+func (*GetLatestForecastRequest) Descriptor() ([]byte, []int) {
+	return file_fcfsapi_quartzui_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetLatestForecastRequest) GetLocationId() int32 {
+	if x != nil {
+		return x.LocationId
+	}
+	return 0
+}
+
+type GetLatestForecastResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	Yields        []*PredictedYield      `protobuf:"bytes,2,rep,name=yields,proto3" json:"yields,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestForecastResponse) Reset() {
+	*x = GetLatestForecastResponse{}
+	mi := &file_fcfsapi_quartzui_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestForecastResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestForecastResponse) ProtoMessage() {}
+
+func (x *GetLatestForecastResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fcfsapi_quartzui_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestForecastResponse.ProtoReflect.Descriptor instead.
+func (*GetLatestForecastResponse) Descriptor() ([]byte, []int) {
+	return file_fcfsapi_quartzui_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetLatestForecastResponse) GetLocationId() int32 {
+	if x != nil {
+		return x.LocationId
+	}
+	return 0
+}
+
+func (x *GetLatestForecastResponse) GetYields() []*PredictedYield {
+	if x != nil {
+		return x.Yields
+	}
+	return nil
+}
+
 var File_fcfsapi_quartzui_proto protoreflect.FileDescriptor
 
 const file_fcfsapi_quartzui_proto_rawDesc = "" +
@@ -762,7 +859,14 @@ const file_fcfsapi_quartzui_proto_rawDesc = "" +
 	"\x15ActualYieldAtLocation\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x12\x19\n" +
-	"\byield_kw\x18\x02 \x01(\x05R\ayieldKwB@Z>github.com/devsjc/fcfs/api/src/internal/models/fcfsapi;fcfsapib\x06proto3"
+	"\byield_kw\x18\x02 \x01(\x05R\ayieldKw\";\n" +
+	"\x18GetLatestForecastRequest\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\x05R\n" +
+	"locationId\"m\n" +
+	"\x19GetLatestForecastResponse\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\x05R\n" +
+	"locationId\x12/\n" +
+	"\x06yields\x18\x02 \x03(\v2\x17.fcfsapi.PredictedYieldR\x06yieldsB@Z>github.com/devsjc/fcfs/api/src/internal/models/fcfsapi;fcfsapib\x06proto3"
 
 var (
 	file_fcfsapi_quartzui_proto_rawDescOnce sync.Once
@@ -776,7 +880,7 @@ func file_fcfsapi_quartzui_proto_rawDescGZIP() []byte {
 	return file_fcfsapi_quartzui_proto_rawDescData
 }
 
-var file_fcfsapi_quartzui_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_fcfsapi_quartzui_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_fcfsapi_quartzui_proto_goTypes = []any{
 	(*GetPredictedTimeseriesRequest)(nil),    // 0: fcfsapi.GetPredictedTimeseriesRequest
 	(*GetPredictedTimeseriesResponse)(nil),   // 1: fcfsapi.GetPredictedTimeseriesResponse
@@ -791,6 +895,8 @@ var file_fcfsapi_quartzui_proto_goTypes = []any{
 	(*GetActualCrossSectionRequest)(nil),     // 10: fcfsapi.GetActualCrossSectionRequest
 	(*GetActualCrossSectionResponse)(nil),    // 11: fcfsapi.GetActualCrossSectionResponse
 	(*ActualYieldAtLocation)(nil),            // 12: fcfsapi.ActualYieldAtLocation
+	(*GetLatestForecastRequest)(nil),         // 13: fcfsapi.GetLatestForecastRequest
+	(*GetLatestForecastResponse)(nil),        // 14: fcfsapi.GetLatestForecastResponse
 }
 var file_fcfsapi_quartzui_proto_depIdxs = []int32{
 	2,  // 0: fcfsapi.GetPredictedTimeseriesResponse.yields:type_name -> fcfsapi.PredictedYield
@@ -799,11 +905,12 @@ var file_fcfsapi_quartzui_proto_depIdxs = []int32{
 	9,  // 3: fcfsapi.GetPredictedCrossSectionResponse.yields:type_name -> fcfsapi.PredictedYieldAtLocation
 	3,  // 4: fcfsapi.PredictedYieldAtLocation.uncertainty:type_name -> fcfsapi.PredictedYieldUncertainty
 	12, // 5: fcfsapi.GetActualCrossSectionResponse.yields:type_name -> fcfsapi.ActualYieldAtLocation
-	6,  // [6:6] is the sub-list for method output_type
-	6,  // [6:6] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	2,  // 6: fcfsapi.GetLatestForecastResponse.yields:type_name -> fcfsapi.PredictedYield
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_fcfsapi_quartzui_proto_init() }
@@ -817,7 +924,7 @@ func file_fcfsapi_quartzui_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_fcfsapi_quartzui_proto_rawDesc), len(file_fcfsapi_quartzui_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

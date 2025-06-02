@@ -205,6 +205,22 @@ class ActualYieldAtLocation(betterproto.Message):
     yield_kw: int = betterproto.int32_field(2)
 
 
+@dataclass
+class GetLatestForecastRequest(betterproto.Message):
+    """
+    --- GetLatestForecast
+    -------------------------------------------------------------
+    """
+
+    location_id: int = betterproto.int32_field(1)
+
+
+@dataclass
+class GetLatestForecastResponse(betterproto.Message):
+    location_id: int = betterproto.int32_field(1)
+    yields: List["PredictedYield"] = betterproto.message_field(2)
+
+
 class QuartzAPIStub(betterproto.ServiceStub):
     async def get_predicted_timeseries(
         self, *, location_ids: List[int] = [], horizon_mins: int = 0
@@ -233,6 +249,19 @@ class QuartzAPIStub(betterproto.ServiceStub):
         ):
             yield response
 
+    async def get_predicted_cross_section(
+        self, *, location_ids: List[int] = [], timestamp_unix: int = 0
+    ) -> GetPredictedCrossSectionResponse:
+        request = GetPredictedCrossSectionRequest()
+        request.location_ids = location_ids
+        request.timestamp_unix = timestamp_unix
+
+        return await self._unary_unary(
+            "/fcfsapi.QuartzAPI/GetPredictedCrossSection",
+            request,
+            GetPredictedCrossSectionResponse,
+        )
+
     async def get_actual_cross_section(
         self, *, location_ids: List[int] = [], timestamp_unix: int = 0
     ) -> GetActualCrossSectionResponse:
@@ -246,17 +275,29 @@ class QuartzAPIStub(betterproto.ServiceStub):
             GetActualCrossSectionResponse,
         )
 
-    async def get_predicted_cross_section(
-        self, *, location_ids: List[int] = [], timestamp_unix: int = 0
-    ) -> GetPredictedCrossSectionResponse:
-        request = GetPredictedCrossSectionRequest()
-        request.location_ids = location_ids
-        request.timestamp_unix = timestamp_unix
+    async def get_latest_forecast(
+        self, *, location_id: int = 0
+    ) -> GetLatestForecastResponse:
+        request = GetLatestForecastRequest()
+        request.location_id = location_id
 
         return await self._unary_unary(
-            "/fcfsapi.QuartzAPI/GetPredictedCrossSection",
+            "/fcfsapi.QuartzAPI/GetLatestForecast",
             request,
-            GetPredictedCrossSectionResponse,
+            GetLatestForecastResponse,
+        )
+
+    async def get_locations_as_geo_j_s_o_n(
+        self, *, location_ids: List[int] = [], unsimplified: bool = False
+    ) -> GetLocationsAsGeoJSONResponse:
+        request = GetLocationsAsGeoJSONRequest()
+        request.location_ids = location_ids
+        request.unsimplified = unsimplified
+
+        return await self._unary_unary(
+            "/fcfsapi.QuartzAPI/GetLocationsAsGeoJSON",
+            request,
+            GetLocationsAsGeoJSONResponse,
         )
 
     async def create_solar_site(
@@ -309,19 +350,6 @@ class QuartzAPIStub(betterproto.ServiceStub):
             "/fcfsapi.QuartzAPI/GetSolarLocation",
             request,
             GetLocationResponse,
-        )
-
-    async def get_locations_as_geo_j_s_o_n(
-        self, *, location_ids: List[int] = [], unsimplified: bool = False
-    ) -> GetLocationsAsGeoJSONResponse:
-        request = GetLocationsAsGeoJSONRequest()
-        request.location_ids = location_ids
-        request.unsimplified = unsimplified
-
-        return await self._unary_unary(
-            "/fcfsapi.QuartzAPI/GetLocationsAsGeoJSON",
-            request,
-            GetLocationsAsGeoJSONResponse,
         )
 
     async def create_model(

@@ -82,3 +82,13 @@ message ActualYieldAtLocation {
   int32 yield_kw = 2;
 }
 
+// --- GetLatestForecast -------------------------------------------------------------
+message GetLatestForecastRequest {
+  int32 location_id = 1;
+}
+
+message GetLatestForecastResponse {
+  int32 location_id = 1;
+  repeated PredictedYield yields = 2;
+}
+

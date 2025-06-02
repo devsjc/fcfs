@@ -21,12 +21,13 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	QuartzAPI_GetPredictedTimeseries_FullMethodName   = "/fcfsapi.QuartzAPI/GetPredictedTimeseries"
 	QuartzAPI_GetActualTimeseries_FullMethodName      = "/fcfsapi.QuartzAPI/GetActualTimeseries"
-	QuartzAPI_GetActualCrossSection_FullMethodName    = "/fcfsapi.QuartzAPI/GetActualCrossSection"
 	QuartzAPI_GetPredictedCrossSection_FullMethodName = "/fcfsapi.QuartzAPI/GetPredictedCrossSection"
+	QuartzAPI_GetActualCrossSection_FullMethodName    = "/fcfsapi.QuartzAPI/GetActualCrossSection"
+	QuartzAPI_GetLatestForecast_FullMethodName        = "/fcfsapi.QuartzAPI/GetLatestForecast"
+	QuartzAPI_GetLocationsAsGeoJSON_FullMethodName    = "/fcfsapi.QuartzAPI/GetLocationsAsGeoJSON"
 	QuartzAPI_CreateSolarSite_FullMethodName          = "/fcfsapi.QuartzAPI/CreateSolarSite"
 	QuartzAPI_CreateSolarGsp_FullMethodName           = "/fcfsapi.QuartzAPI/CreateSolarGsp"
 	QuartzAPI_GetSolarLocation_FullMethodName         = "/fcfsapi.QuartzAPI/GetSolarLocation"
-	QuartzAPI_GetLocationsAsGeoJSON_FullMethodName    = "/fcfsapi.QuartzAPI/GetLocationsAsGeoJSON"
 	QuartzAPI_CreateModel_FullMethodName              = "/fcfsapi.QuartzAPI/CreateModel"
 	QuartzAPI_CreateSolarForecast_FullMethodName      = "/fcfsapi.QuartzAPI/CreateSolarForecast"
 )
@@ -37,12 +38,13 @@ const (
 type QuartzAPIClient interface {
 	GetPredictedTimeseries(ctx context.Context, in *GetPredictedTimeseriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetPredictedTimeseriesResponse], error)
 	GetActualTimeseries(ctx context.Context, in *GetActualTimeseriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetActualTimeseriesResponse], error)
-	GetActualCrossSection(ctx context.Context, in *GetActualCrossSectionRequest, opts ...grpc.CallOption) (*GetActualCrossSectionResponse, error)
 	GetPredictedCrossSection(ctx context.Context, in *GetPredictedCrossSectionRequest, opts ...grpc.CallOption) (*GetPredictedCrossSectionResponse, error)
+	GetActualCrossSection(ctx context.Context, in *GetActualCrossSectionRequest, opts ...grpc.CallOption) (*GetActualCrossSectionResponse, error)
+	GetLatestForecast(ctx context.Context, in *GetLatestForecastRequest, opts ...grpc.CallOption) (*GetLatestForecastResponse, error)
+	GetLocationsAsGeoJSON(ctx context.Context, in *GetLocationsAsGeoJSONRequest, opts ...grpc.CallOption) (*GetLocationsAsGeoJSONResponse, error)
 	CreateSolarSite(ctx context.Context, in *CreateSiteRequest, opts ...grpc.CallOption) (*CreateLocationResponse, error)
 	CreateSolarGsp(ctx context.Context, in *CreateGspRequest, opts ...grpc.CallOption) (*CreateLocationResponse, error)
 	GetSolarLocation(ctx context.Context, in *GetLocationRequest, opts ...grpc.CallOption) (*GetLocationResponse, error)
-	GetLocationsAsGeoJSON(ctx context.Context, in *GetLocationsAsGeoJSONRequest, opts ...grpc.CallOption) (*GetLocationsAsGeoJSONResponse, error)
 	CreateModel(ctx context.Context, in *CreateModelRequest, opts ...grpc.CallOption) (*CreateModelResponse, error)
 	CreateSolarForecast(ctx context.Context, in *CreateForecastRequest, opts ...grpc.CallOption) (*CreateForecastResponse, error)
 }
@@ -93,6 +95,16 @@ func (c *quartzAPIClient) GetActualTimeseries(ctx context.Context, in *GetActual
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type QuartzAPI_GetActualTimeseriesClient = grpc.ServerStreamingClient[GetActualTimeseriesResponse]
 
+func (c *quartzAPIClient) GetPredictedCrossSection(ctx context.Context, in *GetPredictedCrossSectionRequest, opts ...grpc.CallOption) (*GetPredictedCrossSectionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPredictedCrossSectionResponse)
+	err := c.cc.Invoke(ctx, QuartzAPI_GetPredictedCrossSection_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *quartzAPIClient) GetActualCrossSection(ctx context.Context, in *GetActualCrossSectionRequest, opts ...grpc.CallOption) (*GetActualCrossSectionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetActualCrossSectionResponse)
@@ -103,10 +115,20 @@ func (c *quartzAPIClient) GetActualCrossSection(ctx context.Context, in *GetActu
 	return out, nil
 }
 
-func (c *quartzAPIClient) GetPredictedCrossSection(ctx context.Context, in *GetPredictedCrossSectionRequest, opts ...grpc.CallOption) (*GetPredictedCrossSectionResponse, error) {
+func (c *quartzAPIClient) GetLatestForecast(ctx context.Context, in *GetLatestForecastRequest, opts ...grpc.CallOption) (*GetLatestForecastResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetPredictedCrossSectionResponse)
-	err := c.cc.Invoke(ctx, QuartzAPI_GetPredictedCrossSection_FullMethodName, in, out, cOpts...)
+	out := new(GetLatestForecastResponse)
+	err := c.cc.Invoke(ctx, QuartzAPI_GetLatestForecast_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *quartzAPIClient) GetLocationsAsGeoJSON(ctx context.Context, in *GetLocationsAsGeoJSONRequest, opts ...grpc.CallOption) (*GetLocationsAsGeoJSONResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLocationsAsGeoJSONResponse)
+	err := c.cc.Invoke(ctx, QuartzAPI_GetLocationsAsGeoJSON_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,16 +165,6 @@ func (c *quartzAPIClient) GetSolarLocation(ctx context.Context, in *GetLocationR
 	return out, nil
 }
 
-func (c *quartzAPIClient) GetLocationsAsGeoJSON(ctx context.Context, in *GetLocationsAsGeoJSONRequest, opts ...grpc.CallOption) (*GetLocationsAsGeoJSONResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetLocationsAsGeoJSONResponse)
-	err := c.cc.Invoke(ctx, QuartzAPI_GetLocationsAsGeoJSON_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *quartzAPIClient) CreateModel(ctx context.Context, in *CreateModelRequest, opts ...grpc.CallOption) (*CreateModelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateModelResponse)
@@ -179,12 +191,13 @@ func (c *quartzAPIClient) CreateSolarForecast(ctx context.Context, in *CreateFor
 type QuartzAPIServer interface {
 	GetPredictedTimeseries(*GetPredictedTimeseriesRequest, grpc.ServerStreamingServer[GetPredictedTimeseriesResponse]) error
 	GetActualTimeseries(*GetActualTimeseriesRequest, grpc.ServerStreamingServer[GetActualTimeseriesResponse]) error
-	GetActualCrossSection(context.Context, *GetActualCrossSectionRequest) (*GetActualCrossSectionResponse, error)
 	GetPredictedCrossSection(context.Context, *GetPredictedCrossSectionRequest) (*GetPredictedCrossSectionResponse, error)
+	GetActualCrossSection(context.Context, *GetActualCrossSectionRequest) (*GetActualCrossSectionResponse, error)
+	GetLatestForecast(context.Context, *GetLatestForecastRequest) (*GetLatestForecastResponse, error)
+	GetLocationsAsGeoJSON(context.Context, *GetLocationsAsGeoJSONRequest) (*GetLocationsAsGeoJSONResponse, error)
 	CreateSolarSite(context.Context, *CreateSiteRequest) (*CreateLocationResponse, error)
 	CreateSolarGsp(context.Context, *CreateGspRequest) (*CreateLocationResponse, error)
 	GetSolarLocation(context.Context, *GetLocationRequest) (*GetLocationResponse, error)
-	GetLocationsAsGeoJSON(context.Context, *GetLocationsAsGeoJSONRequest) (*GetLocationsAsGeoJSONResponse, error)
 	CreateModel(context.Context, *CreateModelRequest) (*CreateModelResponse, error)
 	CreateSolarForecast(context.Context, *CreateForecastRequest) (*CreateForecastResponse, error)
 }
@@ -202,11 +215,17 @@ func (UnimplementedQuartzAPIServer) GetPredictedTimeseries(*GetPredictedTimeseri
 func (UnimplementedQuartzAPIServer) GetActualTimeseries(*GetActualTimeseriesRequest, grpc.ServerStreamingServer[GetActualTimeseriesResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method GetActualTimeseries not implemented")
 }
+func (UnimplementedQuartzAPIServer) GetPredictedCrossSection(context.Context, *GetPredictedCrossSectionRequest) (*GetPredictedCrossSectionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPredictedCrossSection not implemented")
+}
 func (UnimplementedQuartzAPIServer) GetActualCrossSection(context.Context, *GetActualCrossSectionRequest) (*GetActualCrossSectionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetActualCrossSection not implemented")
 }
-func (UnimplementedQuartzAPIServer) GetPredictedCrossSection(context.Context, *GetPredictedCrossSectionRequest) (*GetPredictedCrossSectionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPredictedCrossSection not implemented")
+func (UnimplementedQuartzAPIServer) GetLatestForecast(context.Context, *GetLatestForecastRequest) (*GetLatestForecastResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestForecast not implemented")
+}
+func (UnimplementedQuartzAPIServer) GetLocationsAsGeoJSON(context.Context, *GetLocationsAsGeoJSONRequest) (*GetLocationsAsGeoJSONResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLocationsAsGeoJSON not implemented")
 }
 func (UnimplementedQuartzAPIServer) CreateSolarSite(context.Context, *CreateSiteRequest) (*CreateLocationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSolarSite not implemented")
@@ -216,9 +235,6 @@ func (UnimplementedQuartzAPIServer) CreateSolarGsp(context.Context, *CreateGspRe
 }
 func (UnimplementedQuartzAPIServer) GetSolarLocation(context.Context, *GetLocationRequest) (*GetLocationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSolarLocation not implemented")
-}
-func (UnimplementedQuartzAPIServer) GetLocationsAsGeoJSON(context.Context, *GetLocationsAsGeoJSONRequest) (*GetLocationsAsGeoJSONResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLocationsAsGeoJSON not implemented")
 }
 func (UnimplementedQuartzAPIServer) CreateModel(context.Context, *CreateModelRequest) (*CreateModelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateModel not implemented")
@@ -268,6 +284,24 @@ func _QuartzAPI_GetActualTimeseries_Handler(srv interface{}, stream grpc.ServerS
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type QuartzAPI_GetActualTimeseriesServer = grpc.ServerStreamingServer[GetActualTimeseriesResponse]
 
+func _QuartzAPI_GetPredictedCrossSection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPredictedCrossSectionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuartzAPIServer).GetPredictedCrossSection(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QuartzAPI_GetPredictedCrossSection_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuartzAPIServer).GetPredictedCrossSection(ctx, req.(*GetPredictedCrossSectionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _QuartzAPI_GetActualCrossSection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetActualCrossSectionRequest)
 	if err := dec(in); err != nil {
@@ -286,20 +320,38 @@ func _QuartzAPI_GetActualCrossSection_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _QuartzAPI_GetPredictedCrossSection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPredictedCrossSectionRequest)
+func _QuartzAPI_GetLatestForecast_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestForecastRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QuartzAPIServer).GetPredictedCrossSection(ctx, in)
+		return srv.(QuartzAPIServer).GetLatestForecast(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: QuartzAPI_GetPredictedCrossSection_FullMethodName,
+		FullMethod: QuartzAPI_GetLatestForecast_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QuartzAPIServer).GetPredictedCrossSection(ctx, req.(*GetPredictedCrossSectionRequest))
+		return srv.(QuartzAPIServer).GetLatestForecast(ctx, req.(*GetLatestForecastRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuartzAPI_GetLocationsAsGeoJSON_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLocationsAsGeoJSONRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuartzAPIServer).GetLocationsAsGeoJSON(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QuartzAPI_GetLocationsAsGeoJSON_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuartzAPIServer).GetLocationsAsGeoJSON(ctx, req.(*GetLocationsAsGeoJSONRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -358,24 +410,6 @@ func _QuartzAPI_GetSolarLocation_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _QuartzAPI_GetLocationsAsGeoJSON_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLocationsAsGeoJSONRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QuartzAPIServer).GetLocationsAsGeoJSON(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: QuartzAPI_GetLocationsAsGeoJSON_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QuartzAPIServer).GetLocationsAsGeoJSON(ctx, req.(*GetLocationsAsGeoJSONRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _QuartzAPI_CreateModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateModelRequest)
 	if err := dec(in); err != nil {
@@ -420,12 +454,20 @@ var QuartzAPI_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*QuartzAPIServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "GetPredictedCrossSection",
+			Handler:    _QuartzAPI_GetPredictedCrossSection_Handler,
+		},
+		{
 			MethodName: "GetActualCrossSection",
 			Handler:    _QuartzAPI_GetActualCrossSection_Handler,
 		},
 		{
-			MethodName: "GetPredictedCrossSection",
-			Handler:    _QuartzAPI_GetPredictedCrossSection_Handler,
+			MethodName: "GetLatestForecast",
+			Handler:    _QuartzAPI_GetLatestForecast_Handler,
+		},
+		{
+			MethodName: "GetLocationsAsGeoJSON",
+			Handler:    _QuartzAPI_GetLocationsAsGeoJSON_Handler,
 		},
 		{
 			MethodName: "CreateSolarSite",
@@ -438,10 +480,6 @@ var QuartzAPI_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSolarLocation",
 			Handler:    _QuartzAPI_GetSolarLocation_Handler,
-		},
-		{
-			MethodName: "GetLocationsAsGeoJSON",
-			Handler:    _QuartzAPI_GetLocationsAsGeoJSON_Handler,
 		},
 		{
 			MethodName: "CreateModel",

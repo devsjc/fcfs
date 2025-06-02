@@ -387,7 +387,7 @@ const setDefaultModel = `-- name: SetDefaultModel :exec
 UPDATE pred.models AS m SET
     is_default = c.new_is_default
 FROM (VALUES
-    ((SELECT model_id FROM pred.models WHERE is_default = true), false), ($1::integer, true)
+    ((SELECT model_id FROM pred.models WHERE is_default = true), NULL), ($1::integer, true)
 ) AS c(model_id, new_is_default)
 WHERE m.model_id = c.model_id
 `
