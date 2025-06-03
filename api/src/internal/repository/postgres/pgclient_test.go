@@ -12,6 +12,7 @@ import (
 
 	"github.com/devsjc/fcfs/api/src/internal/models/fcfsapi"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc"
@@ -153,8 +154,9 @@ func seedDB(
 	c fcfsapi.QuartzAPIClient,
 	ps *seedDBParams,
 	ctx context.Context,
+	rSeed int64,
 ) (defaultModelId int32, locationIds[] int32, err error) {
-	r := rand.New(rand.NewSource(99))
+	r := rand.New(rand.NewSource(rSeed))
 
 	latestInitTime := time.Now().Truncate(time.Minute)
 
@@ -490,12 +492,14 @@ func TestGetPredictedTimeseries(t *testing.T) {
 
 	latestForecastTime := time.Now().Truncate(time.Minute)
 
+	capacityKw := int64(1200)
+
 	// Create a location, source, and model to use for the forecasts
 	locResp, err := c.CreateSolarSite(t.Context(), &fcfsapi.CreateSiteRequest{
 		Name:       "TEST LOCATION",
 		Latitude:   51.5,
 		Longitude:  -0.1,
-		CapacityKw: 1000,
+		CapacityKw: capacityKw,
 		Metadata:   "",
 	})
 	require.NoError(t, err)
@@ -509,14 +513,13 @@ func TestGetPredictedTimeseries(t *testing.T) {
 	for i := 3; i >= 0; i-- {
 		// Create four forecasts, each half an hour apart, up to the latestForecastTime
 		init_time := latestForecastTime.Add(-1 * time.Duration(i) * 30 * time.Minute)
-		// Give each forecast one hour's worth of predicted generation values, occurring every 5 minutes,
-		// the value of which is equal to the minute difference from the latestForecastTime * 10 + the horizon
+		// Give each forecast one hour's worth of predicted generation values, occurring every 10 minutes
 		predictedGenerationValues := make([]*fcfsapi.PredictedGenerationValue, 60 / 5)
 
 		for j := range predictedGenerationValues {
 			predictedGenerationValues[j] = &fcfsapi.PredictedGenerationValue{
 				HorizonMins: int32(j * 5),
-				P50:         int32(i * 100) + int32(j * 5),
+				P50:         (int32(i * 100) + int32(j * 5)) * 10,
 				P10:         int32(i),
 				P90:         int32(i),
 				Metadata:    "",
@@ -536,8 +539,9 @@ func TestGetPredictedTimeseries(t *testing.T) {
 		require.NotNil(t, resp)
 	}
 
-	// We now have four forecasts. The values of the first forecast are 300, 305, 310, 315, 320...
-	// The second 200, 205, 210 etc...
+	// We now have four forecasts.
+	// The values of the first forecast are 3000, 3050, 3100, 3150, 3200... 3550
+	// The second, 2000, 2050, 2100, 2150, 2200... 2550 and so on
 
 	// For each horizon, get the predicted timeseries
 	tests := []struct{
@@ -546,8 +550,18 @@ func TestGetPredictedTimeseries(t *testing.T) {
 	}{
 		{
 			// For horizon 0, we should get all the values from the latest forecast,
-			// plus the values from the previous forecasts that have the lowest horizonMins
+			// plus the values from the previous forecasts that have the lowest horizon
 			// for each target time.
+			// Since the predicted values are every 5 minutes, and the forecasts are every 30,
+			// we should get 6 values from each forecast, until the latest where we get all 12.
+			// This means the values we are fetching should be
+			// 3000, 3050, 3100, 3150, 3200, 3250 (horizons 0 to 25 minutes from forecast 3)
+			// 2000, 2050, 2100, 2150, 2200, 2250 (horizons 0 to 25 minutes from forecast 2)
+			// (forecast 3's values for the same target time here have a greater horizon so are not wanted)
+			// 1000, 1050, 1100, 1150, 1200, 1250 (horizons 0 to 25 minutes from forecast 1)
+			// 0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550 (horizons 0 to 55 minutes from forecast 0)
+			// For simplicity, the values are written in the tests as the P50 values,
+			// but remember they will be in kilowatts according to capacity in the response.
 			horizonMins: 0,
 			expectedValues: []int32{
 				300, 305, 310, 315, 320, 325,
@@ -596,14 +610,21 @@ func TestGetPredictedTimeseries(t *testing.T) {
 				require.NotNil(t, resp)
 				require.Equal(t, locResp.LocationId, resp.LocationId)
 
+				expectedValues := make([]int32, len(tt.expectedValues))
+				for i, v := range tt.expectedValues {
+					expectedValues[i] = v * 10 * int32(capacityKw) / 30000
+				}
+
 				targetTimes := make([]int64, len(resp.Yields))
 				actualValues := make([]int32, len(resp.Yields))
 				for i, v := range resp.Yields {
 					targetTimes[i] = v.TimestampUnix
+					// Don't forget the values were multiplied by 10 to be significant,
+					// and we need to get them as a function of the capacity in Kw
 					actualValues[i] = int32(v.YieldKw)
 				}
 				require.IsIncreasing(t, targetTimes)
-				require.Equal(t, tt.expectedValues, actualValues)
+				require.Equal(t, expectedValues, actualValues)
 			}
 		})
 	}
@@ -612,31 +633,8 @@ func TestGetPredictedTimeseries(t *testing.T) {
 
 // --- BENCHMARKS ---------------------------------------------------------------------------------
 
-func BenchmarkCreateForecast(b *testing.B) {
-	c := setupClient(b, createPostgresContainer(b))
-
-	tests := []seedDBParams{
-		{
-			NumLocations:                  10,
-			NumModels:                     10,
-			NumDaysOfForecastsPerLocation: 1,
-			PgvResolutionMins:             30,
-			ForecastResolutionMins:        60,
-			ForecastLengthHours:           8,
-		},
-	}
-
-	for _, tt := range tests {
-		b.Run(fmt.Sprintf("NumRows=%d", tt.NumLocations), func(b *testing.B) {
-			for b.Loop() {
-				_, _, err := seedDB(c, &tt, b.Context())
-				require.NoError(b, err)
-			}
-		})
-	}
-}
-
 func BenchmarkGetPredictedTimeseries(b *testing.B) {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	c := setupClient(b, createPostgresContainer(b))
 
 	tests := []seedDBParams{
@@ -657,7 +655,7 @@ func BenchmarkGetPredictedTimeseries(b *testing.B) {
 			ForecastLengthHours:           8,
 		},
 		{
-			NumLocations:                  1000,
+			NumLocations:                  100,
 			NumModels:                     10,
 			NumDaysOfForecastsPerLocation: 7,
 			PgvResolutionMins:             30,
@@ -666,9 +664,9 @@ func BenchmarkGetPredictedTimeseries(b *testing.B) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		b.Run(fmt.Sprintf("NumRows=%d", tt.NumPgvRows()), func(b *testing.B) {
-			_, locationIds, err := seedDB(c, &tt, b.Context())
+			_, locationIds, err := seedDB(c, &tt, b.Context(), int64(i))
 			require.NoError(b, err)
 
 			for b.Loop() {

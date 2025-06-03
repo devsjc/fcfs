@@ -14,11 +14,9 @@ service QuartzAPI {
   // Procedures that will be used by the frontend
 
   rpc GetPredictedTimeseries(GetPredictedTimeseriesRequest) returns (stream GetPredictedTimeseriesResponse) {}
-  rpc GetActualTimeseries(GetActualTimeseriesRequest) returns (stream GetActualTimeseriesResponse) {}
-
+  rpc GetPredictedTimeseriesDeltas(GetPredictedTimeseriesRequest) returns (stream GetPredictedTimeseriesDeltasResponse) {}
   rpc GetPredictedCrossSection(GetPredictedCrossSectionRequest) returns (GetPredictedCrossSectionResponse) {}
-  rpc GetActualCrossSection(GetActualCrossSectionRequest) returns (GetActualCrossSectionResponse) {}
-
+  rpc GetObservedTimeseries(GetObservedTimeseriesRequest) returns (stream GetObservedTimeseriesResponse) {}
   rpc GetLatestForecast(GetLatestForecastRequest) returns (GetLatestForecastResponse) {}
   rpc GetLocationsAsGeoJSON(GetLocationsAsGeoJSONRequest) returns (GetLocationsAsGeoJSONResponse) {}
 
