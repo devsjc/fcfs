@@ -4,8 +4,6 @@ import (
 	"math"
 	"math/rand"
 	"time"
-
-	pb "github.com/devsjc/fcfs/api/src/internal/models/fcfsapi"
 )
 
 // step defines the time step of the timeseries data
