@@ -142,13 +142,13 @@ func (q *QuartzAPIPostgresServer) CreateObservations(ctx context.Context, req *p
 		)
 	}
 
-	params := make([]db.BatchCreateObservationsParams, len(req.Yields))
+	params := make([]db.CreateObservationsAsPercentUsingBatchParams, len(req.Yields))
 	for i, obs := range req.Yields {
 
 		// IMPORTANT - the convertion to floats here has to happen in this way to avoid
 		// integer division truncation errors.
 		yield_pct := (float64(obs.YieldKw) / float64(dbSource.CapacityKw)) * 100
-		params[i] = db.BatchCreateObservationsParams{
+		params[i] = db.CreateObservationsAsPercentUsingBatchParams{
 			LocationID: req.LocationId,
 			ObserverID: dbObserver.ObserverID,
 			ObservationTimeUtc: pgtype.Timestamp{
@@ -160,7 +160,7 @@ func (q *QuartzAPIPostgresServer) CreateObservations(ctx context.Context, req *p
 		}
 	}
 
-	batchResults := querier.BatchCreateObservations(ctx, params)
+	batchResults := querier.CreateObservationsAsPercentUsingBatch(ctx, params)
 	count := 0
 	batchResults.Exec(func(i int, err error) {
 		if err != nil {
@@ -270,8 +270,8 @@ func (q *QuartzAPIPostgresServer) GetPredictedTimeseriesDeltas(ctx context.Conte
 		modelID = dbModel.ModelID
 	}
 
-	dbPredictions, err := querier.GetWindowedPredictedGenerationValuesAtHorizon(
-		ctx, db.GetWindowedPredictedGenerationValuesAtHorizonParams{
+	dbPredictions, err := querier.GetPredictionsTimeseriesAsPercentAtHorizon(
+		ctx, db.GetPredictionsTimeseriesAsPercentAtHorizonParams{
 			LocationID:     req.LocationId,
 			SourceTypeName: energySourceMap[req.EnergySource],
 			ModelID:        modelID,
@@ -297,7 +297,7 @@ func (q *QuartzAPIPostgresServer) GetPredictedTimeseriesDeltas(ctx context.Conte
 			len(dbPredictions), req.LocationId, req.HorizonMins,
 		)
 
-	dbObservations, err := querier.GetObservationsBetween(ctx, db.GetObservationsBetweenParams{
+	dbObservations, err := querier.GetObservationsAsPercentBetween(ctx, db.GetObservationsAsPercentBetweenParams{
 		LocationID:     req.LocationId,
 		SourceTypeName: energySourceMap[req.EnergySource],
 		ObserverName:   req.ObserverName,
@@ -324,7 +324,7 @@ func (q *QuartzAPIPostgresServer) GetPredictedTimeseriesDeltas(ctx context.Conte
 	for _, yield := range dbPredictions {
 
 		// Find the corresponding observation value. Returns -1 if not found.
-		obsIdx := slices.IndexFunc(dbObservations, func(obs db.GetObservationsBetweenRow) bool {
+		obsIdx := slices.IndexFunc(dbObservations, func(obs db.GetObservationsAsPercentBetweenRow) bool {
 			return obs.ObservationTimeUtc.Time.Equal(yield.TargetTimeUtc.Time)
 		})
 		if obsIdx > -1 {
@@ -391,9 +391,9 @@ func (q *QuartzAPIPostgresServer) GetLatestForecast(ctx context.Context, req *pb
 		)
 	}
 
-	dbForecast, err := querier.GetLatestForecastForLocationAtHorizon(
+	dbForecast, err := querier.GetLatestForecastAtHorizon(
 		ctx,
-		db.GetLatestForecastForLocationAtHorizonParams{
+		db.GetLatestForecastAtHorizonParams{
 			LocationID:     req.LocationId,
 			ModelID:        dbModel.ModelID,
 			SourceTypeName: energySourceMap[req.EnergySource],
@@ -412,7 +412,7 @@ func (q *QuartzAPIPostgresServer) GetLatestForecast(ctx context.Context, req *pb
 
 	l.Debug().Msgf("Found forecast with ID %d for location %d", dbForecast.ForecastID, req.LocationId)
 
-	dbValues, err := querier.GetPredictedGenerationValuesForForecast(ctx, dbForecast.ForecastID)
+	dbValues, err := querier.GetPredictionsAsPercentByForecastID(ctx, dbForecast.ForecastID)
 	if err != nil {
 		l.Err(err).Msgf(
 			"querier.GetPredictedGenerationValuesForForecast({forecastID: %d})",
@@ -546,14 +546,14 @@ func (q *QuartzAPIPostgresServer) CreateForecast(ctx context.Context, req *pb.Cr
 	l.Debug().Msgf("Created forecast with ID %d and init time %s", dbForecast.ForecastID, dbForecast.InitTimeUtc.Time)
 
 	// Create the forecast data
-	predictedGenerationValues := make([]db.BatchCreatePredictedGenerationValuesParams, len(req.PredictedGenerationValues))
+	predictedGenerationValues := make([]db.CreatePredictionsAsPercentUsingBatchParams, len(req.PredictedGenerationValues))
 	for i, value := range req.PredictedGenerationValues {
 		metadata := []byte(value.Metadata)
 		if value.Metadata == "" {
 			metadata = nil
 		}
 
-		predictedGenerationValues[i] = db.BatchCreatePredictedGenerationValuesParams{
+		predictedGenerationValues[i] = db.CreatePredictionsAsPercentUsingBatchParams{
 			HorizonMins: value.HorizonMins,
 			P50Pct:      value.P50Pct,
 			ForecastID:  dbForecast.ForecastID,
@@ -569,7 +569,7 @@ func (q *QuartzAPIPostgresServer) CreateForecast(ctx context.Context, req *pb.Cr
 		}
 	}
 
-	batchResults := querier.BatchCreatePredictedGenerationValues(ctx, predictedGenerationValues)
+	batchResults := querier.CreatePredictionsAsPercentUsingBatch(ctx, predictedGenerationValues)
 	count := 0
 	batchResults.Exec(func(i int, err error) {
 		if err != nil {
@@ -824,8 +824,8 @@ func (q *QuartzAPIPostgresServer) GetPredictedTimeseries(req *pb.GetPredictedTim
 			return status.Errorf(codes.Internal, "Couldn't get default model. Ensure a default model is set.")
 		}
 
-		dbValues, err := querier.GetWindowedPredictedGenerationValuesAtHorizon(
-			stream.Context(), db.GetWindowedPredictedGenerationValuesAtHorizonParams{
+		dbValues, err := querier.GetPredictionsTimeseriesAsPercentAtHorizon(
+			stream.Context(), db.GetPredictionsTimeseriesAsPercentAtHorizonParams{
 				LocationID:     locationId,
 				SourceTypeName: energySourceMap[req.EnergySource],
 				ModelID:        dbModel.ModelID,

@@ -11,23 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type CopyCreatePredictedGenerationValuesParams struct {
-	HorizonMins   int16
-	P10           *int16
-	P50           int16
-	P90           *int16
-	ForecastID    int32
-	TargetTimeUtc pgtype.Timestamp
-	Metadata      []byte
-}
-
 const createForecast = `-- name: CreateForecast :one
 
 INSERT INTO pred.forecasts(
     source_type_id, location_id, model_id, init_time_utc
 ) VALUES (
     (SELECT source_type_id FROM loc.source_types WHERE source_type_name = $2), $1, $3, $4
-) RETURNING source_type_id, forecast_id, location_id, model_id, init_time_utc
+) RETURNING forecast_id, init_time_utc, source_type_id, location_id, model_id
 `
 
 type CreateForecastParams struct {
@@ -37,21 +27,29 @@ type CreateForecastParams struct {
 	InitTimeUtc    pgtype.Timestamp
 }
 
+type CreateForecastRow struct {
+	ForecastID   int32
+	InitTimeUtc  pgtype.Timestamp
+	SourceTypeID int16
+	LocationID   int32
+	ModelID      int32
+}
+
 // --- Forecasts ---
-func (q *Queries) CreateForecast(ctx context.Context, arg CreateForecastParams) (PredForecast, error) {
+func (q *Queries) CreateForecast(ctx context.Context, arg CreateForecastParams) (CreateForecastRow, error) {
 	row := q.db.QueryRow(ctx, createForecast,
 		arg.LocationID,
 		arg.SourceTypeName,
 		arg.ModelID,
 		arg.InitTimeUtc,
 	)
-	var i PredForecast
+	var i CreateForecastRow
 	err := row.Scan(
-		&i.SourceTypeID,
 		&i.ForecastID,
+		&i.InitTimeUtc,
+		&i.SourceTypeID,
 		&i.LocationID,
 		&i.ModelID,
-		&i.InitTimeUtc,
 	)
 	return i, err
 }
@@ -74,6 +72,16 @@ func (q *Queries) CreateModel(ctx context.Context, arg CreateModelParams) (int32
 	var model_id int32
 	err := row.Scan(&model_id)
 	return model_id, err
+}
+
+type CreatePredictionsAsInt16UsingCopyParams struct {
+	HorizonMins   int16
+	P10           *int16
+	P50           int16
+	P90           *int16
+	ForecastID    int32
+	TargetTimeUtc pgtype.Timestamp
+	Metadata      []byte
 }
 
 const getDefaultModel = `-- name: GetDefaultModel :one
@@ -103,7 +111,7 @@ func (q *Queries) GetDefaultModel(ctx context.Context) (GetDefaultModelRow, erro
 	return i, err
 }
 
-const getForecastByInitTime = `-- name: GetForecastByInitTime :one
+const getForecast = `-- name: GetForecast :one
 SELECT
     f.forecast_id,
     f.init_time_utc,
@@ -117,14 +125,14 @@ AND f.model_id = $3
 AND f.init_time_utc = $4
 `
 
-type GetForecastByInitTimeParams struct {
+type GetForecastParams struct {
 	LocationID     int32
 	SourceTypeName string
 	ModelID        int32
 	InitTimeUtc    pgtype.Timestamp
 }
 
-type GetForecastByInitTimeRow struct {
+type GetForecastRow struct {
 	ForecastID   int32
 	InitTimeUtc  pgtype.Timestamp
 	SourceTypeID int16
@@ -132,14 +140,14 @@ type GetForecastByInitTimeRow struct {
 	ModelID      int32
 }
 
-func (q *Queries) GetForecastByInitTime(ctx context.Context, arg GetForecastByInitTimeParams) (GetForecastByInitTimeRow, error) {
-	row := q.db.QueryRow(ctx, getForecastByInitTime,
+func (q *Queries) GetForecast(ctx context.Context, arg GetForecastParams) (GetForecastRow, error) {
+	row := q.db.QueryRow(ctx, getForecast,
 		arg.LocationID,
 		arg.SourceTypeName,
 		arg.ModelID,
 		arg.InitTimeUtc,
 	)
-	var i GetForecastByInitTimeRow
+	var i GetForecastRow
 	err := row.Scan(
 		&i.ForecastID,
 		&i.InitTimeUtc,
@@ -150,7 +158,7 @@ func (q *Queries) GetForecastByInitTime(ctx context.Context, arg GetForecastByIn
 	return i, err
 }
 
-const getForecastsByInitTimeTimeComponent = `-- name: GetForecastsByInitTimeTimeComponent :many
+const getForecastsTimeComponent = `-- name: GetForecastsTimeComponent :many
 WITH desired_init_times AS (
     SELECT 
         (d.day::date + make_time(sqlq.arg(hour)::integer, $4::integer, 0))::timestamp AS init_time_utc 
@@ -174,14 +182,14 @@ AND f.source_type_id = (SELECT source_type_id FROM loc.source_types WHERE source
 AND f.model_id = $3
 `
 
-type GetForecastsByInitTimeTimeComponentParams struct {
+type GetForecastsTimeComponentParams struct {
 	LocationID     int32
 	SourceTypeName string
 	ModelID        int32
 	Minute         int32
 }
 
-type GetForecastsByInitTimeTimeComponentRow struct {
+type GetForecastsTimeComponentRow struct {
 	ForecastID   int32
 	InitTimeUtc  pgtype.Timestamp
 	SourceTypeID int16
@@ -189,8 +197,8 @@ type GetForecastsByInitTimeTimeComponentRow struct {
 	ModelID      int32
 }
 
-func (q *Queries) GetForecastsByInitTimeTimeComponent(ctx context.Context, arg GetForecastsByInitTimeTimeComponentParams) ([]GetForecastsByInitTimeTimeComponentRow, error) {
-	rows, err := q.db.Query(ctx, getForecastsByInitTimeTimeComponent,
+func (q *Queries) GetForecastsTimeComponent(ctx context.Context, arg GetForecastsTimeComponentParams) ([]GetForecastsTimeComponentRow, error) {
+	rows, err := q.db.Query(ctx, getForecastsTimeComponent,
 		arg.LocationID,
 		arg.SourceTypeName,
 		arg.ModelID,
@@ -200,9 +208,9 @@ func (q *Queries) GetForecastsByInitTimeTimeComponent(ctx context.Context, arg G
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetForecastsByInitTimeTimeComponentRow{}
+	items := []GetForecastsTimeComponentRow{}
 	for rows.Next() {
-		var i GetForecastsByInitTimeTimeComponentRow
+		var i GetForecastsTimeComponentRow
 		if err := rows.Scan(
 			&i.ForecastID,
 			&i.InitTimeUtc,
@@ -220,7 +228,7 @@ func (q *Queries) GetForecastsByInitTimeTimeComponent(ctx context.Context, arg G
 	return items, nil
 }
 
-const getLatestForecastForLocationAtHorizon = `-- name: GetLatestForecastForLocationAtHorizon :one
+const getLatestForecastAtHorizon = `-- name: GetLatestForecastAtHorizon :one
 SELECT
     f.forecast_id,
     f.init_time_utc,
@@ -236,14 +244,14 @@ ORDER BY f.init_time_utc DESC
 LIMIT 1
 `
 
-type GetLatestForecastForLocationAtHorizonParams struct {
+type GetLatestForecastAtHorizonParams struct {
 	LocationID     int32
 	SourceTypeName string
 	ModelID        int32
 	HorizonMins    int32
 }
 
-type GetLatestForecastForLocationAtHorizonRow struct {
+type GetLatestForecastAtHorizonRow struct {
 	ForecastID   int32
 	InitTimeUtc  pgtype.Timestamp
 	SourceTypeID int16
@@ -251,14 +259,17 @@ type GetLatestForecastForLocationAtHorizonRow struct {
 	ModelID      int32
 }
 
-func (q *Queries) GetLatestForecastForLocationAtHorizon(ctx context.Context, arg GetLatestForecastForLocationAtHorizonParams) (GetLatestForecastForLocationAtHorizonRow, error) {
-	row := q.db.QueryRow(ctx, getLatestForecastForLocationAtHorizon,
+// GetLatestForecastAtHorizon retrieves the latest forecast for a given location,
+// source type, and model. Only forecasts that are older than the specified horizon
+// are considered.
+func (q *Queries) GetLatestForecastAtHorizon(ctx context.Context, arg GetLatestForecastAtHorizonParams) (GetLatestForecastAtHorizonRow, error) {
+	row := q.db.QueryRow(ctx, getLatestForecastAtHorizon,
 		arg.LocationID,
 		arg.SourceTypeName,
 		arg.ModelID,
 		arg.HorizonMins,
 	)
-	var i GetLatestForecastForLocationAtHorizonRow
+	var i GetLatestForecastAtHorizonRow
 	err := row.Scan(
 		&i.ForecastID,
 		&i.InitTimeUtc,
@@ -323,7 +334,57 @@ func (q *Queries) GetModelById(ctx context.Context, modelID int32) (GetModelById
 	return i, err
 }
 
-const getPredictedGenerationValuesForForecast = `-- name: GetPredictedGenerationValuesForForecast :many
+const getPredictionsAsInt16ByForecastID = `-- name: GetPredictionsAsInt16ByForecastID :many
+SELECT
+    horizon_mins,
+    p10 AS p10_int16,
+    p50 AS p50_int16,
+    p90 AS p90_int16,
+    target_time_utc,
+    metadata
+FROM pred.predicted_generation_values
+WHERE forecast_id = $1
+`
+
+type GetPredictionsAsInt16ByForecastIDRow struct {
+	HorizonMins   int16
+	P10Int16      *int16
+	P50Int16      int16
+	P90Int16      *int16
+	TargetTimeUtc pgtype.Timestamp
+	Metadata      []byte
+}
+
+// GetPredictionsAsInt16ByForecastID retrieves predicted generation values as 16-bit integers,
+// with 0 representing 0% and 30000 representing 100% of capacity.
+func (q *Queries) GetPredictionsAsInt16ByForecastID(ctx context.Context, forecastID int32) ([]GetPredictionsAsInt16ByForecastIDRow, error) {
+	rows, err := q.db.Query(ctx, getPredictionsAsInt16ByForecastID, forecastID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPredictionsAsInt16ByForecastIDRow{}
+	for rows.Next() {
+		var i GetPredictionsAsInt16ByForecastIDRow
+		if err := rows.Scan(
+			&i.HorizonMins,
+			&i.P10Int16,
+			&i.P50Int16,
+			&i.P90Int16,
+			&i.TargetTimeUtc,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPredictionsAsPercentByForecastID = `-- name: GetPredictionsAsPercentByForecastID :many
 SELECT
     horizon_mins,
     decode_smallint(p10) AS p10_pct,
@@ -335,7 +396,7 @@ FROM pred.predicted_generation_values
 WHERE forecast_id = $1
 `
 
-type GetPredictedGenerationValuesForForecastRow struct {
+type GetPredictionsAsPercentByForecastIDRow struct {
 	HorizonMins   int16
 	P10Pct        float32
 	P50Pct        float32
@@ -344,15 +405,18 @@ type GetPredictedGenerationValuesForForecastRow struct {
 	Metadata      []byte
 }
 
-func (q *Queries) GetPredictedGenerationValuesForForecast(ctx context.Context, forecastID int32) ([]GetPredictedGenerationValuesForForecastRow, error) {
-	rows, err := q.db.Query(ctx, getPredictedGenerationValuesForForecast, forecastID)
+// GetPredictionsAsPercentByForecastID retrieves predicted generation values as percentages of
+// capacity for a specific forecast ID. This is slower than returning the values directly,
+// so use where readability or understandability is more important than performance.
+func (q *Queries) GetPredictionsAsPercentByForecastID(ctx context.Context, forecastID int32) ([]GetPredictionsAsPercentByForecastIDRow, error) {
+	rows, err := q.db.Query(ctx, getPredictionsAsPercentByForecastID, forecastID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetPredictedGenerationValuesForForecastRow{}
+	items := []GetPredictionsAsPercentByForecastIDRow{}
 	for rows.Next() {
-		var i GetPredictedGenerationValuesForForecastRow
+		var i GetPredictionsAsPercentByForecastIDRow
 		if err := rows.Scan(
 			&i.HorizonMins,
 			&i.P10Pct,
@@ -371,7 +435,7 @@ func (q *Queries) GetPredictedGenerationValuesForForecast(ctx context.Context, f
 	return items, nil
 }
 
-const getWindowedPredictedGenerationValuesAtHorizon = `-- name: GetWindowedPredictedGenerationValuesAtHorizon :many
+const getPredictionsTimeseriesAsPercentAtHorizon = `-- name: GetPredictionsTimeseriesAsPercentAtHorizon :many
 WITH relevant_forecasts AS (
     -- Get all the forecasts that fall within the time window for the given location, source, and model
     SELECT
@@ -419,14 +483,14 @@ WHERE rp.rn = 1
 ORDER BY rp.target_time_utc ASC
 `
 
-type GetWindowedPredictedGenerationValuesAtHorizonParams struct {
+type GetPredictionsTimeseriesAsPercentAtHorizonParams struct {
 	LocationID     int32
 	SourceTypeName string
 	ModelID        int32
 	HorizonMins    int32
 }
 
-type GetWindowedPredictedGenerationValuesAtHorizonRow struct {
+type GetPredictionsTimeseriesAsPercentAtHorizonRow struct {
 	HorizonMins   int16
 	P10Pct        float32
 	P50Pct        float32
@@ -435,8 +499,14 @@ type GetWindowedPredictedGenerationValuesAtHorizonRow struct {
 	Metadata      []byte
 }
 
-func (q *Queries) GetWindowedPredictedGenerationValuesAtHorizon(ctx context.Context, arg GetWindowedPredictedGenerationValuesAtHorizonParams) ([]GetWindowedPredictedGenerationValuesAtHorizonRow, error) {
-	rows, err := q.db.Query(ctx, getWindowedPredictedGenerationValuesAtHorizon,
+// GetPredictionsTimeseriesAsPercentAtHorizon retrieves predicted generation values as a timeseries.
+// Multiple forecasts make up the timeseries, so overlapping predictions are filtered
+// according to the lowest allowable horizon. The timeseries window is 36 hours ago to now.
+// Yields are returned as percentages of capacity.
+// Has been measured to be 10 times slower than returning the values directly, so use in non-critical paths
+// where readability or understandability is more important than performance.
+func (q *Queries) GetPredictionsTimeseriesAsPercentAtHorizon(ctx context.Context, arg GetPredictionsTimeseriesAsPercentAtHorizonParams) ([]GetPredictionsTimeseriesAsPercentAtHorizonRow, error) {
+	rows, err := q.db.Query(ctx, getPredictionsTimeseriesAsPercentAtHorizon,
 		arg.LocationID,
 		arg.SourceTypeName,
 		arg.ModelID,
@@ -446,9 +516,9 @@ func (q *Queries) GetWindowedPredictedGenerationValuesAtHorizon(ctx context.Cont
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetWindowedPredictedGenerationValuesAtHorizonRow{}
+	items := []GetPredictionsTimeseriesAsPercentAtHorizonRow{}
 	for rows.Next() {
-		var i GetWindowedPredictedGenerationValuesAtHorizonRow
+		var i GetPredictionsTimeseriesAsPercentAtHorizonRow
 		if err := rows.Scan(
 			&i.HorizonMins,
 			&i.P10Pct,

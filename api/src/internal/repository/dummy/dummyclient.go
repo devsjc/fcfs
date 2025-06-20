@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/devsjc/fcfs/api/src/internal"
+	pb "github.com/devsjc/fcfs/api/src/internal/models/fcfsapi"
 )
 
 // step defines the time step of the timeseries data
@@ -79,87 +79,3 @@ func basicYieldFunc(timeUnix int64, scaleFactor float64) FakeYield {
 	}
 }
 
-type DummyClient struct{}
-
-func NewDummyClient() *DummyClient {
-	return &DummyClient{}
-}
-
-func (*DummyClient) Migrate() error {
-	// No-op
-	return nil
-}
-
-// GetActualYieldForLocations implements main.DatabaseService.
-func (*DummyClient) GetActualYieldForLocations(locIDs []string, timeUnix int64) ([]internal.DBActualLocalisedYield, error) {
-	yields := make([]internal.DBActualLocalisedYield, len(locIDs))
-	for i, id := range locIDs {
-		yields[i] = internal.DBActualLocalisedYield{
-			LocationID: id,
-			YieldKW:    int(basicYieldFunc(int64(timeUnix), 10000.0).Yield),
-		}
-	}
-	return yields, nil
-}
-
-// GetActualYieldsForLocation implements main.DatabaseService.
-func (*DummyClient) GetActualYieldsForLocation(locID string) ([]internal.DBActualYield, error) {
-	windowStart, windowEnd := getWindow()
-	numSteps := int(math.Floor(float64(windowEnd.Sub(windowStart) / step)))
-
-	yields := make([]internal.DBActualYield, numSteps)
-	for i := range yields {
-		// Note that this is not a mathematical multiplication of two durations,
-		// but rather a conversion of the integer i to a duration type in order
-		// for Go to allow it to be multiplied by step, which is a duration type.
-		ti := windowStart.Add(time.Duration(i) * step)
-		yields[i] = internal.DBActualYield{
-			TimeUnix: ti.Unix(),
-			YieldKW:  int(basicYieldFunc(ti.Unix(), 10000.0).Yield),
-		}
-	}
-
-	return yields, nil
-
-}
-
-// GetPredictedYieldForLocations implements main.DatabaseService.
-func (*DummyClient) GetPredictedYieldForLocations(locIDs []string, timeUnix int64) ([]internal.DBPredictedLocalisedYield, error) {
-	yields := make([]internal.DBPredictedLocalisedYield, len(locIDs))
-	for i, id := range locIDs {
-		yield := basicYieldFunc(int64(timeUnix), 10000.0)
-		yields[i] = internal.DBPredictedLocalisedYield{
-			LocationID: id,
-			YieldKW:    int(yield.Yield),
-			ErrLow:     int(yield.ErrLow),
-			ErrHigh:    int(yield.ErrHigh),
-		}
-	}
-
-	return yields, nil
-}
-
-func (*DummyClient) GetPredictedYieldsForLocation(locID string) ([]internal.DBPredictedYield, error) {
-	windowStart, windowEnd := getWindow()
-	numSteps := int(math.Floor(float64(windowEnd.Sub(windowStart) / step)))
-
-	yields := make([]internal.DBPredictedYield, int(numSteps))
-	for i := range yields {
-		// Note that this is not a mathematical multiplication of two durations,
-		// but rather a conversion of the integer i to a duration type in order
-		// for Go to allow it to be multiplied by step, which is a duration type.
-		ti := windowStart.Add(time.Duration(i) * step)
-		yield := basicYieldFunc(ti.Unix(), 10000.0)
-		yields[i] = internal.DBPredictedYield{
-			TimeUnix: ti.Unix(),
-			YieldKW:  int(yield.Yield),
-			ErrLow:   int(yield.ErrLow),
-			ErrHigh:  int(yield.ErrHigh),
-		}
-	}
-
-	return yields, nil
-}
-
-// Compile check to ensure that the DummyClient implements the DatabaseService interface.
-var _ internal.DatabaseRepository = &DummyClient{}
