@@ -60,6 +60,10 @@ type Querier interface {
 	// where readability or understandability is more important than performance.
 	GetObservationsAsPercentBetween(ctx context.Context, arg GetObservationsAsPercentBetweenParams) ([]GetObservationsAsPercentBetweenRow, error)
 	GetObserverByName(ctx context.Context, observerName string) (ObsObserver, error)
+	// GetPredictedTimeseriesDeltasAtHorizon retrieves predicted generation values as a timeseries like
+	// GetPredictionsTimeseriesAsPercentAtHorizon, but also fetches observed values for the timeseries
+	// time steps, along with the resultant deltas between the predicted and observed values.
+	GetPredictionDeltasTimeseriesAtHorizon(ctx context.Context, arg GetPredictionDeltasTimeseriesAtHorizonParams) ([]GetPredictionDeltasTimeseriesAtHorizonRow, error)
 	// GetPredictionsAsInt16ByForecastID retrieves predicted generation values as 16-bit integers,
 	// with 0 representing 0% and 30000 representing 100% of capacity.
 	GetPredictionsAsInt16ByForecastID(ctx context.Context, forecastID int32) ([]GetPredictionsAsInt16ByForecastIDRow, error)

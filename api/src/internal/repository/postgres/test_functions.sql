@@ -1,3 +1,93 @@
+-- Function to seed values into the database
+CREATE OR REPLACE FUNCTION seed_db(
+    num_locations INTEGER DEFAULT 1000,
+    gv_resolution_mins INTEGER DEFAULT 30,
+    forecast_resolution_mins INTEGER DEFAULT 30,
+    pivot_time TIMESTAMP DEFAULT DATE_TRUNC('minute', NOW())
+)
+RETURNS INTEGER AS $$
+DECLARE
+    loc_id INTEGER;
+    result RECORD;
+BEGIN
+    -- Insert models
+    INSERT INTO pred.models (model_name, model_version, is_default)
+    SELECT
+        'test_model',
+        'v' || i,
+        CASE WHEN i = 10 THEN TRUE ELSE NULL END
+    FROM generate_series(1, 10) AS i;
+
+    -- Insert locations
+    INSERT INTO loc.locations
+      (location_name, location_type_id, geom)
+    SELECT
+        'LOCATION-' || i AS location_name,
+        (SELECT location_type_id FROM loc.location_types WHERE location_type_name = 'site'),
+        ST_SetSRID(ST_MakePoint(random() * 360 - 180, random() * 180 - 90), 4326)
+    FROM generate_series(1, num_locations) as i;
+    RAISE NOTICE 'Inserted %s locations', (SELECT COUNT(*) FROM loc.locations);
+
+    -- Insert observers
+    INSERT INTO obs.observers (observer_name) VALUES ('test_observer');
+
+    FOR loc_id IN SELECT location_id FROM loc.locations LOOP
+        -- Insert location sources, default to solar with a capacity of 1000 kW
+        INSERT INTO loc.location_sources
+            (source_type_id, capacity, capacity_unit_prefix_factor, location_id, metadata)
+        VALUES (
+            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'solar'),
+            1000::SMALLINT,
+            3,
+            loc_id,
+            jsonb_build_object('source', 'test'));
+
+        -- Insert forecasts for each location
+        INSERT INTO pred.forecasts
+            (source_type_id, location_id, model_id, init_time_utc)
+        SELECT
+            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'solar'),
+            loc_id,
+            (SELECT model_id FROM pred.models WHERE is_default = TRUE),
+            pivot_time - (i || ' minutes')::interval
+        FROM generate_series(1, 10080, 30) AS i; -- 30 minutely forecast resolution, 7 days of forecasts
+        
+        -- Insert observed generation values covering all the forecast period
+        INSERT INTO obs.observed_generation_values
+            (value, source_type_id, observer_id, location_id, observation_time_utc)
+        SELECT
+            CAST (random() * 30000 AS SMALLINT),
+            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'solar'),
+            (SELECT observer_id FROM obs.observers WHERE observer_name = 'test_observer'),
+            loc_id,
+            pivot_time - (i || ' minutes')::interval
+        FROM generate_series(1, 10080, 5) AS i; -- 5 minute ogv resolution
+
+    END LOOP;
+
+    -- Insert predicted generation values for each forecast
+    FOR result IN SELECT forecast_id, init_time_utc FROM pred.forecasts LOOP
+        WITH p50 as (
+            SELECT
+                CAST (random() * 29000 AS SMALLINT) + 1000::SMALLINT AS value
+        )
+        INSERT INTO pred.predicted_generation_values
+            (horizon_mins, p10, p50, p90, forecast_id, target_time_utc, metadata)
+        SELECT
+            i,
+            p50.value - 1000::SMALLINT,
+            p50.value,
+            p50.value + 1000::SMALLINT,
+            result.forecast_id,
+            result.init_time_utc + (i || ' minutes')::interval,
+            jsonb_build_object('source', 'test')
+        FROM generate_series(0, 420, 5) AS i JOIN p50 ON TRUE; -- 5 minute pgv resolution
+    END LOOP;
+
+    RETURN(SELECT COUNT(*) from pred.predicted_generation_values);
+END;
+$$ LANGUAGE plpgsql;
+
 INSERT INTO loc.locations
   (location_id, location_name, location_type_id, geom)
 OVERRIDING SYSTEM VALUE VALUES

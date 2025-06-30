@@ -218,3 +218,69 @@ FROM rankedPredictions rp
 WHERE rp.rn = 1
 ORDER BY rp.target_time_utc ASC;
 
+
+-- name: GetPredictionDeltasTimeseriesAtHorizon :many
+-- GetPredictedTimeseriesDeltasAtHorizon retrieves predicted generation values as a timeseries like
+-- GetPredictionsTimeseriesAsPercentAtHorizon, but also fetches observed values for the timeseries
+-- time steps, along with the resultant deltas between the predicted and observed values.
+WITH relevant_forecasts AS (
+    SELECT
+        f.forecast_id
+    FROM pred.forecasts f
+    WHERE f.location_id = $1
+    AND f.source_type_id = (SELECT st.source_type_id FROM loc.source_types st WHERE st.source_type_name = $2)
+    AND f.model_id = $3
+    AND f.init_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(
+        mins => sqlc.arg(horizon_mins)::integer, hours => 36
+    )
+),
+filteredPredictions AS (
+    SELECT
+        pv.horizon_mins,
+        pv.p10,
+        pv.p50,
+        pv.p90,
+        pv.target_time_utc,
+        pv.metadata
+    FROM pred.predicted_generation_values pv
+    INNER JOIN relevant_forecasts rf ON pv.forecast_id = rf.forecast_id
+    WHERE pv.target_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(mins => sqlc.arg(horizon_mins)::integer, hours => 36)
+    AND pv.horizon_mins >= sqlc.arg(horizon_mins)::integer
+),
+rankedPredictions AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (PARTITION BY target_time_utc ORDER BY horizon_mins ASC) AS rn
+    FROM filteredPredictions
+),
+chosenPredictions AS (
+    SELECT
+        rp.horizon_mins,
+        p10,
+        p50,
+        p90,
+        rp.target_time_utc,
+        rp.metadata
+    FROM rankedPredictions rp
+    WHERE rp.rn = 1
+    ORDER BY rp.target_time_utc ASC
+),
+relevantObservations AS (
+    SELECT
+        ogv.observation_time_utc,
+        ogv.value
+    FROM obs.observed_generation_values ogv
+    WHERE ogv.location_id = $1
+    AND ogv.source_type_id = (SELECT st.source_type_id FROM loc.source_types st WHERE st.source_type_name = $2)
+    AND ogv.observer_id = (SELECT observer_id FROM obs.observers WHERE observer_name = $4)
+    AND ogv.observation_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(mins => sqlc.arg(horizon_mins)::integer, hours => 36)
+)
+SELECT
+    cp.horizon_mins,
+    cp.p50 AS p50_int16,
+    cp.target_time_utc AS time_utc,
+    ro.value AS observed_value_int16,
+    cp.p50 - ro.value AS delta_int16
+FROM relevantObservations ro
+INNER JOIN chosenPredictions cp ON ro.observation_time_utc = cp.target_time_utc;
+

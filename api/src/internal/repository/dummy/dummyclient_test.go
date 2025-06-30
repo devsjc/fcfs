@@ -92,6 +92,7 @@ func TestPlots(t *testing.T) {
 	sunrisePlot := plot.New()
 	sunrisePlot.Title.Text = "Sunrise Time in MST over a Year"
 	sunrisePlot.Add(plotter.NewGrid())
+	sunrisePlot.X.Label.Text = "Day of Year"
 	for i, sd := range yearSds {
 		yearPts[i].Y = float64(sd.sunriseTimeMst.Hour()) + float64(sd.sunriseTimeMst.Minute())/60.0
 	}
@@ -100,11 +101,13 @@ func TestPlots(t *testing.T) {
 	sunrisePlot.Add(line)
 
 	// Plot the Extraterrestrial Irradiance over a day
+	// Do this for the solstices and summer
 	extraterrestrialPlot := plot.New()
-	extraterrestrialPlot.Title.Text = "Extraterrestrial Irradiation over a Day"
+	extraterrestrialPlot.Title.Text = "Extraterrestrial Irradiation over a day"
 	extraterrestrialPlot.Add(plotter.NewGrid())
+	extraterrestrialPlot.X.Label.Text = "Time of Day (hours)"
 	for i, sd := range daySds {
-		dayPts[i].Y = sd.extraterrestrialIrradiation
+		dayPts[i].Y = sd.extraterrestrialIrradiance
 	}
 	line, err = plotter.NewLine(dayPts)
 	require.NoError(t, err)

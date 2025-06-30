@@ -8,7 +8,6 @@ import (
 	"embed"
 	"fmt"
 	"math"
-	"slices"
 	"strings"
 	"time"
 
@@ -270,84 +269,42 @@ func (q *QuartzAPIPostgresServer) GetPredictedTimeseriesDeltas(ctx context.Conte
 		modelID = dbModel.ModelID
 	}
 
-	dbPredictions, err := querier.GetPredictionsTimeseriesAsPercentAtHorizon(
-		ctx, db.GetPredictionsTimeseriesAsPercentAtHorizonParams{
+	dbDeltas, err := querier.GetPredictionDeltasTimeseriesAtHorizon(
+		ctx, db.GetPredictionDeltasTimeseriesAtHorizonParams{
 			LocationID:     req.LocationId,
 			SourceTypeName: energySourceMap[req.EnergySource],
 			ModelID:        modelID,
 			HorizonMins:    req.HorizonMins,
+			ObserverName:   req.ObserverName,
 		},
 	)
 	if err != nil {
 		l.Err(err).Msgf(
-			"querier.GetWindowedPredictedGenerationValuesAtHorizon({"+
-				"locationID: %d, sourceTypeName: '%s', modelID: %d, horizonMins: %d"+
-				"})",
-			req.LocationId, energySourceMap[req.EnergySource], modelID, req.HorizonMins,
+			"querier.GetPredictionDeltasTimeseriesAtHorizon({"+
+				"locationID: %d, sourceTypeName: '%s', modelID: %d, horizonMins: %d, observerName: '%s'"+
+			"})",
+			req.LocationId, energySourceMap[req.EnergySource], modelID, req.HorizonMins, req.ObserverName,
 		)
-		return nil, status.Errorf(codes.NotFound, "No values found for location %d with horizon %d minutes",
-			req.LocationId, req.HorizonMins,
+		return nil, status.Errorf(
+			codes.NotFound,
+			"No deltas found for location %d and source type '%s' against observer '%s' with horizon %d minutes",
+			req.LocationId, energySourceMap[req.EnergySource], req.ObserverName, req.HorizonMins,
 		)
 	}
 	l.Debug().
-		Time("start", dbPredictions[0].TargetTimeUtc.Time).
-		Time("end", dbPredictions[len(dbPredictions)-1].TargetTimeUtc.Time).
+		Time("start", dbDeltas[0].TimeUtc.Time).
+		Time("end", dbDeltas[len(dbDeltas)-1].TimeUtc.Time).
 		Msgf(
 			"Found %d predicted values for location %d with horizon %d minutes",
-			len(dbPredictions), req.LocationId, req.HorizonMins,
+			len(dbDeltas), req.LocationId, req.HorizonMins,
 		)
 
-	dbObservations, err := querier.GetObservationsAsPercentBetween(ctx, db.GetObservationsAsPercentBetweenParams{
-		LocationID:     req.LocationId,
-		SourceTypeName: energySourceMap[req.EnergySource],
-		ObserverName:   req.ObserverName,
-		StartTimeUtc:   dbPredictions[0].TargetTimeUtc,
-		EndTimeUtc:     dbPredictions[len(dbPredictions)-1].TargetTimeUtc,
-	})
-	if err != nil {
-		l.Err(err).Msgf(
-			"querier.ListObservations({"+
-			"locationID: %d, sourceTypeName: '%s', observerName: '%s', "+
-			"startTimeUtc: %s, endTimeUtc: %s"+
-			"})",
-			req.LocationId, energySourceMap[req.EnergySource], req.ObserverName,
-			dbPredictions[0].TargetTimeUtc.Time, dbPredictions[len(dbPredictions)-1].TargetTimeUtc.Time,
-		)
-		return nil, status.Errorf(
-			codes.NotFound,
-			"No observations found for location %d with source type '%s' and observer '%s' in the specified time range",
-			req.LocationId, energySourceMap[req.EnergySource], req.ObserverName,
-		)
-	}
-
-	deltas := []*pb.YieldDelta{}
-	for _, yield := range dbPredictions {
-
-		// Find the corresponding observation value. Returns -1 if not found.
-		obsIdx := slices.IndexFunc(dbObservations, func(obs db.GetObservationsAsPercentBetweenRow) bool {
-			return obs.ObservationTimeUtc.Time.Equal(yield.TargetTimeUtc.Time)
-		})
-		if obsIdx > -1 {
-			deltas = append(deltas, &pb.YieldDelta{
-				DeltaKw:       int64(yield.P50Pct - dbObservations[obsIdx].YieldPct) * dbSource.CapacityKw / 100,
-				TimestampUnix: yield.TargetTimeUtc.Time.Unix(),
-			})
-		} else {
-			log.Warn().Msgf(
-				"No observation found for predicted value at %s for location %d and source type '%s'",
-				yield.TargetTimeUtc.Time, req.LocationId, energySourceMap[req.EnergySource],
-			)
+	deltas := make([]*pb.YieldDelta, len(dbDeltas))
+	for i, row := range dbDeltas {
+		deltas[i] = &pb.YieldDelta{
+			DeltaKw:       int64(float64(row.DeltaInt16) * float64(dbSource.CapacityKw) / 30000.0),
+			TimestampUnix: row.TimeUtc.Time.Unix(),
 		}
-	}
-	if len(deltas) == 0 {
-		l.Err(fmt.Errorf("no observations correspond to the predicted value timestamps for location %d and source type '%s'",
-			req.LocationId, energySourceMap[req.EnergySource],
-		)).Msg("No deltas found")
-		return nil, status.Errorf(
-			codes.NotFound,
-			"No observations correspond to the predicted value timestamps for location %d and source type '%s'",
-			req.LocationId, energySourceMap[req.EnergySource],
-		)
 	}
 
 	return &pb.GetPredictedTimeseriesDeltasResponse{
