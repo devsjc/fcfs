@@ -36,6 +36,13 @@ gen-proto-python:
 		-I=src/proto \
 		--python_betterproto_out=src/sdk/python
 
+gen-proto-typescript:
+	mkdir -p src/sdk/typescript
+	protoc \
+		src/proto/fcfsapi/*.proto \
+		-I=src/proto \
+		--ts_out=src/sdk/typescript \
+
 gen-proto-openapi:
 	protoc \
 		src/proto/fcfsapi/*.proto \
