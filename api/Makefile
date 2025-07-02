@@ -1,4 +1,10 @@
-.PHONY: run-docker-db run-api gen-reqs
+.PHONY: test bench gen gen-reqs gen-go gen-ext gen-db-go gen-proto-go gen-proto-python gen-proto-openapi run-db run-api run-grpc-client
+
+test:
+	go run gotest.tools/gotestsum@latest --format=testname --junitfile unit-tests.xml
+
+bench:
+	go test ./...  -bench=BenchmarkPostgresClient -run=BenchmarkPostgresClient -timeout=30m
 
 gen-reqs:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -40,8 +46,12 @@ gen-proto-openapi:
 run-db:
 	docker build -f src/internal/repository/postgres/infra/Containerfile src/internal/repository/postgres/infra -t fcfs-pgdb:local && docker run --rm -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p "5400:5432" fcfs-pgdb:local
 
+migrate-db:
+	goose postgres "postgresql://postgres:postgres@localhost:5400/postgres" -dir ./src/internal/repository/postgres/sql/migrations up
+
 run-api:
 	DATABASE_URL=postgres://postgres:postgres@localhost:5400/postgres DATABASE_TYPE=postgres go run src/cmd/main.go
 
 run-grpc-client:
 	grpcui -plaintext localhost:50051
+

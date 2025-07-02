@@ -49,6 +49,7 @@ type Querier interface {
 	GetLocationGeoJSONByIds(ctx context.Context, arg GetLocationGeoJSONByIdsParams) ([]byte, error)
 	// Get latest active record via the UPPER(sys_period) IS NULL condition
 	GetLocationSource(ctx context.Context, arg GetLocationSourceParams) (GetLocationSourceRow, error)
+	GetLocationSources(ctx context.Context, arg GetLocationSourcesParams) ([]GetLocationSourcesRow, error)
 	GetModelById(ctx context.Context, modelID int32) (GetModelByIdRow, error)
 	// GetObservationsAsInt16 gets observations between two timestamps
 	// and returns their values as 16-bit integers, with 0 representing 0%
@@ -59,14 +60,13 @@ type Querier interface {
 	// Has been measured to be 10 times slower than returning the values directly, so use in non-critical paths
 	// where readability or understandability is more important than performance.
 	GetObservationsAsPercentBetween(ctx context.Context, arg GetObservationsAsPercentBetweenParams) ([]GetObservationsAsPercentBetweenRow, error)
-	GetObserverByName(ctx context.Context, observerName string) (ObsObserver, error)
-	// GetPredictedTimeseriesDeltasAtHorizon retrieves predicted generation values as a timeseries like
-	// GetPredictionsTimeseriesAsPercentAtHorizon, but also fetches observed values for the timeseries
-	// time steps, along with the resultant deltas between the predicted and observed values.
-	GetPredictionDeltasTimeseriesAtHorizon(ctx context.Context, arg GetPredictionDeltasTimeseriesAtHorizonParams) ([]GetPredictionDeltasTimeseriesAtHorizonRow, error)
+	GetObserverByName(ctx context.Context, observerName string) (GetObserverByNameRow, error)
 	// GetPredictionsAsInt16ByForecastID retrieves predicted generation values as 16-bit integers,
 	// with 0 representing 0% and 30000 representing 100% of capacity.
 	GetPredictionsAsInt16ByForecastID(ctx context.Context, forecastID int32) ([]GetPredictionsAsInt16ByForecastIDRow, error)
+	// GetPredictionsAsPercentAtTimeAndHorizonForLocations retrieves predicted generation values as percentages
+	// of capacity for a specific time and horizon. This is useful for comparing predictions across multiple locations.
+	GetPredictionsAsPercentAtTimeAndHorizonForLocations(ctx context.Context, arg GetPredictionsAsPercentAtTimeAndHorizonForLocationsParams) ([]GetPredictionsAsPercentAtTimeAndHorizonForLocationsRow, error)
 	// GetPredictionsAsPercentByForecastID retrieves predicted generation values as percentages of
 	// capacity for a specific forecast ID. This is slower than returning the values directly,
 	// so use where readability or understandability is more important than performance.
@@ -85,7 +85,7 @@ type Querier interface {
 	ListLocationSourceHistory(ctx context.Context, arg ListLocationSourceHistoryParams) ([]ListLocationSourceHistoryRow, error)
 	ListLocationsByType(ctx context.Context, locationTypeName string) ([]LocLocation, error)
 	ListModels(ctx context.Context) ([]ListModelsRow, error)
-	ListObservers(ctx context.Context) ([]ObsObserver, error)
+	ListObservers(ctx context.Context) ([]ListObserversRow, error)
 	//- Queries for the locations table ------------------------------
 	ListSourceTypes(ctx context.Context) ([]LocSourceType, error)
 	SetDefaultModel(ctx context.Context, modelID int32) error

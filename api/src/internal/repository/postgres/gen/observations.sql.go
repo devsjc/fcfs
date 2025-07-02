@@ -164,9 +164,14 @@ FROM obs.observers
 WHERE observer_name = $1
 `
 
-func (q *Queries) GetObserverByName(ctx context.Context, observerName string) (ObsObserver, error) {
+type GetObserverByNameRow struct {
+	ObserverID   int32
+	ObserverName string
+}
+
+func (q *Queries) GetObserverByName(ctx context.Context, observerName string) (GetObserverByNameRow, error) {
 	row := q.db.QueryRow(ctx, getObserverByName, observerName)
-	var i ObsObserver
+	var i GetObserverByNameRow
 	err := row.Scan(&i.ObserverID, &i.ObserverName)
 	return i, err
 }
@@ -177,15 +182,20 @@ SELECT
 FROM obs.observers
 `
 
-func (q *Queries) ListObservers(ctx context.Context) ([]ObsObserver, error) {
+type ListObserversRow struct {
+	ObserverID   int32
+	ObserverName string
+}
+
+func (q *Queries) ListObservers(ctx context.Context) ([]ListObserversRow, error) {
 	rows, err := q.db.Query(ctx, listObservers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ObsObserver{}
+	items := []ListObserversRow{}
 	for rows.Next() {
-		var i ObsObserver
+		var i ListObserversRow
 		if err := rows.Scan(&i.ObserverID, &i.ObserverName); err != nil {
 			return nil, err
 		}

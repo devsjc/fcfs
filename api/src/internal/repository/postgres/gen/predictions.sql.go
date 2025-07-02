@@ -239,7 +239,7 @@ FROM pred.forecasts f
 WHERE f.location_id = $1
 AND f.source_type_id = (SELECT source_type_id FROM loc.source_types WHERE source_type_name = $2)
 AND f.model_id = $3
-AND f.init_time_utc <= CURRENT_TIMESTAMP - MAKE_INTERVAL(mins => $4::integer)
+AND f.init_time_utc <= $4::timestamp - MAKE_INTERVAL(mins => $5::integer)
 ORDER BY f.init_time_utc DESC
 LIMIT 1
 `
@@ -248,6 +248,7 @@ type GetLatestForecastAtHorizonParams struct {
 	LocationID     int32
 	SourceTypeName string
 	ModelID        int32
+	PivotTimestamp pgtype.Timestamp
 	HorizonMins    int32
 }
 
@@ -267,6 +268,7 @@ func (q *Queries) GetLatestForecastAtHorizon(ctx context.Context, arg GetLatestF
 		arg.LocationID,
 		arg.SourceTypeName,
 		arg.ModelID,
+		arg.PivotTimestamp,
 		arg.HorizonMins,
 	)
 	var i GetLatestForecastAtHorizonRow
@@ -334,120 +336,6 @@ func (q *Queries) GetModelById(ctx context.Context, modelID int32) (GetModelById
 	return i, err
 }
 
-const getPredictionDeltasTimeseriesAtHorizon = `-- name: GetPredictionDeltasTimeseriesAtHorizon :many
-WITH relevant_forecasts AS (
-    SELECT
-        f.forecast_id
-    FROM pred.forecasts f
-    WHERE f.location_id = $1
-    AND f.source_type_id = (SELECT st.source_type_id FROM loc.source_types st WHERE st.source_type_name = $2)
-    AND f.model_id = $3
-    AND f.init_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(
-        mins => $5::integer, hours => 36
-    )
-),
-filteredPredictions AS (
-    SELECT
-        pv.horizon_mins,
-        pv.p10,
-        pv.p50,
-        pv.p90,
-        pv.target_time_utc,
-        pv.metadata
-    FROM pred.predicted_generation_values pv
-    INNER JOIN relevant_forecasts rf ON pv.forecast_id = rf.forecast_id
-    WHERE pv.target_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(mins => $5::integer, hours => 36)
-    AND pv.horizon_mins >= $5::integer
-),
-rankedPredictions AS (
-    SELECT
-        horizon_mins, p10, p50, p90, target_time_utc, metadata,
-        ROW_NUMBER() OVER (PARTITION BY target_time_utc ORDER BY horizon_mins ASC) AS rn
-    FROM filteredPredictions
-),
-chosenPredictions AS (
-    SELECT
-        rp.horizon_mins,
-        p10,
-        p50,
-        p90,
-        rp.target_time_utc,
-        rp.metadata
-    FROM rankedPredictions rp
-    WHERE rp.rn = 1
-    ORDER BY rp.target_time_utc ASC
-),
-relevantObservations AS (
-    SELECT
-        ogv.observation_time_utc,
-        ogv.value
-    FROM obs.observed_generation_values ogv
-    WHERE ogv.location_id = $1
-    AND ogv.source_type_id = (SELECT st.source_type_id FROM loc.source_types st WHERE st.source_type_name = $2)
-    AND ogv.observer_id = (SELECT observer_id FROM obs.observers WHERE observer_name = $4)
-    AND ogv.observation_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(mins => $5::integer, hours => 36)
-)
-SELECT
-    cp.horizon_mins,
-    cp.p50 AS p50_int16,
-    cp.target_time_utc AS time_utc,
-    ro.value AS observed_value_int16,
-    cp.p50 - ro.value AS delta_int16
-FROM relevantObservations ro
-INNER JOIN chosenPredictions cp ON ro.observation_time_utc = cp.target_time_utc
-`
-
-type GetPredictionDeltasTimeseriesAtHorizonParams struct {
-	LocationID     int32
-	SourceTypeName string
-	ModelID        int32
-	ObserverName   string
-	HorizonMins    int32
-}
-
-type GetPredictionDeltasTimeseriesAtHorizonRow struct {
-	HorizonMins        int16
-	P50Int16           int16
-	TimeUtc            pgtype.Timestamp
-	ObservedValueInt16 int16
-	DeltaInt16         int32
-}
-
-// GetPredictedTimeseriesDeltasAtHorizon retrieves predicted generation values as a timeseries like
-// GetPredictionsTimeseriesAsPercentAtHorizon, but also fetches observed values for the timeseries
-// time steps, along with the resultant deltas between the predicted and observed values.
-func (q *Queries) GetPredictionDeltasTimeseriesAtHorizon(ctx context.Context, arg GetPredictionDeltasTimeseriesAtHorizonParams) ([]GetPredictionDeltasTimeseriesAtHorizonRow, error) {
-	rows, err := q.db.Query(ctx, getPredictionDeltasTimeseriesAtHorizon,
-		arg.LocationID,
-		arg.SourceTypeName,
-		arg.ModelID,
-		arg.ObserverName,
-		arg.HorizonMins,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []GetPredictionDeltasTimeseriesAtHorizonRow{}
-	for rows.Next() {
-		var i GetPredictionDeltasTimeseriesAtHorizonRow
-		if err := rows.Scan(
-			&i.HorizonMins,
-			&i.P50Int16,
-			&i.TimeUtc,
-			&i.ObservedValueInt16,
-			&i.DeltaInt16,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getPredictionsAsInt16ByForecastID = `-- name: GetPredictionsAsInt16ByForecastID :many
 SELECT
     horizon_mins,
@@ -485,6 +373,94 @@ func (q *Queries) GetPredictionsAsInt16ByForecastID(ctx context.Context, forecas
 			&i.P10Int16,
 			&i.P50Int16,
 			&i.P90Int16,
+			&i.TargetTimeUtc,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPredictionsAsPercentAtTimeAndHorizonForLocations = `-- name: GetPredictionsAsPercentAtTimeAndHorizonForLocations :many
+WITH relevant_forecasts AS (
+    SELECT
+        f.forecast_id,
+        f.location_id,
+        f.init_time_utc,
+        ROW_NUMBER() OVER (PARTITION BY f.location_id ORDER BY f.init_time_utc DESC) AS rn
+    FROM pred.forecasts f
+    WHERE f.location_id = ANY($4::integer[])
+    AND f.source_type_id = (SELECT source_type_id FROM loc.source_types WHERE source_type_name = $1)
+    AND f.model_id = $2
+    AND f.init_time_utc <= $5::timestamp - MAKE_INTERVAL(mins => $3::integer)
+),
+latest_relevant_forecasts AS (
+    SELECT
+        rf.forecast_id,
+        rf.location_id,
+        rf.init_time_utc
+    FROM relevant_forecasts rf
+    WHERE rf.rn = 1
+)
+SELECT
+    rf.location_id,
+    pgv.horizon_mins,
+    decode_smallint(pgv.p10) AS p10_pct,
+    decode_smallint(pgv.p50) AS p50_pct,
+    decode_smallint(pgv.p90) AS p90_pct,
+    pgv.target_time_utc,
+    pgv.metadata
+FROM pred.predicted_generation_values pgv
+INNER JOIN latest_relevant_forecasts rf USING (forecast_id)
+WHERE pgv.horizon_mins = $3::integer
+`
+
+type GetPredictionsAsPercentAtTimeAndHorizonForLocationsParams struct {
+	SourceTypeName string
+	ModelID        int32
+	HorizonMins    int32
+	LocationIds    []int32
+	Time           pgtype.Timestamp
+}
+
+type GetPredictionsAsPercentAtTimeAndHorizonForLocationsRow struct {
+	LocationID    int32
+	HorizonMins   int16
+	P10Pct        float32
+	P50Pct        float32
+	P90Pct        float32
+	TargetTimeUtc pgtype.Timestamp
+	Metadata      []byte
+}
+
+// GetPredictionsAsPercentAtTimeAndHorizonForLocations retrieves predicted generation values as percentages
+// of capacity for a specific time and horizon. This is useful for comparing predictions across multiple locations.
+func (q *Queries) GetPredictionsAsPercentAtTimeAndHorizonForLocations(ctx context.Context, arg GetPredictionsAsPercentAtTimeAndHorizonForLocationsParams) ([]GetPredictionsAsPercentAtTimeAndHorizonForLocationsRow, error) {
+	rows, err := q.db.Query(ctx, getPredictionsAsPercentAtTimeAndHorizonForLocations,
+		arg.SourceTypeName,
+		arg.ModelID,
+		arg.HorizonMins,
+		arg.LocationIds,
+		arg.Time,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPredictionsAsPercentAtTimeAndHorizonForLocationsRow{}
+	for rows.Next() {
+		var i GetPredictionsAsPercentAtTimeAndHorizonForLocationsRow
+		if err := rows.Scan(
+			&i.LocationID,
+			&i.HorizonMins,
+			&i.P10Pct,
+			&i.P50Pct,
+			&i.P90Pct,
 			&i.TargetTimeUtc,
 			&i.Metadata,
 		); err != nil {
@@ -558,8 +534,8 @@ WITH relevant_forecasts AS (
     WHERE f.location_id = $1
     AND f.source_type_id = (SELECT source_type_id FROM loc.source_types WHERE source_type_name = $2)
     AND f.model_id = $3
-    AND f.init_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(
-        mins => $4::integer, hours => 36
+    AND f.init_time_utc >= $4::timestamp - MAKE_INTERVAL(
+        mins => $5::integer, hours => 36
     )
 ),
 filteredPredictions AS (
@@ -573,9 +549,9 @@ filteredPredictions AS (
         pv.target_time_utc,
         pv.metadata
     FROM pred.predicted_generation_values pv
-    INNER JOIN relevant_forecasts rf ON pv.forecast_id = rf.forecast_id
-    WHERE pv.target_time_utc >= CURRENT_TIMESTAMP - MAKE_INTERVAL(mins => $4::integer, hours => 36)
-    AND pv.horizon_mins >= $4::integer
+    INNER JOIN relevant_forecasts rf USING (forecast_id)
+    WHERE pv.target_time_utc >= $4::timestamp - MAKE_INTERVAL(mins => $5::integer, hours => 36)
+    AND pv.horizon_mins >= $5::integer
 ),
 rankedPredictions AS (
     -- Rank the predictions by horizon_mins for each target_time_utc
@@ -601,6 +577,7 @@ type GetPredictionsTimeseriesAsPercentAtHorizonParams struct {
 	LocationID     int32
 	SourceTypeName string
 	ModelID        int32
+	PivotTimestamp pgtype.Timestamp
 	HorizonMins    int32
 }
 
@@ -624,6 +601,7 @@ func (q *Queries) GetPredictionsTimeseriesAsPercentAtHorizon(ctx context.Context
 		arg.LocationID,
 		arg.SourceTypeName,
 		arg.ModelID,
+		arg.PivotTimestamp,
 		arg.HorizonMins,
 	)
 	if err != nil {
