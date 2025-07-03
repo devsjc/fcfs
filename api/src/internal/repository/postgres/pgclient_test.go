@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/stretchr/testify/require"
 )
@@ -565,6 +566,46 @@ func TestGetPredictedTimeseries(t *testing.T) {
 	}
 }
 
+func TestGetObservedTimeseries(t *testing.T) {
+	pivotTime := time.Now().Truncate(time.Minute)
+	pgConnString := createPostgresContainer(t)
+	c := setupClient(t, pgConnString)
+	_ = seed(t, pgConnString, seedDBParams{
+		NumLocations:            1,
+		NumModels:               1,
+		NumForecastsPerLocation: 48,
+		PgvResolutionMins:       5,
+		ForecastResolutionMins:  30,
+		ForecastLengthHours:     1,
+	})
+
+	tests := []struct {
+		startTime    time.Time
+		endTime      time.Time
+		expectedSize int
+	}{
+		{
+			startTime:    pivotTime.Add(-time.Hour * 24),
+			endTime:      pivotTime,
+			expectedSize: 24 * 60 / 5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Start %s End %s", tt.startTime, tt.endTime), func(t *testing.T) {
+			resp, err := c.GetObservedTimeseries(t.Context(), &fcfsapi.GetObservedTimeseriesRequest{
+				LocationId:   1,
+				StartTime:    &timestamppb.Timestamp{Seconds: tt.startTime.Unix()},
+				EndTime:      &timestamppb.Timestamp{Seconds: tt.endTime.Unix()},
+				ObserverName: "test_observer",
+			})
+			require.NoError(t, err)
+			require.Len(t, resp.Yields, tt.expectedSize)
+
+		})
+	}
+}
+
 func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 	pgConnString := createPostgresContainer(t)
 	c := setupClient(t, pgConnString)
@@ -598,7 +639,7 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins (deltas)", tt.horizonMins), func(t *testing.T) {
 			deltaResp, err := c.GetPredictedTimeseriesDeltas(t.Context(), &fcfsapi.GetPredictedTimeseriesDeltasRequest{
-				LocationId:   0,
+				LocationId:   1,
 				HorizonMins:  int32(tt.horizonMins),
 				EnergySource: fcfsapi.EnergySource_ENERGY_SOURCE_SOLAR,
 				ObserverName: "test_observer",
@@ -621,13 +662,14 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 
 func BenchmarkPostgresClient(b *testing.B) {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	pivotTime := time.Now().Truncate(time.Minute)
+	pivotTime := time.Now().UTC().Truncate(time.Minute)
 
 	tests := []seedDBParams{
 		{NumLocations: 373, PgvResolutionMins: 30, ForecastResolutionMins: 60, ForecastLengthHours: 8, NumForecastsPerLocation: 10},
 		{NumLocations: 373, PgvResolutionMins: 5, ForecastResolutionMins: 60, ForecastLengthHours: 16, NumForecastsPerLocation: 48},
-		{NumLocations: 1000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 200},
+		{NumLocations: 1000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
 		{NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76},
+		{NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
 	}
 
 	for _, tt := range tests {
@@ -635,10 +677,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 		c := setupClient(b, pgConnString)
 		numPgvs := seed(b, pgConnString, tt)
 
-		b.Run(fmt.Sprintf("GetPredictedTimeseries(%drows)", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/GetPredictedTimeseries", numPgvs), func(b *testing.B) {
 			for b.Loop() {
 				stream, err := c.GetPredictedTimeseries(b.Context(), &fcfsapi.GetPredictedTimeseriesRequest{
-					LocationIds: []int32{0},
+					LocationIds: []int32{1},
 					EnergySource: fcfsapi.EnergySource_ENERGY_SOURCE_SOLAR,
 				})
 				require.NoError(b, err)
@@ -648,15 +690,15 @@ func BenchmarkPostgresClient(b *testing.B) {
 						break // End of stream
 					}
 					require.NotNil(b, resp)
-					require.Equal(b, int32(0), resp.LocationId)
+					require.Equal(b, int32(1), resp.LocationId)
 					require.GreaterOrEqual(b, len(resp.Yields), 1)
 				}
 			}
 		})
-		b.Run(fmt.Sprintf("GetPredictedCrossSection(%drows)", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/GetPredictedCrossSection", numPgvs), func(b *testing.B) {
 			locationIds := make([]int32, 373)
 			for i := range locationIds {
-				locationIds[i] = int32(i)
+				locationIds[i] = int32(i) + 1
 			}
 			for b.Loop() {
 				crossSectionResp, err := c.GetPredictedCrossSection(b.Context(), &fcfsapi.GetPredictedCrossSectionRequest{
@@ -669,16 +711,28 @@ func BenchmarkPostgresClient(b *testing.B) {
 				require.GreaterOrEqual(b, len(crossSectionResp.Yields), 1)
 			}
 		})
-		b.Run(fmt.Sprintf("GetPredictedTimeseriesDeltas(%drows)", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/GetObservedTimeseries", numPgvs), func(b *testing.B) {
+			for b.Loop() {
+				obsResp, err := c.GetObservedTimeseries(b.Context(), &fcfsapi.GetObservedTimeseriesRequest{
+					LocationId:   1,
+					ObserverName: "test_observer",
+					StartTime:    &timestamppb.Timestamp{Seconds: pivotTime.Add(-time.Hour * 36).Unix()},
+					EndTime:      &timestamppb.Timestamp{Seconds: pivotTime.Unix()},
+				})
+				require.NoError(b, err)
+				require.Len(b, obsResp.Yields, 36*24/tt.PgvResolutionMins)
+			}
+		})
+		b.Run(fmt.Sprintf("%d/GetPredictedTimeseriesDeltas", numPgvs), func(b *testing.B) {
 			for b.Loop() {
 				deltasResp, err := c.GetPredictedTimeseriesDeltas(b.Context(), &fcfsapi.GetPredictedTimeseriesDeltasRequest{
-					LocationId:   0,
+					LocationId:   1,
 					EnergySource: fcfsapi.EnergySource_ENERGY_SOURCE_SOLAR,
 					ObserverName: "test_observer",
 				})
 				require.NoError(b, err)
 				require.NotNil(b, deltasResp)
-				require.Equal(b, int32(0), deltasResp.LocationId)
+				require.Equal(b, int32(1), deltasResp.LocationId)
 				require.GreaterOrEqual(b, len(deltasResp.Deltas), 1)
 			}
 		})

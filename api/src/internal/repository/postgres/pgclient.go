@@ -113,21 +113,45 @@ func (q *QuartzAPIPostgresServer) GetObservedTimeseries(ctx context.Context, req
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
 
-	params := db.GetObservationsAsInt16BetweenParams{
+	// Get capacity of location source
+	params := db.GetLocationSourceParams{
 		LocationID:     req.LocationId,
-		SourceTypeName: "",
-		ObserverName:   "",
-		StartTimeUtc:   pgtype.Timestamp{},
-		EndTimeUtc:     pgtype.Timestamp{},
+		SourceTypeName: "solar", // TODO: make this dynamic
 	}
-	_, err = querier.GetObservationsAsInt16Between(ctx, params)
+	dbSource, err := querier.GetLocationSource(ctx, params)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetObservationsAsInt16Between(%+v)", params)
+		l.Err(err).Msgf("querier.GetLocationSource(%+v)", params)
+		return nil, status.Errorf(
+			codes.NotFound,
+			"Cannot get observations for location %d as it does not have any recorded operational source of type 'solar'.",
+			req.LocationId,
+		)
+	}
+
+	// Get the observations
+	params2 := db.GetObservationsAsInt16BetweenParams{
+		LocationID:     req.LocationId,
+		SourceTypeName: "solar", // TODO
+		ObserverName:   req.ObserverName,
+		StartTimeUtc:   pgtype.Timestamp{Time: req.StartTime.AsTime(), Valid: true},
+		EndTimeUtc:     pgtype.Timestamp{Time: req.EndTime.AsTime(), Valid: true},
+	}
+	dbObs, err := querier.GetObservationsAsInt16Between(ctx, params2)
+	if err != nil {
+		l.Err(err).Msgf("querier.GetObservationsAsInt16Between(%+v)", params2)
 		return nil, status.Errorf(codes.NotFound, "No observations found for location %d", req.LocationId)
 	}
+
+	yields := make([]*pb.Yield, len(dbObs))
+	for i, obs := range dbObs {
+		yields[i] = &pb.Yield{
+			YieldKw:       int64((float64(obs.Value) / 30000.0) * float64(dbSource.CapacityKw)),
+			TimestampUnix: obs.ObservationTimeUtc.Time.Unix(),
+		}
+	}
 	return &pb.GetObservedTimeseriesResponse{
-		LocationId: 0,
-		Yields:     []*pb.Yield{},
+		LocationId: req.LocationId,
+		Yields:     yields,
 	}, nil
 }
 

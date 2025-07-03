@@ -4,7 +4,7 @@ test:
 	go run gotest.tools/gotestsum@latest --format=testname --junitfile unit-tests.xml
 
 bench:
-	go test ./...  -bench=BenchmarkPostgresClient -run=BenchmarkPostgresClient -timeout=30m
+	go test ./...  -bench=BenchmarkPostgresClient -run=BenchmarkPostgresClient -timeout=50m
 
 gen-reqs:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
