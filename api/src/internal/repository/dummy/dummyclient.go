@@ -11,7 +11,6 @@ package dummy
 
 import (
 	"math"
-	"math/rand"
 	"time"
 )
 
