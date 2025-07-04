@@ -22,7 +22,7 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Install dependencies
-        run: cd api && go mod download
+        run: go mod download
 
       - name: Run unit tests
         run: go run gotest.tools/gotestsum@latest --junitfile unit-tests.xml --format testname
