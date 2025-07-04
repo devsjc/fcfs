@@ -25,7 +25,7 @@ jobs:
         run: cd api && go mod download
 
       - name: Run unit tests
-        run: cd api && go run gotest.tools/gotestsum@latest --junitfile unit-tests.xml --format testname
+        run: go run gotest.tools/gotestsum@latest --junitfile unit-tests.xml --format testname
 
       - name: Test Summary
         uses: test-summary/action@v2

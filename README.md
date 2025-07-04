@@ -1,6 +1,6 @@
-# FCFS API
+# FCFS Data Platform
 
-**GRPC API serving predicted renewable generation values for the FCFS project.**
+**Reimagining OCF's Data Platform for Performance and Useability**
 
 ## Installation
 
@@ -13,22 +13,32 @@ $ docker build . --tag api:local
 or via Go
 
 ```
-$ go install github.com/devsjc/fcfs/api
+$ go install github.com/devsjc/fcfs
 ```
 
 ## Documentation
 
-The API is defined using `.proto` files in `src/proto`.
-These represent the contract between the client and any servers invoking the API.
+### External schema (replacing `pydantic` in the old `datamodel`)
 
-Relevant models and interfaces for both client and server implementations are then generated
-using the [protoc compiler](https://protobuf.dev/installation/), invoked through `make`:
+The Data Platform defines a strongly typed _data contract_ as its external interface. This is the
+API that any external clients have to use to interact with the platform. The schema for this is
+defined via Protocol Buffers in `proto/ocf/dp`.
 
-```bash
-$ make gen-proto
+Boilerplate code for client and server implementations is generated in the required language from
+these `.proto` files using the `protoc` compiler.
+
+Changes to the schema modifies the data contract, and will require client and server
+implementations to regenerate their bindings and update their code. As such they should be made
+with purpose and care.
+
+**Generating bindings**
+
+```
+make gen-ext
 ```
 
-This will populate the `src/gen` directory with language-specific bindings for the API.
+This will populate the `protogen` directory with language-specific bindings for implementations
+of server and client code.
 
 These bindings are then used to implement the server code in `src/internal/service/server.go`.
 They should also be imported or copied into external codebases to create type-safe and contract-bound clients.
