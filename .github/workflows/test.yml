@@ -17,9 +17,9 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version-file: dp/go.mod
+          go-version-file: go.mod
           cache: true
-          cache-dependency-path: dp/go.sum
+          cache-dependency-path: go.sum
 
       - name: Install dependencies
         run: cd api && go mod download
@@ -30,6 +30,6 @@ jobs:
       - name: Test Summary
         uses: test-summary/action@v2
         with:
-          paths: "dp/unit-tests.xml"
+          paths: "unit-tests.xml"
         if: always()
 

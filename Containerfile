@@ -1,7 +1,9 @@
 FROM golang:1.24 AS build
 
 WORKDIR /go/src/app
-COPY . .
+COPY go.mod go.sum ./
+COPY cmd/ cmd/
+COPY internal/ internal/
 
 RUN go mod download
 RUN go mod verify
