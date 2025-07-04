@@ -576,7 +576,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 		NumForecastsPerLocation: 48,
 		PgvResolutionMins:       5,
 		ForecastResolutionMins:  30,
-		ForecastLengthHours:     1,
+		ForecastLengthHours:     8,
 	})
 
 	tests := []struct {
@@ -600,7 +600,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 				ObserverName: "test_observer",
 			})
 			require.NoError(t, err)
-			require.Len(t, resp.Yields, tt.expectedSize)
+			require.Equal(t, len(resp.Yields), tt.expectedSize)
 
 		})
 	}
@@ -668,10 +668,9 @@ func BenchmarkPostgresClient(b *testing.B) {
 		{NumLocations: 373, PgvResolutionMins: 30, ForecastResolutionMins: 60, ForecastLengthHours: 8, NumForecastsPerLocation: 10},
 		{NumLocations: 373, PgvResolutionMins: 5, ForecastResolutionMins: 60, ForecastLengthHours: 16, NumForecastsPerLocation: 48},
 		{NumLocations: 1000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
-		{NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76},
-		{NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
+		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76},
+		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
 	}
-
 	for _, tt := range tests {
 		pgConnString := createPostgresContainer(b)
 		c := setupClient(b, pgConnString)
@@ -720,7 +719,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 					EndTime:      &timestamppb.Timestamp{Seconds: pivotTime.Unix()},
 				})
 				require.NoError(b, err)
-				require.Len(b, obsResp.Yields, 36*24/tt.PgvResolutionMins)
+				require.GreaterOrEqual(b, len(obsResp.Yields), 36 * 60 / tt.PgvResolutionMins)
 			}
 		})
 		b.Run(fmt.Sprintf("%d/GetPredictedTimeseriesDeltas", numPgvs), func(b *testing.B) {

@@ -70,9 +70,7 @@ func capacityKwToValueMultiplier(capacityKw int64) (int16, int16, error) {
 		// * add on 500 to round up numbers that are over halfway to the next 10^3
 		nextValue := (currentValue + 500) / 1000
 
-		// If rounding resulted in 0 for a value that was previously > 0.
-		// This is very unlikely with rounding unless the number is enormous and precision is lost,
-		// but good to keep a check.
+		// Check we haven't accidentally rounded to 0
 		if nextValue == 0 && currentValue > 0 {
 			return 0, exponent + 3, fmt.Errorf(
 				"scaled value rounded to zero from large input %d at potential exponent %d",
