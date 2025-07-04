@@ -19,9 +19,9 @@ jobs:
         include:
           - folder: frontend
             image: ghcr.io/devsjc/fcfs-frontend
-          - folder: api
+          - folder: dp
             image: ghcr.io/devsjc/fcfs-api
-          - folder: api/src/internal/repository/postgres/infra
+          - folder: dp/internal/database/postgres/infra
             image: ghcr.io/devsjc/fcfs-pgdb
 
     steps:
