@@ -45,17 +45,17 @@ services:
     networks:
       - fcfs-net
 
-  frontend:
-    build:
-      context: frontend
-      dockerfile: Containerfile
-    ports:
-      - "5173:5173"
-    environment:
-      - GRPCWEB_URL=http://envoy-proxy:8088
-    depends_on: ["envoy-proxy"]
-    networks:
-      - fcfs-net
+  # frontend:
+  #   build:
+  #     context: frontend
+  #     dockerfile: Containerfile
+  #   ports:
+  #     - "5173:5173"
+  #   environment:
+  #     - GRPCWEB_URL=http://envoy-proxy:8088
+  #   depends_on: ["envoy-proxy"]
+  #   networks:
+  #     - fcfs-net
 
   database:
     build:
