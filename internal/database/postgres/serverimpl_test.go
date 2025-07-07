@@ -656,7 +656,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 		{NumLocations: 373, PgvResolutionMins: 30, ForecastResolutionMins: 60, ForecastLengthHours: 8, NumForecastsPerLocation: 10},
 		{NumLocations: 373, PgvResolutionMins: 5, ForecastResolutionMins: 60, ForecastLengthHours: 16, NumForecastsPerLocation: 48},
 		{NumLocations: 1000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
-		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76},
+		{NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76},
 		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
 	}
 	for _, tt := range tests {
@@ -669,6 +669,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 				stream, err := c.GetPredictedTimeseries(b.Context(), &pb.GetPredictedTimeseriesRequest{
 					LocationIds:  []int32{1},
 					EnergySource: pb.EnergySource_SOLAR,
+					Model: &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
 				})
 				require.NoError(b, err)
 				for {
@@ -691,6 +692,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 				crossSectionResp, err := c.GetPredictedCrossSection(b.Context(), &pb.GetPredictedCrossSectionRequest{
 					EnergySource:  pb.EnergySource_SOLAR,
 					LocationIds:   locationIds,
+					Model: &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
 					TimestampUnix: timestamppb.New(pivotTime),
 				})
 				require.NoError(b, err)
@@ -703,6 +705,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 				obsResp, err := c.GetObservedTimeseries(b.Context(), &pb.GetObservedTimeseriesRequest{
 					LocationId:   1,
 					ObserverName: "test_observer",
+					EnergySource: pb.EnergySource_SOLAR,
 					TimeWindow: &pb.TimeWindow{
 						StartTimestampUnix: timestamppb.New(pivotTime.Add(-time.Hour * 36)),
 						EndTimestampUnix:   timestamppb.New(pivotTime),
@@ -718,6 +721,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 					LocationId:   1,
 					EnergySource: pb.EnergySource_SOLAR,
 					ObserverName: "test_observer",
+					Model: &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
 				})
 				require.NoError(b, err)
 				require.NotNil(b, deltasResp)

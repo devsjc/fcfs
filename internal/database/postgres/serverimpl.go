@@ -422,7 +422,6 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx contex
 			req.Model.ModelName, req.Model.ModelVersion,
 		)
 	}
-	log.Info().Msg("HERE")
 
 	// Get the predictions
 	start, end, err := timeWindowToPgWindow(req.TimeWindow)
