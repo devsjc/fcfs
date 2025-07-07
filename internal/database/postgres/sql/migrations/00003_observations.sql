@@ -32,12 +32,12 @@ CREATE TABLE obs.observers (
 -- Table to store observed generation values
 CREATE TABLE obs.observed_generation_values (
     -- The generation value as a percentage of the location capacity
-    -- represented by the smallint range. Since it isn't impossible to measure
-    -- a little over capacity, 30000 represents 100% of capacity instead of the
-    -- max smallint value (32767). This allows for some measurement leeway.
-    value SMALLINT NOT NULL
+    -- represented by a smallint percent (sip).
+    -- Since it isn't impossible to measure a little over capacity,
+    -- 30000 represents 100% of capacity instead of the max smallint value (32767).
+    -- This allows for some measurement leeway.
+    value_sip SMALLINT NOT NULL
         CHECK ( value >= 0 ),
-    -- TODO: Move this logic to the observer
     source_type_id SMALLINT NOT NULL
         REFERENCES loc.source_types(source_type_id)
         ON DELETE RESTRICT,
@@ -49,8 +49,7 @@ CREATE TABLE obs.observed_generation_values (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     observation_time_utc TIMESTAMP NOT NULL,
-        -- The following check is actually not wanted because of PVLive...
-        -- CHECK ( observation_time_utc <= CURRENT_TIMESTAMP ),
+        CHECK ( observation_time_utc <= CURRENT_TIMESTAMP + make_interval(days => 31) ),
     PRIMARY KEY (location_id, source_type_id, observer_id, observation_time_utc)
 );
 

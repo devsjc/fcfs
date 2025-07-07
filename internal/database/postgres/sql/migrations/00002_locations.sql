@@ -24,13 +24,13 @@ CREATE TABLE loc.source_types(
     source_type_name TEXT NOT NULL
         CHECK (
             LENGTH(source_type_name) > 0
-            AND LENGTH(source_type_name) <= 24
-            AND source_type_name = LOWER(source_type_name)
+            AND LENGTH(source_type_name) <= 48
+            AND source_type_name = UPPER(source_type_name)
         ),
     PRIMARY KEY (source_type_id),
     UNIQUE (source_type_name)
 );
-INSERT INTO loc.source_types (source_type_name) VALUES ('solar'), ('wind'), ('hydro');
+INSERT INTO loc.source_types (source_type_name) VALUES ('SOLAR'), ('WIND'), ('HYDRO'), ('BATTERY');
 
 -- Lookup table to store different location types
 CREATE TABLE loc.location_types(
@@ -39,12 +39,12 @@ CREATE TABLE loc.location_types(
         CHECK (
             LENGTH(location_type_name) > 0
             AND LENGTH(location_type_name) <= 24
-            AND location_type_name = LOWER(location_type_name)
+            AND location_type_name = UPPER(location_type_name)
         ),
     PRIMARY KEY (location_type_id),
     UNIQUE (location_type_name)
 );
-INSERT INTO loc.location_types (location_type_name) VALUES ('site'), ('gsp'), ('dno'), ('nation');
+INSERT INTO loc.location_types (location_type_name) VALUES ('SITE'), ('GSP'), ('DNO'), ('NATION');
 
 
 /*- Tables ----------------------------------------------------------------------------------*/
@@ -98,15 +98,25 @@ CREATE TABLE loc.location_sources (
             AND capacity_unit_prefix_factor % 3 = 0
             AND capacity_unit_prefix_factor <= 18 -- ExaWatts surely sufficient...
         ),
-    -- Capacity cap, measured in percent of the capacity (e.g. curtailment)
-    capacity_limit SMALLINT
-        CHECK ( capacity_limit IS NULL OR (capacity_limit >= 0 AND capacity_limit < 100) ),
+    -- Capacity cap, (for instance during curtailment or repair work),
+    -- encoded as a smallint percentage (sip) of the capacity; with 0 representing 0%
+    -- AND 30000 representing 100% of the capacity. However, since things are mostly
+    -- not limited, NULL indicates no limit, and 30000 is an invalid value.
+    capacity_limit_sip SMALLINT DEFAULT NULL
+        CHECK (
+            capacity_limit_sip IS NULL
+            OR (capacity_limit_sip >= 0 AND capacity_limit_sip < 30000)
+        ),
     record_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
     location_id INTEGER NOT NULL
         REFERENCES loc.locations(location_id)
         ON DELETE CASCADE,
+    -- The ID of the default predictor to use when getting predicted values for this location source
+    default_predictor_id INTEGER DEFAULT NULL
+        REFERENCES pred.predictors(predictor_id)
+        ON DELETE SET NULL,
     -- Metadata about the source, e.g. tilt, orientation, etc.
-    metadata JSONB
+    metadata JSONB DEFAULT NULL
         CHECK ( metadata IS NULL OR metadata <> '{}'::jsonb ), -- Null is cheaper than empty JSON
     sys_period TSRANGE NOT NULL
         DEFAULT TSRANGE(NOW()::TIMESTAMP, NULL, '[)')
@@ -141,7 +151,7 @@ BEGIN
             OLD.capacity IS DISTINCT FROM NEW.capacity OR
             OLD.capacity_unit_prefix_factor IS DISTINCT FROM NEW.capacity_unit_prefix_factor OR
             OLD.metadata IS DISTINCT FROM NEW.metadata OR
-            OLD.capacity_limit IS DISTINCT FROM NEW.capacity_limit
+            OLD.capacity_limit_sip IS DISTINCT FROM NEW.capacity_limit_sip
         ) THEN
             -- Close the validity period of the old record to current_ts (exclusive end)
             UPDATE loc.location_sources
@@ -151,10 +161,10 @@ BEGIN
             NEW.sys_period = TSRANGE(current_ts, NULL, '[]');
             INSERT INTO loc.location_sources (
                 location_id, source_type_id, capacity, capacity_unit_prefix_factor,
-                capacity_limit, metadata, sys_period
+                capacity_limit_sip, default_predictor_id, metadata, sys_period
             ) VALUES (
                 NEW.location_id, NEW.source_type_id, NEW.capacity, NEW.capacity_unit_prefix_factor,
-                NEW.capacity_limit, NEW.metadata, NEW.sys_period
+                NEW.capacity_limit_sip, NEW.default_predictor_id, NEW.metadata, NEW.sys_period
             );
             -- Cancel the original update action
             RETURN NULL;
@@ -195,46 +205,6 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_location_source_change
 BEFORE UPDATE OR DELETE OR INSERT ON loc.location_sources
 FOR EACH ROW EXECUTE FUNCTION loc.handle_location_source_change();
--- +goose StatementEnd
-
--- +goose StatementBegin
--- Get a kilowatt value as a smallint with an power of 10 exponent multiplier
-CREATE OR REPLACE FUNCTION loc.encode_kw(value_kilowatts BIGINT)
-RETURNS TABLE(value SMALLINT, exponent SMALLINT) AS $$
-DECLARE
-    current_value BIGINT;
-    exponent SMALLINT;
-    max_smallint CONSTANT BIGINT := 32767;
-    max_exponent CONSTANT SMALLINT := 18;  -- Limit to ExaWatts (current generation is ~20PW globally!)
-BEGIN
-    IF value_kilowatts < 0 THEN
-        RAISE EXCEPTION 'Negative values are not allowed: %', value_kilowatts;
-    ELSIF value_kilowatts = 0 THEN
-        RETURN QUERY SELECT 0, 0;
-    END IF;
-
-    current_value := value_kilowatts * 1000;
-    exponent := 0;
-
-    -- Keep increasing the exponent by factors of three until the value is under the smallint limit
-    WHILE current_value > max_smallint LOOP
-        IF exponent >= max_exponent THEN
-            RAISE EXCEPTION 'Input capacity %kW results in a value greater than % ExaWatts, which is not supported.', capacity_kw, max_smallint;
-        END IF;
-        -- Divide by 1000 to get the next SI unit prefix, rounding up via the addition of 500
-        current_value := (current_value + 500) / 1000;
-        exponent := exponent + 3;
-
-        IF current_value = 0 THEN
-             RAISE EXCEPTION 'Scaled value rounded to zero from large input %kW at potential exponent %.', capacity_kw, exponent;
-        END IF;
-    END LOOP;
-
-    -- Now safe to cast the current_value to SMALLINT
-    RETURN QUERY SELECT current_value::SMALLINT, exponent;
-
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
 -- +goose StatementEnd
 
 -- +goose Down

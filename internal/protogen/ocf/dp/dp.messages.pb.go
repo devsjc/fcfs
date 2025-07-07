@@ -9,6 +9,7 @@
 package dp
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -27,22 +28,22 @@ const (
 type EnergySource int32
 
 const (
-	EnergySource_ENERGY_SOURCE_UNSPECIFIED EnergySource = 0
-	EnergySource_ENERGY_SOURCE_SOLAR       EnergySource = 1
-	EnergySource_ENERGY_SOURCE_WIND        EnergySource = 2
+	EnergySource_UNSPECIFIED EnergySource = 0
+	EnergySource_SOLAR       EnergySource = 1
+	EnergySource_WIND        EnergySource = 2
 )
 
 // Enum value maps for EnergySource.
 var (
 	EnergySource_name = map[int32]string{
-		0: "ENERGY_SOURCE_UNSPECIFIED",
-		1: "ENERGY_SOURCE_SOLAR",
-		2: "ENERGY_SOURCE_WIND",
+		0: "UNSPECIFIED",
+		1: "SOLAR",
+		2: "WIND",
 	}
 	EnergySource_value = map[string]int32{
-		"ENERGY_SOURCE_UNSPECIFIED": 0,
-		"ENERGY_SOURCE_SOLAR":       1,
-		"ENERGY_SOURCE_WIND":        2,
+		"UNSPECIFIED": 0,
+		"SOLAR":       1,
+		"WIND":        2,
 	}
 )
 
@@ -75,8 +76,8 @@ func (EnergySource) EnumDescriptor() ([]byte, []int) {
 
 type Yield struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	YieldKw       int64                  `protobuf:"varint,1,opt,name=yield_kw,json=yieldKw,proto3" json:"yield_kw,omitempty"`
-	TimestampUnix int64                  `protobuf:"varint,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
+	YieldPercent  float32                `protobuf:"fixed32,1,opt,name=yield_percent,json=yieldPercent,proto3" json:"yield_percent,omitempty"`
+	TimestampUnix *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -111,24 +112,24 @@ func (*Yield) Descriptor() ([]byte, []int) {
 	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Yield) GetYieldKw() int64 {
+func (x *Yield) GetYieldPercent() float32 {
 	if x != nil {
-		return x.YieldKw
+		return x.YieldPercent
 	}
 	return 0
 }
 
-func (x *Yield) GetTimestampUnix() int64 {
+func (x *Yield) GetTimestampUnix() *timestamppb.Timestamp {
 	if x != nil {
 		return x.TimestampUnix
 	}
-	return 0
+	return nil
 }
 
 type YieldPrediction struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
-	YieldKw       int64                        `protobuf:"varint,1,opt,name=yield_kw,json=yieldKw,proto3" json:"yield_kw,omitempty"`
-	TimestampUnix int64                        `protobuf:"varint,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
+	YieldPercent  float32                      `protobuf:"fixed32,1,opt,name=yield_percent,json=yieldPercent,proto3" json:"yield_percent,omitempty"`
+	TimestampUnix *timestamppb.Timestamp       `protobuf:"bytes,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
 	Uncertainty   *YieldPrediction_Uncertainty `protobuf:"bytes,3,opt,name=uncertainty,proto3" json:"uncertainty,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -164,18 +165,18 @@ func (*YieldPrediction) Descriptor() ([]byte, []int) {
 	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *YieldPrediction) GetYieldKw() int64 {
+func (x *YieldPrediction) GetYieldPercent() float32 {
 	if x != nil {
-		return x.YieldKw
+		return x.YieldPercent
 	}
 	return 0
 }
 
-func (x *YieldPrediction) GetTimestampUnix() int64 {
+func (x *YieldPrediction) GetTimestampUnix() *timestamppb.Timestamp {
 	if x != nil {
 		return x.TimestampUnix
 	}
-	return 0
+	return nil
 }
 
 func (x *YieldPrediction) GetUncertainty() *YieldPrediction_Uncertainty {
@@ -185,28 +186,31 @@ func (x *YieldPrediction) GetUncertainty() *YieldPrediction_Uncertainty {
 	return nil
 }
 
-type YieldDelta struct {
+// LatLng represents a WSG84 coordinate pair.
+// Float precision enables a resolution of about 1cm,
+// which is more precise than we'll ever have data for.
+type LatLng struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	DeltaKw       int64                  `protobuf:"zigzag64,1,opt,name=delta_kw,json=deltaKw,proto3" json:"delta_kw,omitempty"`
-	TimestampUnix int64                  `protobuf:"varint,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
+	Latitude      float32                `protobuf:"fixed32,1,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude     float32                `protobuf:"fixed32,2,opt,name=longitude,proto3" json:"longitude,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *YieldDelta) Reset() {
-	*x = YieldDelta{}
+func (x *LatLng) Reset() {
+	*x = LatLng{}
 	mi := &file_ocf_dp_dp_messages_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *YieldDelta) String() string {
+func (x *LatLng) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*YieldDelta) ProtoMessage() {}
+func (*LatLng) ProtoMessage() {}
 
-func (x *YieldDelta) ProtoReflect() protoreflect.Message {
+func (x *LatLng) ProtoReflect() protoreflect.Message {
 	mi := &file_ocf_dp_dp_messages_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -218,40 +222,157 @@ func (x *YieldDelta) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use YieldDelta.ProtoReflect.Descriptor instead.
-func (*YieldDelta) Descriptor() ([]byte, []int) {
+// Deprecated: Use LatLng.ProtoReflect.Descriptor instead.
+func (*LatLng) Descriptor() ([]byte, []int) {
 	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *YieldDelta) GetDeltaKw() int64 {
+func (x *LatLng) GetLatitude() float32 {
 	if x != nil {
-		return x.DeltaKw
+		return x.Latitude
 	}
 	return 0
 }
 
-func (x *YieldDelta) GetTimestampUnix() int64 {
+func (x *LatLng) GetLongitude() float32 {
 	if x != nil {
-		return x.TimestampUnix
+		return x.Longitude
 	}
 	return 0
+}
+
+type Model struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ModelName string                 `protobuf:"bytes,1,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
+	// The version of the model to use.
+	// If not specified, the latest version will be used.
+	ModelVersion  string `protobuf:"bytes,2,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Model) Reset() {
+	*x = Model{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Model) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Model) ProtoMessage() {}
+
+func (x *Model) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Model.ProtoReflect.Descriptor instead.
+func (*Model) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Model) GetModelName() string {
+	if x != nil {
+		return x.ModelName
+	}
+	return ""
+}
+
+func (x *Model) GetModelVersion() string {
+	if x != nil {
+		return x.ModelVersion
+	}
+	return ""
+}
+
+type TimeWindow struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The start of the time window, inclusive.
+	// Cannot be more than 7 days before end_timestamp_unix.
+	StartTimestampUnix *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_timestamp_unix,json=startTimestampUnix,proto3" json:"start_timestamp_unix,omitempty"`
+	// The end of the time window, inclusive.
+	// Cannot be more than 7 days after start_timestamp_unix.
+	EndTimestampUnix *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_timestamp_unix,json=endTimestampUnix,proto3" json:"end_timestamp_unix,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *TimeWindow) Reset() {
+	*x = TimeWindow{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TimeWindow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimeWindow) ProtoMessage() {}
+
+func (x *TimeWindow) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimeWindow.ProtoReflect.Descriptor instead.
+func (*TimeWindow) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *TimeWindow) GetStartTimestampUnix() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTimestampUnix
+	}
+	return nil
+}
+
+func (x *TimeWindow) GetEndTimestampUnix() *timestamppb.Timestamp {
+	if x != nil {
+		return x.EndTimestampUnix
+	}
+	return nil
 }
 
 type GetPredictedTimeseriesRequest struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	LocationIds  []int32                `protobuf:"varint,1,rep,packed,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
 	EnergySource EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
-	// * The desired minimum difference between the forecast initialisation time,
+	// The desired minimum difference between the forecast initialisation time,
 	// and each target time in minutes.
 	// A value of 0 gives the most recently predicted values for each target time (default).
-	HorizonMins   int32 `protobuf:"varint,3,opt,name=horizon_mins,json=horizonMins,proto3" json:"horizon_mins,omitempty"`
+	HorizonMins int32 `protobuf:"varint,3,opt,name=horizon_mins,json=horizonMins,proto3" json:"horizon_mins,omitempty"`
+	// The time window to fetch predicted yields for.
+	// If not specified, the default is 48 hours before the current time
+	// to 36 hours after the current time.
+	TimeWindow *TimeWindow `protobuf:"bytes,4,opt,name=time_window,json=timeWindow,proto3" json:"time_window,omitempty"`
+	// The model to fetch predicted yields from.
+	// If not specified, the default model will be used.
+	Model         *Model `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPredictedTimeseriesRequest) Reset() {
 	*x = GetPredictedTimeseriesRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[3]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -263,7 +384,7 @@ func (x *GetPredictedTimeseriesRequest) String() string {
 func (*GetPredictedTimeseriesRequest) ProtoMessage() {}
 
 func (x *GetPredictedTimeseriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[3]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -276,7 +397,7 @@ func (x *GetPredictedTimeseriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPredictedTimeseriesRequest.ProtoReflect.Descriptor instead.
 func (*GetPredictedTimeseriesRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{3}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetPredictedTimeseriesRequest) GetLocationIds() []int32 {
@@ -290,7 +411,7 @@ func (x *GetPredictedTimeseriesRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
 func (x *GetPredictedTimeseriesRequest) GetHorizonMins() int32 {
@@ -300,17 +421,32 @@ func (x *GetPredictedTimeseriesRequest) GetHorizonMins() int32 {
 	return 0
 }
 
+func (x *GetPredictedTimeseriesRequest) GetTimeWindow() *TimeWindow {
+	if x != nil {
+		return x.TimeWindow
+	}
+	return nil
+}
+
+func (x *GetPredictedTimeseriesRequest) GetModel() *Model {
+	if x != nil {
+		return x.Model
+	}
+	return nil
+}
+
 type GetPredictedTimeseriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	Yields        []*YieldPrediction     `protobuf:"bytes,2,rep,name=yields,proto3" json:"yields,omitempty"`
+	CapacityWatts uint64                 `protobuf:"varint,2,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	Yields        []*YieldPrediction     `protobuf:"bytes,3,rep,name=yields,proto3" json:"yields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPredictedTimeseriesResponse) Reset() {
 	*x = GetPredictedTimeseriesResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[4]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -322,7 +458,7 @@ func (x *GetPredictedTimeseriesResponse) String() string {
 func (*GetPredictedTimeseriesResponse) ProtoMessage() {}
 
 func (x *GetPredictedTimeseriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[4]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -335,12 +471,19 @@ func (x *GetPredictedTimeseriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPredictedTimeseriesResponse.ProtoReflect.Descriptor instead.
 func (*GetPredictedTimeseriesResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{4}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetPredictedTimeseriesResponse) GetLocationId() int32 {
 	if x != nil {
 		return x.LocationId
+	}
+	return 0
+}
+
+func (x *GetPredictedTimeseriesResponse) GetCapacityWatts() uint64 {
+	if x != nil {
+		return x.CapacityWatts
 	}
 	return 0
 }
@@ -356,25 +499,26 @@ type GetPredictedTimeseriesDeltasRequest struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	LocationId   int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	EnergySource EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
-	// * The desired difference between the initialisation time and the target time in minutes.
+	// The desired difference between the initialisation time and the target time in minutes.
 	// 0 gives the most recently predicted deltas, and is the default if not specified.
 	HorizonMins int32 `protobuf:"varint,3,opt,name=horizon_mins,json=horizonMins,proto3" json:"horizon_mins,omitempty"`
-	// * The name of the desired model to fetch predicted yields from.
+	// The model to fetch predicted yields from.
 	// If not specified, the default model will be used.
-	ModelName string `protobuf:"bytes,4,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
-	// * The version of the model to fetch predicted yields from.
-	// If not specified, the latest version of the named model will be used.
-	ModelVersion string `protobuf:"bytes,5,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
-	// * The name of the provider of observed yields to fetch from.
+	Model *Model `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	// The name of the observer to compare predicted yields against.
 	// If not specified, the default observer will be used.
-	ObserverName  string `protobuf:"bytes,6,opt,name=observer_name,json=observerName,proto3" json:"observer_name,omitempty"`
+	ObserverName string `protobuf:"bytes,5,opt,name=observer_name,json=observerName,proto3" json:"observer_name,omitempty"`
+	// The time window to fetch predicted deltas for.
+	// If not specified, the default is 48 hours before the current time
+	// to 36 hours after the current time.
+	TimeWindow    *TimeWindow `protobuf:"bytes,6,opt,name=time_window,json=timeWindow,proto3" json:"time_window,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPredictedTimeseriesDeltasRequest) Reset() {
 	*x = GetPredictedTimeseriesDeltasRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[5]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -386,7 +530,7 @@ func (x *GetPredictedTimeseriesDeltasRequest) String() string {
 func (*GetPredictedTimeseriesDeltasRequest) ProtoMessage() {}
 
 func (x *GetPredictedTimeseriesDeltasRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[5]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -399,7 +543,7 @@ func (x *GetPredictedTimeseriesDeltasRequest) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use GetPredictedTimeseriesDeltasRequest.ProtoReflect.Descriptor instead.
 func (*GetPredictedTimeseriesDeltasRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{5}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetPredictedTimeseriesDeltasRequest) GetLocationId() int32 {
@@ -413,7 +557,7 @@ func (x *GetPredictedTimeseriesDeltasRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
 func (x *GetPredictedTimeseriesDeltasRequest) GetHorizonMins() int32 {
@@ -423,18 +567,11 @@ func (x *GetPredictedTimeseriesDeltasRequest) GetHorizonMins() int32 {
 	return 0
 }
 
-func (x *GetPredictedTimeseriesDeltasRequest) GetModelName() string {
+func (x *GetPredictedTimeseriesDeltasRequest) GetModel() *Model {
 	if x != nil {
-		return x.ModelName
+		return x.Model
 	}
-	return ""
-}
-
-func (x *GetPredictedTimeseriesDeltasRequest) GetModelVersion() string {
-	if x != nil {
-		return x.ModelVersion
-	}
-	return ""
+	return nil
 }
 
 func (x *GetPredictedTimeseriesDeltasRequest) GetObserverName() string {
@@ -444,17 +581,25 @@ func (x *GetPredictedTimeseriesDeltasRequest) GetObserverName() string {
 	return ""
 }
 
+func (x *GetPredictedTimeseriesDeltasRequest) GetTimeWindow() *TimeWindow {
+	if x != nil {
+		return x.TimeWindow
+	}
+	return nil
+}
+
 type GetPredictedTimeseriesDeltasResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	Deltas        []*YieldDelta          `protobuf:"bytes,2,rep,name=deltas,proto3" json:"deltas,omitempty"`
+	state         protoimpl.MessageState                             `protogen:"open.v1"`
+	LocationId    int32                                              `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	CapacityWatts uint64                                             `protobuf:"varint,2,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	Deltas        []*GetPredictedTimeseriesDeltasResponse_YieldDelta `protobuf:"bytes,3,rep,name=deltas,proto3" json:"deltas,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPredictedTimeseriesDeltasResponse) Reset() {
 	*x = GetPredictedTimeseriesDeltasResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[6]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -466,7 +611,7 @@ func (x *GetPredictedTimeseriesDeltasResponse) String() string {
 func (*GetPredictedTimeseriesDeltasResponse) ProtoMessage() {}
 
 func (x *GetPredictedTimeseriesDeltasResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[6]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -479,7 +624,7 @@ func (x *GetPredictedTimeseriesDeltasResponse) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use GetPredictedTimeseriesDeltasResponse.ProtoReflect.Descriptor instead.
 func (*GetPredictedTimeseriesDeltasResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{6}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetPredictedTimeseriesDeltasResponse) GetLocationId() int32 {
@@ -489,7 +634,14 @@ func (x *GetPredictedTimeseriesDeltasResponse) GetLocationId() int32 {
 	return 0
 }
 
-func (x *GetPredictedTimeseriesDeltasResponse) GetDeltas() []*YieldDelta {
+func (x *GetPredictedTimeseriesDeltasResponse) GetCapacityWatts() uint64 {
+	if x != nil {
+		return x.CapacityWatts
+	}
+	return 0
+}
+
+func (x *GetPredictedTimeseriesDeltasResponse) GetDeltas() []*GetPredictedTimeseriesDeltasResponse_YieldDelta {
 	if x != nil {
 		return x.Deltas
 	}
@@ -497,18 +649,21 @@ func (x *GetPredictedTimeseriesDeltasResponse) GetDeltas() []*YieldDelta {
 }
 
 type GetObservedTimeseriesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	ObserverName  string                 `protobuf:"bytes,2,opt,name=observer_name,json=observerName,proto3" json:"observer_name,omitempty"`
-	StartTime     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	LocationId   int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	ObserverName string                 `protobuf:"bytes,2,opt,name=observer_name,json=observerName,proto3" json:"observer_name,omitempty"`
+	EnergySource EnergySource           `protobuf:"varint,3,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
+	// The time window to fetch observed yields for.
+	// If not specified, the default is 48 hours before the current time
+	// to 36 hours after the current time.
+	TimeWindow    *TimeWindow `protobuf:"bytes,4,opt,name=time_window,json=timeWindow,proto3" json:"time_window,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetObservedTimeseriesRequest) Reset() {
 	*x = GetObservedTimeseriesRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[7]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -520,7 +675,7 @@ func (x *GetObservedTimeseriesRequest) String() string {
 func (*GetObservedTimeseriesRequest) ProtoMessage() {}
 
 func (x *GetObservedTimeseriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[7]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -533,7 +688,7 @@ func (x *GetObservedTimeseriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetObservedTimeseriesRequest.ProtoReflect.Descriptor instead.
 func (*GetObservedTimeseriesRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{7}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetObservedTimeseriesRequest) GetLocationId() int32 {
@@ -550,16 +705,16 @@ func (x *GetObservedTimeseriesRequest) GetObserverName() string {
 	return ""
 }
 
-func (x *GetObservedTimeseriesRequest) GetStartTime() *timestamppb.Timestamp {
+func (x *GetObservedTimeseriesRequest) GetEnergySource() EnergySource {
 	if x != nil {
-		return x.StartTime
+		return x.EnergySource
 	}
-	return nil
+	return EnergySource_UNSPECIFIED
 }
 
-func (x *GetObservedTimeseriesRequest) GetEndTime() *timestamppb.Timestamp {
+func (x *GetObservedTimeseriesRequest) GetTimeWindow() *TimeWindow {
 	if x != nil {
-		return x.EndTime
+		return x.TimeWindow
 	}
 	return nil
 }
@@ -567,14 +722,15 @@ func (x *GetObservedTimeseriesRequest) GetEndTime() *timestamppb.Timestamp {
 type GetObservedTimeseriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	Yields        []*Yield               `protobuf:"bytes,2,rep,name=yields,proto3" json:"yields,omitempty"`
+	CapacityWatts uint64                 `protobuf:"varint,2,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	Yields        []*Yield               `protobuf:"bytes,3,rep,name=yields,proto3" json:"yields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetObservedTimeseriesResponse) Reset() {
 	*x = GetObservedTimeseriesResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[8]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -586,7 +742,7 @@ func (x *GetObservedTimeseriesResponse) String() string {
 func (*GetObservedTimeseriesResponse) ProtoMessage() {}
 
 func (x *GetObservedTimeseriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[8]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -599,12 +755,19 @@ func (x *GetObservedTimeseriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetObservedTimeseriesResponse.ProtoReflect.Descriptor instead.
 func (*GetObservedTimeseriesResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{8}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetObservedTimeseriesResponse) GetLocationId() int32 {
 	if x != nil {
 		return x.LocationId
+	}
+	return 0
+}
+
+func (x *GetObservedTimeseriesResponse) GetCapacityWatts() uint64 {
+	if x != nil {
+		return x.CapacityWatts
 	}
 	return 0
 }
@@ -620,14 +783,17 @@ type GetPredictedCrossSectionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationIds   []int32                `protobuf:"varint,1,rep,packed,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
 	EnergySource  EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
-	TimestampUnix int64                  `protobuf:"varint,3,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
+	TimestampUnix *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
+	// The model to fetch predicted yields from.
+	// If not specified, the default model will be used.
+	Model         *Model `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPredictedCrossSectionRequest) Reset() {
 	*x = GetPredictedCrossSectionRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[9]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -639,7 +805,7 @@ func (x *GetPredictedCrossSectionRequest) String() string {
 func (*GetPredictedCrossSectionRequest) ProtoMessage() {}
 
 func (x *GetPredictedCrossSectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[9]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -652,7 +818,7 @@ func (x *GetPredictedCrossSectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPredictedCrossSectionRequest.ProtoReflect.Descriptor instead.
 func (*GetPredictedCrossSectionRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{9}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetPredictedCrossSectionRequest) GetLocationIds() []int32 {
@@ -666,19 +832,26 @@ func (x *GetPredictedCrossSectionRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
-func (x *GetPredictedCrossSectionRequest) GetTimestampUnix() int64 {
+func (x *GetPredictedCrossSectionRequest) GetTimestampUnix() *timestamppb.Timestamp {
 	if x != nil {
 		return x.TimestampUnix
 	}
-	return 0
+	return nil
+}
+
+func (x *GetPredictedCrossSectionRequest) GetModel() *Model {
+	if x != nil {
+		return x.Model
+	}
+	return nil
 }
 
 type GetPredictedCrossSectionResponse struct {
 	state         protoimpl.MessageState                                        `protogen:"open.v1"`
-	TimestampUnix int64                                                         `protobuf:"varint,1,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
+	TimestampUnix *timestamppb.Timestamp                                        `protobuf:"bytes,1,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
 	Yields        []*GetPredictedCrossSectionResponse_YieldPredictionAtLocation `protobuf:"bytes,2,rep,name=yields,proto3" json:"yields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -686,7 +859,7 @@ type GetPredictedCrossSectionResponse struct {
 
 func (x *GetPredictedCrossSectionResponse) Reset() {
 	*x = GetPredictedCrossSectionResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[10]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -698,7 +871,7 @@ func (x *GetPredictedCrossSectionResponse) String() string {
 func (*GetPredictedCrossSectionResponse) ProtoMessage() {}
 
 func (x *GetPredictedCrossSectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[10]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -711,14 +884,14 @@ func (x *GetPredictedCrossSectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPredictedCrossSectionResponse.ProtoReflect.Descriptor instead.
 func (*GetPredictedCrossSectionResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{10}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *GetPredictedCrossSectionResponse) GetTimestampUnix() int64 {
+func (x *GetPredictedCrossSectionResponse) GetTimestampUnix() *timestamppb.Timestamp {
 	if x != nil {
 		return x.TimestampUnix
 	}
-	return 0
+	return nil
 }
 
 func (x *GetPredictedCrossSectionResponse) GetYields() []*GetPredictedCrossSectionResponse_YieldPredictionAtLocation {
@@ -728,29 +901,35 @@ func (x *GetPredictedCrossSectionResponse) GetYields() []*GetPredictedCrossSecti
 	return nil
 }
 
-type GetLatestForecastRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	EnergySource  EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
+type GetLatestPredictionsRequest struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	LocationId   int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	EnergySource EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
+	// The time to search backwards from to find the 'latest' forecast.
+	// If not specified, the current time will be used.
+	PivotTimestampUnix *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=pivot_timestamp_unix,json=pivotTimestampUnix,proto3" json:"pivot_timestamp_unix,omitempty"`
+	// The model to fetch the latest forecast from.
+	// If not specified, the default model will be used.
+	Model         *Model `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetLatestForecastRequest) Reset() {
-	*x = GetLatestForecastRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[11]
+func (x *GetLatestPredictionsRequest) Reset() {
+	*x = GetLatestPredictionsRequest{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetLatestForecastRequest) String() string {
+func (x *GetLatestPredictionsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetLatestForecastRequest) ProtoMessage() {}
+func (*GetLatestPredictionsRequest) ProtoMessage() {}
 
-func (x *GetLatestForecastRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[11]
+func (x *GetLatestPredictionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -761,49 +940,64 @@ func (x *GetLatestForecastRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetLatestForecastRequest.ProtoReflect.Descriptor instead.
-func (*GetLatestForecastRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{11}
+// Deprecated: Use GetLatestPredictionsRequest.ProtoReflect.Descriptor instead.
+func (*GetLatestPredictionsRequest) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *GetLatestForecastRequest) GetLocationId() int32 {
+func (x *GetLatestPredictionsRequest) GetLocationId() int32 {
 	if x != nil {
 		return x.LocationId
 	}
 	return 0
 }
 
-func (x *GetLatestForecastRequest) GetEnergySource() EnergySource {
+func (x *GetLatestPredictionsRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
-type GetLatestForecastResponse struct {
+func (x *GetLatestPredictionsRequest) GetPivotTimestampUnix() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PivotTimestampUnix
+	}
+	return nil
+}
+
+func (x *GetLatestPredictionsRequest) GetModel() *Model {
+	if x != nil {
+		return x.Model
+	}
+	return nil
+}
+
+type GetLatestPredictionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	ForecastId    int64                  `protobuf:"varint,2,opt,name=forecast_id,json=forecastId,proto3" json:"forecast_id,omitempty"`
-	Yields        []*YieldPrediction     `protobuf:"bytes,3,rep,name=yields,proto3" json:"yields,omitempty"`
+	CapacityWatts uint64                 `protobuf:"varint,2,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	ForecastId    int64                  `protobuf:"varint,3,opt,name=forecast_id,json=forecastId,proto3" json:"forecast_id,omitempty"`
+	Yields        []*YieldPrediction     `protobuf:"bytes,4,rep,name=yields,proto3" json:"yields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetLatestForecastResponse) Reset() {
-	*x = GetLatestForecastResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[12]
+func (x *GetLatestPredictionsResponse) Reset() {
+	*x = GetLatestPredictionsResponse{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetLatestForecastResponse) String() string {
+func (x *GetLatestPredictionsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetLatestForecastResponse) ProtoMessage() {}
+func (*GetLatestPredictionsResponse) ProtoMessage() {}
 
-func (x *GetLatestForecastResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[12]
+func (x *GetLatestPredictionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -814,26 +1008,33 @@ func (x *GetLatestForecastResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetLatestForecastResponse.ProtoReflect.Descriptor instead.
-func (*GetLatestForecastResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{12}
+// Deprecated: Use GetLatestPredictionsResponse.ProtoReflect.Descriptor instead.
+func (*GetLatestPredictionsResponse) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *GetLatestForecastResponse) GetLocationId() int32 {
+func (x *GetLatestPredictionsResponse) GetLocationId() int32 {
 	if x != nil {
 		return x.LocationId
 	}
 	return 0
 }
 
-func (x *GetLatestForecastResponse) GetForecastId() int64 {
+func (x *GetLatestPredictionsResponse) GetCapacityWatts() uint64 {
+	if x != nil {
+		return x.CapacityWatts
+	}
+	return 0
+}
+
+func (x *GetLatestPredictionsResponse) GetForecastId() int64 {
 	if x != nil {
 		return x.ForecastId
 	}
 	return 0
 }
 
-func (x *GetLatestForecastResponse) GetYields() []*YieldPrediction {
+func (x *GetLatestPredictionsResponse) GetYields() []*YieldPrediction {
 	if x != nil {
 		return x.Yields
 	}
@@ -844,14 +1045,13 @@ type CreateModelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	MakeDefault   bool                   `protobuf:"varint,3,opt,name=make_default,json=makeDefault,proto3" json:"make_default,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateModelRequest) Reset() {
 	*x = CreateModelRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[13]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -863,7 +1063,7 @@ func (x *CreateModelRequest) String() string {
 func (*CreateModelRequest) ProtoMessage() {}
 
 func (x *CreateModelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[13]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -876,7 +1076,7 @@ func (x *CreateModelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateModelRequest.ProtoReflect.Descriptor instead.
 func (*CreateModelRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{13}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CreateModelRequest) GetName() string {
@@ -893,13 +1093,6 @@ func (x *CreateModelRequest) GetVersion() string {
 	return ""
 }
 
-func (x *CreateModelRequest) GetMakeDefault() bool {
-	if x != nil {
-		return x.MakeDefault
-	}
-	return false
-}
-
 type CreateModelResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ModelId       int32                  `protobuf:"varint,1,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
@@ -909,7 +1102,7 @@ type CreateModelResponse struct {
 
 func (x *CreateModelResponse) Reset() {
 	*x = CreateModelResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[14]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -921,7 +1114,7 @@ func (x *CreateModelResponse) String() string {
 func (*CreateModelResponse) ProtoMessage() {}
 
 func (x *CreateModelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[14]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -934,7 +1127,7 @@ func (x *CreateModelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateModelResponse.ProtoReflect.Descriptor instead.
 func (*CreateModelResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{14}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CreateModelResponse) GetModelId() int32 {
@@ -954,7 +1147,7 @@ type CreateForecastRequest struct {
 
 func (x *CreateForecastRequest) Reset() {
 	*x = CreateForecastRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[15]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -966,7 +1159,7 @@ func (x *CreateForecastRequest) String() string {
 func (*CreateForecastRequest) ProtoMessage() {}
 
 func (x *CreateForecastRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[15]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -979,7 +1172,7 @@ func (x *CreateForecastRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateForecastRequest.ProtoReflect.Descriptor instead.
 func (*CreateForecastRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{15}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *CreateForecastRequest) GetForecast() *CreateForecastRequest_Forecast {
@@ -1005,7 +1198,7 @@ type CreateForecastResponse struct {
 
 func (x *CreateForecastResponse) Reset() {
 	*x = CreateForecastResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[16]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1017,7 +1210,7 @@ func (x *CreateForecastResponse) String() string {
 func (*CreateForecastResponse) ProtoMessage() {}
 
 func (x *CreateForecastResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[16]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1030,7 +1223,7 @@ func (x *CreateForecastResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateForecastResponse.ProtoReflect.Descriptor instead.
 func (*CreateForecastResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{16}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CreateForecastResponse) GetForecastId() int64 {
@@ -1044,17 +1237,16 @@ type CreateSiteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	EnergySource  EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
-	Latitude      float32                `protobuf:"fixed32,3,opt,name=latitude,proto3" json:"latitude,omitempty"`
-	Longitude     float32                `protobuf:"fixed32,4,opt,name=longitude,proto3" json:"longitude,omitempty"`
-	CapacityKw    int64                  `protobuf:"varint,5,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
-	Metadata      string                 `protobuf:"bytes,6,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Latlng        *LatLng                `protobuf:"bytes,3,opt,name=latlng,proto3" json:"latlng,omitempty"`
+	CapacityWatts uint64                 `protobuf:"varint,4,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	Metadata      string                 `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateSiteRequest) Reset() {
 	*x = CreateSiteRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[17]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1066,7 +1258,7 @@ func (x *CreateSiteRequest) String() string {
 func (*CreateSiteRequest) ProtoMessage() {}
 
 func (x *CreateSiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[17]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1079,7 +1271,7 @@ func (x *CreateSiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSiteRequest.ProtoReflect.Descriptor instead.
 func (*CreateSiteRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{17}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CreateSiteRequest) GetName() string {
@@ -1093,26 +1285,19 @@ func (x *CreateSiteRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
-func (x *CreateSiteRequest) GetLatitude() float32 {
+func (x *CreateSiteRequest) GetLatlng() *LatLng {
 	if x != nil {
-		return x.Latitude
+		return x.Latlng
 	}
-	return 0
+	return nil
 }
 
-func (x *CreateSiteRequest) GetLongitude() float32 {
+func (x *CreateSiteRequest) GetCapacityWatts() uint64 {
 	if x != nil {
-		return x.Longitude
-	}
-	return 0
-}
-
-func (x *CreateSiteRequest) GetCapacityKw() int64 {
-	if x != nil {
-		return x.CapacityKw
+		return x.CapacityWatts
 	}
 	return 0
 }
@@ -1133,7 +1318,7 @@ type CreateSiteResponse struct {
 
 func (x *CreateSiteResponse) Reset() {
 	*x = CreateSiteResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[18]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1145,7 +1330,7 @@ func (x *CreateSiteResponse) String() string {
 func (*CreateSiteResponse) ProtoMessage() {}
 
 func (x *CreateSiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[18]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1158,7 +1343,7 @@ func (x *CreateSiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSiteResponse.ProtoReflect.Descriptor instead.
 func (*CreateSiteResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{18}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CreateSiteResponse) GetLocationId() int32 {
@@ -1173,7 +1358,7 @@ type CreateGspRequest struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	EnergySource  EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
 	Geometry      string                 `protobuf:"bytes,3,opt,name=geometry,proto3" json:"geometry,omitempty"`
-	CapacityMw    int64                  `protobuf:"varint,4,opt,name=capacity_mw,json=capacityMw,proto3" json:"capacity_mw,omitempty"`
+	CapacityWatts uint64                 `protobuf:"varint,4,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
 	Metadata      string                 `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1181,7 +1366,7 @@ type CreateGspRequest struct {
 
 func (x *CreateGspRequest) Reset() {
 	*x = CreateGspRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[19]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1193,7 +1378,7 @@ func (x *CreateGspRequest) String() string {
 func (*CreateGspRequest) ProtoMessage() {}
 
 func (x *CreateGspRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[19]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1206,7 +1391,7 @@ func (x *CreateGspRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGspRequest.ProtoReflect.Descriptor instead.
 func (*CreateGspRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{19}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CreateGspRequest) GetName() string {
@@ -1220,7 +1405,7 @@ func (x *CreateGspRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
 func (x *CreateGspRequest) GetGeometry() string {
@@ -1230,9 +1415,9 @@ func (x *CreateGspRequest) GetGeometry() string {
 	return ""
 }
 
-func (x *CreateGspRequest) GetCapacityMw() int64 {
+func (x *CreateGspRequest) GetCapacityWatts() uint64 {
 	if x != nil {
-		return x.CapacityMw
+		return x.CapacityWatts
 	}
 	return 0
 }
@@ -1253,7 +1438,7 @@ type CreateGspResponse struct {
 
 func (x *CreateGspResponse) Reset() {
 	*x = CreateGspResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[20]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1265,7 +1450,7 @@ func (x *CreateGspResponse) String() string {
 func (*CreateGspResponse) ProtoMessage() {}
 
 func (x *CreateGspResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[20]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1278,7 +1463,7 @@ func (x *CreateGspResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGspResponse.ProtoReflect.Descriptor instead.
 func (*CreateGspResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{20}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CreateGspResponse) GetLocationId() int32 {
@@ -1289,16 +1474,17 @@ func (x *CreateGspResponse) GetLocationId() int32 {
 }
 
 type GetLocationRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	EnergySource  EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// TODO: Make this location name?
+	LocationId    int32        `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	EnergySource  EnergySource `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetLocationRequest) Reset() {
 	*x = GetLocationRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[21]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1310,7 +1496,7 @@ func (x *GetLocationRequest) String() string {
 func (*GetLocationRequest) ProtoMessage() {}
 
 func (x *GetLocationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[21]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1323,7 +1509,7 @@ func (x *GetLocationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLocationRequest.ProtoReflect.Descriptor instead.
 func (*GetLocationRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{21}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetLocationRequest) GetLocationId() int32 {
@@ -1337,24 +1523,26 @@ func (x *GetLocationRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
 type GetLocationResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Latitude      float32                `protobuf:"fixed32,3,opt,name=latitude,proto3" json:"latitude,omitempty"`
-	Longitude     float32                `protobuf:"fixed32,4,opt,name=longitude,proto3" json:"longitude,omitempty"`
-	CapacityKw    int64                  `protobuf:"varint,5,opt,name=capacity_kw,json=capacityKw,proto3" json:"capacity_kw,omitempty"`
-	Metadata      string                 `protobuf:"bytes,6,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	LocationId int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The characteristic coordinates of the location.
+	// For sites, this is simply their point coordinates,
+	// whilst for area-based locations, this is their centroid.
+	Latlng        *LatLng `protobuf:"bytes,3,opt,name=latlng,proto3" json:"latlng,omitempty"`
+	CapacityWatts uint64  `protobuf:"varint,4,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	Metadata      string  `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetLocationResponse) Reset() {
 	*x = GetLocationResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[22]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1366,7 +1554,7 @@ func (x *GetLocationResponse) String() string {
 func (*GetLocationResponse) ProtoMessage() {}
 
 func (x *GetLocationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[22]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1379,7 +1567,7 @@ func (x *GetLocationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLocationResponse.ProtoReflect.Descriptor instead.
 func (*GetLocationResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{22}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *GetLocationResponse) GetLocationId() int32 {
@@ -1396,23 +1584,16 @@ func (x *GetLocationResponse) GetName() string {
 	return ""
 }
 
-func (x *GetLocationResponse) GetLatitude() float32 {
+func (x *GetLocationResponse) GetLatlng() *LatLng {
 	if x != nil {
-		return x.Latitude
+		return x.Latlng
 	}
-	return 0
+	return nil
 }
 
-func (x *GetLocationResponse) GetLongitude() float32 {
+func (x *GetLocationResponse) GetCapacityWatts() uint64 {
 	if x != nil {
-		return x.Longitude
-	}
-	return 0
-}
-
-func (x *GetLocationResponse) GetCapacityKw() int64 {
-	if x != nil {
-		return x.CapacityKw
+		return x.CapacityWatts
 	}
 	return 0
 }
@@ -1425,16 +1606,18 @@ func (x *GetLocationResponse) GetMetadata() string {
 }
 
 type GetLocationsAsGeoJSONRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LocationIds   []int32                `protobuf:"varint,1,rep,packed,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
-	Unsimplified  bool                   `protobuf:"varint,2,opt,name=unsimplified,proto3" json:"unsimplified,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	LocationIds []int32                `protobuf:"varint,1,rep,packed,name=location_ids,json=locationIds,proto3" json:"location_ids,omitempty"`
+	// If true, the GeoJSON will not be simplified.
+	// Defaults to false if not set to reduce response size.
+	Unsimplified  bool `protobuf:"varint,2,opt,name=unsimplified,proto3" json:"unsimplified,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetLocationsAsGeoJSONRequest) Reset() {
 	*x = GetLocationsAsGeoJSONRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[23]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1446,7 +1629,7 @@ func (x *GetLocationsAsGeoJSONRequest) String() string {
 func (*GetLocationsAsGeoJSONRequest) ProtoMessage() {}
 
 func (x *GetLocationsAsGeoJSONRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[23]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1459,7 +1642,7 @@ func (x *GetLocationsAsGeoJSONRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLocationsAsGeoJSONRequest.ProtoReflect.Descriptor instead.
 func (*GetLocationsAsGeoJSONRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{23}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GetLocationsAsGeoJSONRequest) GetLocationIds() []int32 {
@@ -1485,7 +1668,7 @@ type GetLocationsAsGeoJSONResponse struct {
 
 func (x *GetLocationsAsGeoJSONResponse) Reset() {
 	*x = GetLocationsAsGeoJSONResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[24]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1497,7 +1680,7 @@ func (x *GetLocationsAsGeoJSONResponse) String() string {
 func (*GetLocationsAsGeoJSONResponse) ProtoMessage() {}
 
 func (x *GetLocationsAsGeoJSONResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[24]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1510,7 +1693,7 @@ func (x *GetLocationsAsGeoJSONResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLocationsAsGeoJSONResponse.ProtoReflect.Descriptor instead.
 func (*GetLocationsAsGeoJSONResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{24}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GetLocationsAsGeoJSONResponse) GetGeojson() string {
@@ -1532,7 +1715,7 @@ type CreateObservationsRequest struct {
 
 func (x *CreateObservationsRequest) Reset() {
 	*x = CreateObservationsRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[25]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1544,7 +1727,7 @@ func (x *CreateObservationsRequest) String() string {
 func (*CreateObservationsRequest) ProtoMessage() {}
 
 func (x *CreateObservationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[25]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1557,7 +1740,7 @@ func (x *CreateObservationsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateObservationsRequest.ProtoReflect.Descriptor instead.
 func (*CreateObservationsRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{25}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *CreateObservationsRequest) GetLocationId() int32 {
@@ -1571,7 +1754,7 @@ func (x *CreateObservationsRequest) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
 func (x *CreateObservationsRequest) GetObserverName() string {
@@ -1596,7 +1779,7 @@ type CreateObservationsResponse struct {
 
 func (x *CreateObservationsResponse) Reset() {
 	*x = CreateObservationsResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[26]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1608,7 +1791,7 @@ func (x *CreateObservationsResponse) String() string {
 func (*CreateObservationsResponse) ProtoMessage() {}
 
 func (x *CreateObservationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[26]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1621,7 +1804,7 @@ func (x *CreateObservationsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateObservationsResponse.ProtoReflect.Descriptor instead.
 func (*CreateObservationsResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{26}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{28}
 }
 
 type CreateObserverRequest struct {
@@ -1633,7 +1816,7 @@ type CreateObserverRequest struct {
 
 func (x *CreateObserverRequest) Reset() {
 	*x = CreateObserverRequest{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[27]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1645,7 +1828,7 @@ func (x *CreateObserverRequest) String() string {
 func (*CreateObserverRequest) ProtoMessage() {}
 
 func (x *CreateObserverRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[27]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1658,7 +1841,7 @@ func (x *CreateObserverRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateObserverRequest.ProtoReflect.Descriptor instead.
 func (*CreateObserverRequest) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{27}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *CreateObserverRequest) GetName() string {
@@ -1677,7 +1860,7 @@ type CreateObserverResponse struct {
 
 func (x *CreateObserverResponse) Reset() {
 	*x = CreateObserverResponse{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[28]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1689,7 +1872,7 @@ func (x *CreateObserverResponse) String() string {
 func (*CreateObserverResponse) ProtoMessage() {}
 
 func (x *CreateObserverResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[28]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1702,7 +1885,7 @@ func (x *CreateObserverResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateObserverResponse.ProtoReflect.Descriptor instead.
 func (*CreateObserverResponse) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{28}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *CreateObserverResponse) GetObserverId() int32 {
@@ -1714,15 +1897,15 @@ func (x *CreateObserverResponse) GetObserverId() int32 {
 
 type YieldPrediction_Uncertainty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LowerKw       int64                  `protobuf:"varint,1,opt,name=lower_kw,json=lowerKw,proto3" json:"lower_kw,omitempty"`
-	UpperKw       int64                  `protobuf:"varint,2,opt,name=upper_kw,json=upperKw,proto3" json:"upper_kw,omitempty"`
+	LowerPercent  float32                `protobuf:"fixed32,1,opt,name=lower_percent,json=lowerPercent,proto3" json:"lower_percent,omitempty"`
+	UpperPercent  float32                `protobuf:"fixed32,2,opt,name=upper_percent,json=upperPercent,proto3" json:"upper_percent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *YieldPrediction_Uncertainty) Reset() {
 	*x = YieldPrediction_Uncertainty{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[29]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1734,7 +1917,7 @@ func (x *YieldPrediction_Uncertainty) String() string {
 func (*YieldPrediction_Uncertainty) ProtoMessage() {}
 
 func (x *YieldPrediction_Uncertainty) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[29]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1750,31 +1933,84 @@ func (*YieldPrediction_Uncertainty) Descriptor() ([]byte, []int) {
 	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (x *YieldPrediction_Uncertainty) GetLowerKw() int64 {
+func (x *YieldPrediction_Uncertainty) GetLowerPercent() float32 {
 	if x != nil {
-		return x.LowerKw
+		return x.LowerPercent
 	}
 	return 0
 }
 
-func (x *YieldPrediction_Uncertainty) GetUpperKw() int64 {
+func (x *YieldPrediction_Uncertainty) GetUpperPercent() float32 {
 	if x != nil {
-		return x.UpperKw
+		return x.UpperPercent
 	}
 	return 0
+}
+
+type GetPredictedTimeseriesDeltasResponse_YieldDelta struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeltaPercent  float32                `protobuf:"fixed32,1,opt,name=delta_percent,json=deltaPercent,proto3" json:"delta_percent,omitempty"`
+	TimestampUnix *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) Reset() {
+	*x = GetPredictedTimeseriesDeltasResponse_YieldDelta{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPredictedTimeseriesDeltasResponse_YieldDelta) ProtoMessage() {}
+
+func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPredictedTimeseriesDeltasResponse_YieldDelta.ProtoReflect.Descriptor instead.
+func (*GetPredictedTimeseriesDeltasResponse_YieldDelta) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{8, 0}
+}
+
+func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) GetDeltaPercent() float32 {
+	if x != nil {
+		return x.DeltaPercent
+	}
+	return 0
+}
+
+func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) GetTimestampUnix() *timestamppb.Timestamp {
+	if x != nil {
+		return x.TimestampUnix
+	}
+	return nil
 }
 
 type GetPredictedCrossSectionResponse_YieldPredictionAtLocation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationId    int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	YieldKw       int64                  `protobuf:"varint,2,opt,name=yield_kw,json=yieldKw,proto3" json:"yield_kw,omitempty"`
+	CapacityWatts uint64                 `protobuf:"varint,2,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	YieldPercent  float32                `protobuf:"fixed32,3,opt,name=yield_percent,json=yieldPercent,proto3" json:"yield_percent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) Reset() {
 	*x = GetPredictedCrossSectionResponse_YieldPredictionAtLocation{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[30]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1786,7 +2022,7 @@ func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) String() st
 func (*GetPredictedCrossSectionResponse_YieldPredictionAtLocation) ProtoMessage() {}
 
 func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[30]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1799,7 +2035,7 @@ func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) ProtoReflec
 
 // Deprecated: Use GetPredictedCrossSectionResponse_YieldPredictionAtLocation.ProtoReflect.Descriptor instead.
 func (*GetPredictedCrossSectionResponse_YieldPredictionAtLocation) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{10, 0}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{12, 0}
 }
 
 func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) GetLocationId() int32 {
@@ -1809,9 +2045,16 @@ func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) GetLocation
 	return 0
 }
 
-func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) GetYieldKw() int64 {
+func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) GetCapacityWatts() uint64 {
 	if x != nil {
-		return x.YieldKw
+		return x.CapacityWatts
+	}
+	return 0
+}
+
+func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) GetYieldPercent() float32 {
+	if x != nil {
+		return x.YieldPercent
 	}
 	return 0
 }
@@ -1829,7 +2072,7 @@ type CreateForecastRequest_PredictedGenerationValue struct {
 
 func (x *CreateForecastRequest_PredictedGenerationValue) Reset() {
 	*x = CreateForecastRequest_PredictedGenerationValue{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1841,7 +2084,7 @@ func (x *CreateForecastRequest_PredictedGenerationValue) String() string {
 func (*CreateForecastRequest_PredictedGenerationValue) ProtoMessage() {}
 
 func (x *CreateForecastRequest_PredictedGenerationValue) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1854,7 +2097,7 @@ func (x *CreateForecastRequest_PredictedGenerationValue) ProtoReflect() protoref
 
 // Deprecated: Use CreateForecastRequest_PredictedGenerationValue.ProtoReflect.Descriptor instead.
 func (*CreateForecastRequest_PredictedGenerationValue) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{15, 0}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{17, 0}
 }
 
 func (x *CreateForecastRequest_PredictedGenerationValue) GetHorizonMins() int32 {
@@ -1904,7 +2147,7 @@ type CreateForecastRequest_Forecast struct {
 
 func (x *CreateForecastRequest_Forecast) Reset() {
 	*x = CreateForecastRequest_Forecast{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1916,7 +2159,7 @@ func (x *CreateForecastRequest_Forecast) String() string {
 func (*CreateForecastRequest_Forecast) ProtoMessage() {}
 
 func (x *CreateForecastRequest_Forecast) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1929,7 +2172,7 @@ func (x *CreateForecastRequest_Forecast) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateForecastRequest_Forecast.ProtoReflect.Descriptor instead.
 func (*CreateForecastRequest_Forecast) Descriptor() ([]byte, []int) {
-	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{15, 1}
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{17, 1}
 }
 
 func (x *CreateForecastRequest_Forecast) GetModelId() int32 {
@@ -1950,7 +2193,7 @@ func (x *CreateForecastRequest_Forecast) GetEnergySource() EnergySource {
 	if x != nil {
 		return x.EnergySource
 	}
-	return EnergySource_ENERGY_SOURCE_UNSPECIFIED
+	return EnergySource_UNSPECIFIED
 }
 
 func (x *CreateForecastRequest_Forecast) GetInitTimeUtc() *timestamppb.Timestamp {
@@ -1964,78 +2207,106 @@ var File_ocf_dp_dp_messages_proto protoreflect.FileDescriptor
 
 const file_ocf_dp_dp_messages_proto_rawDesc = "" +
 	"\n" +
-	"\x18ocf/dp/dp.messages.proto\x12\x06ocf.dp\x1a\x1fgoogle/protobuf/timestamp.proto\"I\n" +
-	"\x05Yield\x12\x19\n" +
-	"\byield_kw\x18\x01 \x01(\x03R\ayieldKw\x12%\n" +
-	"\x0etimestamp_unix\x18\x02 \x01(\x03R\rtimestampUnix\"\xdf\x01\n" +
-	"\x0fYieldPrediction\x12\x19\n" +
-	"\byield_kw\x18\x01 \x01(\x03R\ayieldKw\x12%\n" +
-	"\x0etimestamp_unix\x18\x02 \x01(\x03R\rtimestampUnix\x12E\n" +
-	"\vuncertainty\x18\x03 \x01(\v2#.ocf.dp.YieldPrediction.UncertaintyR\vuncertainty\x1aC\n" +
-	"\vUncertainty\x12\x19\n" +
-	"\blower_kw\x18\x01 \x01(\x03R\alowerKw\x12\x19\n" +
-	"\bupper_kw\x18\x02 \x01(\x03R\aupperKw\"N\n" +
+	"\x18ocf/dp/dp.messages.proto\x12\x06ocf.dp\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"o\n" +
+	"\x05Yield\x12#\n" +
+	"\ryield_percent\x18\x01 \x01(\x02R\fyieldPercent\x12A\n" +
+	"\x0etimestamp_unix\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\rtimestampUnix\"\x99\x02\n" +
+	"\x0fYieldPrediction\x12#\n" +
+	"\ryield_percent\x18\x01 \x01(\x02R\fyieldPercent\x12A\n" +
+	"\x0etimestamp_unix\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\rtimestampUnix\x12E\n" +
+	"\vuncertainty\x18\x03 \x01(\v2#.ocf.dp.YieldPrediction.UncertaintyR\vuncertainty\x1aW\n" +
+	"\vUncertainty\x12#\n" +
+	"\rlower_percent\x18\x01 \x01(\x02R\flowerPercent\x12#\n" +
+	"\rupper_percent\x18\x02 \x01(\x02R\fupperPercent\"d\n" +
+	"\x06LatLng\x12+\n" +
+	"\blatitude\x18\x01 \x01(\x02B\x0f\xbaH\f\n" +
 	"\n" +
-	"YieldDelta\x12\x19\n" +
-	"\bdelta_kw\x18\x01 \x01(\x12R\adeltaKw\x12%\n" +
-	"\x0etimestamp_unix\x18\x02 \x01(\x03R\rtimestampUnix\"\xa0\x01\n" +
+	"\x1d\x00\x00\xb4B-\x00\x00\xb4\xc2R\blatitude\x12-\n" +
+	"\tlongitude\x18\x02 \x01(\x02B\x0f\xbaH\f\n" +
+	"\n" +
+	"\x1d\x00\x004C-\x00\x004\xc3R\tlongitude\"K\n" +
+	"\x05Model\x12\x1d\n" +
+	"\n" +
+	"model_name\x18\x01 \x01(\tR\tmodelName\x12#\n" +
+	"\rmodel_version\x18\x02 \x01(\tR\fmodelVersion\"\xbc\x03\n" +
+	"\n" +
+	"TimeWindow\x12]\n" +
+	"\x14start_timestamp_unix\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampB\x0f\xbaH\f\xb2\x01\t8\x01*\x05\b\x80\xf8\xb35R\x12startTimestampUnix\x12W\n" +
+	"\x12end_timestamp_unix\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\r\xbaH\n" +
+	"\xb2\x01\a*\x05\b\x80\xf8\xb35R\x10endTimestampUnix:\xf5\x01\xbaH\xf1\x01\x1ax\n" +
+	"\x13maximum_window_size\x12\"window size must not exceed 7 days\x1a=(end_timestamp_unix - start_timestamp_unix) <= duration('7d')\x1au\n" +
+	"\x10start_before_end\x126start_timestamp_unix must be before end_timestamp_unix\x1a)start_timestamp_unix < end_timestamp_unix\"\xfa\x01\n" +
 	"\x1dGetPredictedTimeseriesRequest\x12!\n" +
 	"\flocation_ids\x18\x01 \x03(\x05R\vlocationIds\x129\n" +
 	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12!\n" +
-	"\fhorizon_mins\x18\x03 \x01(\x05R\vhorizonMins\"r\n" +
+	"\fhorizon_mins\x18\x03 \x01(\x05R\vhorizonMins\x123\n" +
+	"\vtime_window\x18\x04 \x01(\v2\x12.ocf.dp.TimeWindowR\n" +
+	"timeWindow\x12#\n" +
+	"\x05model\x18\x05 \x01(\v2\r.ocf.dp.ModelR\x05model\"\x99\x01\n" +
 	"\x1eGetPredictedTimeseriesResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
-	"locationId\x12/\n" +
-	"\x06yields\x18\x02 \x03(\v2\x17.ocf.dp.YieldPredictionR\x06yields\"\x8d\x02\n" +
+	"locationId\x12%\n" +
+	"\x0ecapacity_watts\x18\x02 \x01(\x04R\rcapacityWatts\x12/\n" +
+	"\x06yields\x18\x03 \x03(\v2\x17.ocf.dp.YieldPredictionR\x06yields\"\xa3\x02\n" +
 	"#GetPredictedTimeseriesDeltasRequest\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x129\n" +
 	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12!\n" +
-	"\fhorizon_mins\x18\x03 \x01(\x05R\vhorizonMins\x12\x1d\n" +
-	"\n" +
-	"model_name\x18\x04 \x01(\tR\tmodelName\x12#\n" +
-	"\rmodel_version\x18\x05 \x01(\tR\fmodelVersion\x12#\n" +
-	"\robserver_name\x18\x06 \x01(\tR\fobserverName\"s\n" +
+	"\fhorizon_mins\x18\x03 \x01(\x05R\vhorizonMins\x12#\n" +
+	"\x05model\x18\x04 \x01(\v2\r.ocf.dp.ModelR\x05model\x12#\n" +
+	"\robserver_name\x18\x05 \x01(\tR\fobserverName\x123\n" +
+	"\vtime_window\x18\x06 \x01(\v2\x12.ocf.dp.TimeWindowR\n" +
+	"timeWindow\"\xb5\x02\n" +
 	"$GetPredictedTimeseriesDeltasResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
-	"locationId\x12*\n" +
-	"\x06deltas\x18\x02 \x03(\v2\x12.ocf.dp.YieldDeltaR\x06deltas\"\xd6\x01\n" +
+	"locationId\x12%\n" +
+	"\x0ecapacity_watts\x18\x02 \x01(\x04R\rcapacityWatts\x12O\n" +
+	"\x06deltas\x18\x03 \x03(\v27.ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDeltaR\x06deltas\x1at\n" +
+	"\n" +
+	"YieldDelta\x12#\n" +
+	"\rdelta_percent\x18\x01 \x01(\x02R\fdeltaPercent\x12A\n" +
+	"\x0etimestamp_unix\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\rtimestampUnix\"\xd4\x01\n" +
 	"\x1cGetObservedTimeseriesRequest\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x12#\n" +
 	"\robserver_name\x18\x02 \x01(\tR\fobserverName\x129\n" +
-	"\n" +
-	"start_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
-	"\bend_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\"g\n" +
+	"\renergy_source\x18\x03 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x123\n" +
+	"\vtime_window\x18\x04 \x01(\v2\x12.ocf.dp.TimeWindowR\n" +
+	"timeWindow\"\x8e\x01\n" +
 	"\x1dGetObservedTimeseriesResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x12%\n" +
-	"\x06yields\x18\x02 \x03(\v2\r.ocf.dp.YieldR\x06yields\"\xa6\x01\n" +
+	"\x0ecapacity_watts\x18\x02 \x01(\x04R\rcapacityWatts\x12%\n" +
+	"\x06yields\x18\x03 \x03(\v2\r.ocf.dp.YieldR\x06yields\"\xe7\x01\n" +
 	"\x1fGetPredictedCrossSectionRequest\x12!\n" +
 	"\flocation_ids\x18\x01 \x03(\x05R\vlocationIds\x129\n" +
-	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12%\n" +
-	"\x0etimestamp_unix\x18\x03 \x01(\x03R\rtimestampUnix\"\xfe\x01\n" +
-	" GetPredictedCrossSectionResponse\x12%\n" +
-	"\x0etimestamp_unix\x18\x01 \x01(\x03R\rtimestampUnix\x12Z\n" +
-	"\x06yields\x18\x02 \x03(\v2B.ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocationR\x06yields\x1aW\n" +
+	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12A\n" +
+	"\x0etimestamp_unix\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\rtimestampUnix\x12#\n" +
+	"\x05model\x18\x04 \x01(\v2\r.ocf.dp.ModelR\x05model\"\xcc\x02\n" +
+	" GetPredictedCrossSectionResponse\x12A\n" +
+	"\x0etimestamp_unix\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rtimestampUnix\x12Z\n" +
+	"\x06yields\x18\x02 \x03(\v2B.ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocationR\x06yields\x1a\x88\x01\n" +
 	"\x19YieldPredictionAtLocation\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
-	"locationId\x12\x19\n" +
-	"\byield_kw\x18\x02 \x01(\x03R\ayieldKw\"v\n" +
-	"\x18GetLatestForecastRequest\x12\x1f\n" +
+	"locationId\x12%\n" +
+	"\x0ecapacity_watts\x18\x02 \x01(\x04R\rcapacityWatts\x12#\n" +
+	"\ryield_percent\x18\x03 \x01(\x02R\fyieldPercent\"\xec\x01\n" +
+	"\x1bGetLatestPredictionsRequest\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x129\n" +
-	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\"\x8e\x01\n" +
-	"\x19GetLatestForecastResponse\x12\x1f\n" +
+	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12L\n" +
+	"\x14pivot_timestamp_unix\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x12pivotTimestampUnix\x12#\n" +
+	"\x05model\x18\x04 \x01(\v2\r.ocf.dp.ModelR\x05model\"\xb8\x01\n" +
+	"\x1cGetLatestPredictionsResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
-	"locationId\x12\x1f\n" +
-	"\vforecast_id\x18\x02 \x01(\x03R\n" +
+	"locationId\x12%\n" +
+	"\x0ecapacity_watts\x18\x02 \x01(\x04R\rcapacityWatts\x12\x1f\n" +
+	"\vforecast_id\x18\x03 \x01(\x03R\n" +
 	"forecastId\x12/\n" +
-	"\x06yields\x18\x03 \x03(\v2\x17.ocf.dp.YieldPredictionR\x06yields\"e\n" +
-	"\x12CreateModelRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\x12!\n" +
-	"\fmake_default\x18\x03 \x01(\bR\vmakeDefault\"0\n" +
+	"\x06yields\x18\x04 \x03(\v2\x17.ocf.dp.YieldPredictionR\x06yields\"T\n" +
+	"\x12CreateModelRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x03R\x04name\x12!\n" +
+	"\aversion\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\aversion\"0\n" +
 	"\x13CreateModelResponse\x12\x19\n" +
 	"\bmodel_id\x18\x01 \x01(\x05R\amodelId\"\xbe\x04\n" +
 	"\x15CreateForecastRequest\x12B\n" +
@@ -2055,24 +2326,21 @@ const file_ocf_dp_dp_messages_proto_rawDesc = "" +
 	"\rinit_time_utc\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vinitTimeUtc\"9\n" +
 	"\x16CreateForecastResponse\x12\x1f\n" +
 	"\vforecast_id\x18\x01 \x01(\x03R\n" +
-	"forecastId\"\xd9\x01\n" +
+	"forecastId\"\xcd\x01\n" +
 	"\x11CreateSiteRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x129\n" +
-	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12\x1a\n" +
-	"\blatitude\x18\x03 \x01(\x02R\blatitude\x12\x1c\n" +
-	"\tlongitude\x18\x04 \x01(\x02R\tlongitude\x12\x1f\n" +
-	"\vcapacity_kw\x18\x05 \x01(\x03R\n" +
-	"capacityKw\x12\x1a\n" +
-	"\bmetadata\x18\x06 \x01(\tR\bmetadata\"5\n" +
+	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12&\n" +
+	"\x06latlng\x18\x03 \x01(\v2\x0e.ocf.dp.LatLngR\x06latlng\x12%\n" +
+	"\x0ecapacity_watts\x18\x04 \x01(\x04R\rcapacityWatts\x12\x1a\n" +
+	"\bmetadata\x18\x05 \x01(\tR\bmetadata\"5\n" +
 	"\x12CreateSiteResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
-	"locationId\"\xba\x01\n" +
+	"locationId\"\xc0\x01\n" +
 	"\x10CreateGspRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x129\n" +
 	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12\x1a\n" +
-	"\bgeometry\x18\x03 \x01(\tR\bgeometry\x12\x1f\n" +
-	"\vcapacity_mw\x18\x04 \x01(\x03R\n" +
-	"capacityMw\x12\x1a\n" +
+	"\bgeometry\x18\x03 \x01(\tR\bgeometry\x12%\n" +
+	"\x0ecapacity_watts\x18\x04 \x01(\x04R\rcapacityWatts\x12\x1a\n" +
 	"\bmetadata\x18\x05 \x01(\tR\bmetadata\"4\n" +
 	"\x11CreateGspResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
@@ -2080,16 +2348,14 @@ const file_ocf_dp_dp_messages_proto_rawDesc = "" +
 	"\x12GetLocationRequest\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x129\n" +
-	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\"\xc1\x01\n" +
+	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\"\xb5\x01\n" +
 	"\x13GetLocationResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
-	"\blatitude\x18\x03 \x01(\x02R\blatitude\x12\x1c\n" +
-	"\tlongitude\x18\x04 \x01(\x02R\tlongitude\x12\x1f\n" +
-	"\vcapacity_kw\x18\x05 \x01(\x03R\n" +
-	"capacityKw\x12\x1a\n" +
-	"\bmetadata\x18\x06 \x01(\tR\bmetadata\"e\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12&\n" +
+	"\x06latlng\x18\x03 \x01(\v2\x0e.ocf.dp.LatLngR\x06latlng\x12%\n" +
+	"\x0ecapacity_watts\x18\x04 \x01(\x04R\rcapacityWatts\x12\x1a\n" +
+	"\bmetadata\x18\x05 \x01(\tR\bmetadata\"e\n" +
 	"\x1cGetLocationsAsGeoJSONRequest\x12!\n" +
 	"\flocation_ids\x18\x01 \x03(\x05R\vlocationIds\x12\"\n" +
 	"\funsimplified\x18\x02 \x01(\bR\funsimplified\"9\n" +
@@ -2106,11 +2372,11 @@ const file_ocf_dp_dp_messages_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"9\n" +
 	"\x16CreateObserverResponse\x12\x1f\n" +
 	"\vobserver_id\x18\x01 \x01(\x05R\n" +
-	"observerId*^\n" +
-	"\fEnergySource\x12\x1d\n" +
-	"\x19ENERGY_SOURCE_UNSPECIFIED\x10\x00\x12\x17\n" +
-	"\x13ENERGY_SOURCE_SOLAR\x10\x01\x12\x16\n" +
-	"\x12ENERGY_SOURCE_WIND\x10\x02B7Z5github.com/devsjc/fcfs/dp/internal/protogen/ocf/dp;dpb\x06proto3"
+	"observerId*4\n" +
+	"\fEnergySource\x12\x0f\n" +
+	"\vUNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05SOLAR\x10\x01\x12\b\n" +
+	"\x04WIND\x10\x02B7Z5github.com/devsjc/fcfs/dp/internal/protogen/ocf/dp;dpb\x06proto3"
 
 var (
 	file_ocf_dp_dp_messages_proto_rawDescOnce sync.Once
@@ -2125,71 +2391,90 @@ func file_ocf_dp_dp_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_ocf_dp_dp_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ocf_dp_dp_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_ocf_dp_dp_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_ocf_dp_dp_messages_proto_goTypes = []any{
 	(EnergySource)(0),                                                  // 0: ocf.dp.EnergySource
 	(*Yield)(nil),                                                      // 1: ocf.dp.Yield
 	(*YieldPrediction)(nil),                                            // 2: ocf.dp.YieldPrediction
-	(*YieldDelta)(nil),                                                 // 3: ocf.dp.YieldDelta
-	(*GetPredictedTimeseriesRequest)(nil),                              // 4: ocf.dp.GetPredictedTimeseriesRequest
-	(*GetPredictedTimeseriesResponse)(nil),                             // 5: ocf.dp.GetPredictedTimeseriesResponse
-	(*GetPredictedTimeseriesDeltasRequest)(nil),                        // 6: ocf.dp.GetPredictedTimeseriesDeltasRequest
-	(*GetPredictedTimeseriesDeltasResponse)(nil),                       // 7: ocf.dp.GetPredictedTimeseriesDeltasResponse
-	(*GetObservedTimeseriesRequest)(nil),                               // 8: ocf.dp.GetObservedTimeseriesRequest
-	(*GetObservedTimeseriesResponse)(nil),                              // 9: ocf.dp.GetObservedTimeseriesResponse
-	(*GetPredictedCrossSectionRequest)(nil),                            // 10: ocf.dp.GetPredictedCrossSectionRequest
-	(*GetPredictedCrossSectionResponse)(nil),                           // 11: ocf.dp.GetPredictedCrossSectionResponse
-	(*GetLatestForecastRequest)(nil),                                   // 12: ocf.dp.GetLatestForecastRequest
-	(*GetLatestForecastResponse)(nil),                                  // 13: ocf.dp.GetLatestForecastResponse
-	(*CreateModelRequest)(nil),                                         // 14: ocf.dp.CreateModelRequest
-	(*CreateModelResponse)(nil),                                        // 15: ocf.dp.CreateModelResponse
-	(*CreateForecastRequest)(nil),                                      // 16: ocf.dp.CreateForecastRequest
-	(*CreateForecastResponse)(nil),                                     // 17: ocf.dp.CreateForecastResponse
-	(*CreateSiteRequest)(nil),                                          // 18: ocf.dp.CreateSiteRequest
-	(*CreateSiteResponse)(nil),                                         // 19: ocf.dp.CreateSiteResponse
-	(*CreateGspRequest)(nil),                                           // 20: ocf.dp.CreateGspRequest
-	(*CreateGspResponse)(nil),                                          // 21: ocf.dp.CreateGspResponse
-	(*GetLocationRequest)(nil),                                         // 22: ocf.dp.GetLocationRequest
-	(*GetLocationResponse)(nil),                                        // 23: ocf.dp.GetLocationResponse
-	(*GetLocationsAsGeoJSONRequest)(nil),                               // 24: ocf.dp.GetLocationsAsGeoJSONRequest
-	(*GetLocationsAsGeoJSONResponse)(nil),                              // 25: ocf.dp.GetLocationsAsGeoJSONResponse
-	(*CreateObservationsRequest)(nil),                                  // 26: ocf.dp.CreateObservationsRequest
-	(*CreateObservationsResponse)(nil),                                 // 27: ocf.dp.CreateObservationsResponse
-	(*CreateObserverRequest)(nil),                                      // 28: ocf.dp.CreateObserverRequest
-	(*CreateObserverResponse)(nil),                                     // 29: ocf.dp.CreateObserverResponse
-	(*YieldPrediction_Uncertainty)(nil),                                // 30: ocf.dp.YieldPrediction.Uncertainty
-	(*GetPredictedCrossSectionResponse_YieldPredictionAtLocation)(nil), // 31: ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
-	(*CreateForecastRequest_PredictedGenerationValue)(nil),             // 32: ocf.dp.CreateForecastRequest.PredictedGenerationValue
-	(*CreateForecastRequest_Forecast)(nil),                             // 33: ocf.dp.CreateForecastRequest.Forecast
-	(*timestamppb.Timestamp)(nil),                                      // 34: google.protobuf.Timestamp
+	(*LatLng)(nil),                                                     // 3: ocf.dp.LatLng
+	(*Model)(nil),                                                      // 4: ocf.dp.Model
+	(*TimeWindow)(nil),                                                 // 5: ocf.dp.TimeWindow
+	(*GetPredictedTimeseriesRequest)(nil),                              // 6: ocf.dp.GetPredictedTimeseriesRequest
+	(*GetPredictedTimeseriesResponse)(nil),                             // 7: ocf.dp.GetPredictedTimeseriesResponse
+	(*GetPredictedTimeseriesDeltasRequest)(nil),                        // 8: ocf.dp.GetPredictedTimeseriesDeltasRequest
+	(*GetPredictedTimeseriesDeltasResponse)(nil),                       // 9: ocf.dp.GetPredictedTimeseriesDeltasResponse
+	(*GetObservedTimeseriesRequest)(nil),                               // 10: ocf.dp.GetObservedTimeseriesRequest
+	(*GetObservedTimeseriesResponse)(nil),                              // 11: ocf.dp.GetObservedTimeseriesResponse
+	(*GetPredictedCrossSectionRequest)(nil),                            // 12: ocf.dp.GetPredictedCrossSectionRequest
+	(*GetPredictedCrossSectionResponse)(nil),                           // 13: ocf.dp.GetPredictedCrossSectionResponse
+	(*GetLatestPredictionsRequest)(nil),                                // 14: ocf.dp.GetLatestPredictionsRequest
+	(*GetLatestPredictionsResponse)(nil),                               // 15: ocf.dp.GetLatestPredictionsResponse
+	(*CreateModelRequest)(nil),                                         // 16: ocf.dp.CreateModelRequest
+	(*CreateModelResponse)(nil),                                        // 17: ocf.dp.CreateModelResponse
+	(*CreateForecastRequest)(nil),                                      // 18: ocf.dp.CreateForecastRequest
+	(*CreateForecastResponse)(nil),                                     // 19: ocf.dp.CreateForecastResponse
+	(*CreateSiteRequest)(nil),                                          // 20: ocf.dp.CreateSiteRequest
+	(*CreateSiteResponse)(nil),                                         // 21: ocf.dp.CreateSiteResponse
+	(*CreateGspRequest)(nil),                                           // 22: ocf.dp.CreateGspRequest
+	(*CreateGspResponse)(nil),                                          // 23: ocf.dp.CreateGspResponse
+	(*GetLocationRequest)(nil),                                         // 24: ocf.dp.GetLocationRequest
+	(*GetLocationResponse)(nil),                                        // 25: ocf.dp.GetLocationResponse
+	(*GetLocationsAsGeoJSONRequest)(nil),                               // 26: ocf.dp.GetLocationsAsGeoJSONRequest
+	(*GetLocationsAsGeoJSONResponse)(nil),                              // 27: ocf.dp.GetLocationsAsGeoJSONResponse
+	(*CreateObservationsRequest)(nil),                                  // 28: ocf.dp.CreateObservationsRequest
+	(*CreateObservationsResponse)(nil),                                 // 29: ocf.dp.CreateObservationsResponse
+	(*CreateObserverRequest)(nil),                                      // 30: ocf.dp.CreateObserverRequest
+	(*CreateObserverResponse)(nil),                                     // 31: ocf.dp.CreateObserverResponse
+	(*YieldPrediction_Uncertainty)(nil),                                // 32: ocf.dp.YieldPrediction.Uncertainty
+	(*GetPredictedTimeseriesDeltasResponse_YieldDelta)(nil),            // 33: ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta
+	(*GetPredictedCrossSectionResponse_YieldPredictionAtLocation)(nil), // 34: ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
+	(*CreateForecastRequest_PredictedGenerationValue)(nil),             // 35: ocf.dp.CreateForecastRequest.PredictedGenerationValue
+	(*CreateForecastRequest_Forecast)(nil),                             // 36: ocf.dp.CreateForecastRequest.Forecast
+	(*timestamppb.Timestamp)(nil),                                      // 37: google.protobuf.Timestamp
 }
 var file_ocf_dp_dp_messages_proto_depIdxs = []int32{
-	30, // 0: ocf.dp.YieldPrediction.uncertainty:type_name -> ocf.dp.YieldPrediction.Uncertainty
-	0,  // 1: ocf.dp.GetPredictedTimeseriesRequest.energy_source:type_name -> ocf.dp.EnergySource
-	2,  // 2: ocf.dp.GetPredictedTimeseriesResponse.yields:type_name -> ocf.dp.YieldPrediction
-	0,  // 3: ocf.dp.GetPredictedTimeseriesDeltasRequest.energy_source:type_name -> ocf.dp.EnergySource
-	3,  // 4: ocf.dp.GetPredictedTimeseriesDeltasResponse.deltas:type_name -> ocf.dp.YieldDelta
-	34, // 5: ocf.dp.GetObservedTimeseriesRequest.start_time:type_name -> google.protobuf.Timestamp
-	34, // 6: ocf.dp.GetObservedTimeseriesRequest.end_time:type_name -> google.protobuf.Timestamp
-	1,  // 7: ocf.dp.GetObservedTimeseriesResponse.yields:type_name -> ocf.dp.Yield
-	0,  // 8: ocf.dp.GetPredictedCrossSectionRequest.energy_source:type_name -> ocf.dp.EnergySource
-	31, // 9: ocf.dp.GetPredictedCrossSectionResponse.yields:type_name -> ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
-	0,  // 10: ocf.dp.GetLatestForecastRequest.energy_source:type_name -> ocf.dp.EnergySource
-	2,  // 11: ocf.dp.GetLatestForecastResponse.yields:type_name -> ocf.dp.YieldPrediction
-	33, // 12: ocf.dp.CreateForecastRequest.forecast:type_name -> ocf.dp.CreateForecastRequest.Forecast
-	32, // 13: ocf.dp.CreateForecastRequest.predicted_generation_values:type_name -> ocf.dp.CreateForecastRequest.PredictedGenerationValue
-	0,  // 14: ocf.dp.CreateSiteRequest.energy_source:type_name -> ocf.dp.EnergySource
-	0,  // 15: ocf.dp.CreateGspRequest.energy_source:type_name -> ocf.dp.EnergySource
-	0,  // 16: ocf.dp.GetLocationRequest.energy_source:type_name -> ocf.dp.EnergySource
-	0,  // 17: ocf.dp.CreateObservationsRequest.energy_source:type_name -> ocf.dp.EnergySource
-	1,  // 18: ocf.dp.CreateObservationsRequest.yields:type_name -> ocf.dp.Yield
-	0,  // 19: ocf.dp.CreateForecastRequest.Forecast.energy_source:type_name -> ocf.dp.EnergySource
-	34, // 20: ocf.dp.CreateForecastRequest.Forecast.init_time_utc:type_name -> google.protobuf.Timestamp
-	21, // [21:21] is the sub-list for method output_type
-	21, // [21:21] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	37, // 0: ocf.dp.Yield.timestamp_unix:type_name -> google.protobuf.Timestamp
+	37, // 1: ocf.dp.YieldPrediction.timestamp_unix:type_name -> google.protobuf.Timestamp
+	32, // 2: ocf.dp.YieldPrediction.uncertainty:type_name -> ocf.dp.YieldPrediction.Uncertainty
+	37, // 3: ocf.dp.TimeWindow.start_timestamp_unix:type_name -> google.protobuf.Timestamp
+	37, // 4: ocf.dp.TimeWindow.end_timestamp_unix:type_name -> google.protobuf.Timestamp
+	0,  // 5: ocf.dp.GetPredictedTimeseriesRequest.energy_source:type_name -> ocf.dp.EnergySource
+	5,  // 6: ocf.dp.GetPredictedTimeseriesRequest.time_window:type_name -> ocf.dp.TimeWindow
+	4,  // 7: ocf.dp.GetPredictedTimeseriesRequest.model:type_name -> ocf.dp.Model
+	2,  // 8: ocf.dp.GetPredictedTimeseriesResponse.yields:type_name -> ocf.dp.YieldPrediction
+	0,  // 9: ocf.dp.GetPredictedTimeseriesDeltasRequest.energy_source:type_name -> ocf.dp.EnergySource
+	4,  // 10: ocf.dp.GetPredictedTimeseriesDeltasRequest.model:type_name -> ocf.dp.Model
+	5,  // 11: ocf.dp.GetPredictedTimeseriesDeltasRequest.time_window:type_name -> ocf.dp.TimeWindow
+	33, // 12: ocf.dp.GetPredictedTimeseriesDeltasResponse.deltas:type_name -> ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta
+	0,  // 13: ocf.dp.GetObservedTimeseriesRequest.energy_source:type_name -> ocf.dp.EnergySource
+	5,  // 14: ocf.dp.GetObservedTimeseriesRequest.time_window:type_name -> ocf.dp.TimeWindow
+	1,  // 15: ocf.dp.GetObservedTimeseriesResponse.yields:type_name -> ocf.dp.Yield
+	0,  // 16: ocf.dp.GetPredictedCrossSectionRequest.energy_source:type_name -> ocf.dp.EnergySource
+	37, // 17: ocf.dp.GetPredictedCrossSectionRequest.timestamp_unix:type_name -> google.protobuf.Timestamp
+	4,  // 18: ocf.dp.GetPredictedCrossSectionRequest.model:type_name -> ocf.dp.Model
+	37, // 19: ocf.dp.GetPredictedCrossSectionResponse.timestamp_unix:type_name -> google.protobuf.Timestamp
+	34, // 20: ocf.dp.GetPredictedCrossSectionResponse.yields:type_name -> ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
+	0,  // 21: ocf.dp.GetLatestPredictionsRequest.energy_source:type_name -> ocf.dp.EnergySource
+	37, // 22: ocf.dp.GetLatestPredictionsRequest.pivot_timestamp_unix:type_name -> google.protobuf.Timestamp
+	4,  // 23: ocf.dp.GetLatestPredictionsRequest.model:type_name -> ocf.dp.Model
+	2,  // 24: ocf.dp.GetLatestPredictionsResponse.yields:type_name -> ocf.dp.YieldPrediction
+	36, // 25: ocf.dp.CreateForecastRequest.forecast:type_name -> ocf.dp.CreateForecastRequest.Forecast
+	35, // 26: ocf.dp.CreateForecastRequest.predicted_generation_values:type_name -> ocf.dp.CreateForecastRequest.PredictedGenerationValue
+	0,  // 27: ocf.dp.CreateSiteRequest.energy_source:type_name -> ocf.dp.EnergySource
+	3,  // 28: ocf.dp.CreateSiteRequest.latlng:type_name -> ocf.dp.LatLng
+	0,  // 29: ocf.dp.CreateGspRequest.energy_source:type_name -> ocf.dp.EnergySource
+	0,  // 30: ocf.dp.GetLocationRequest.energy_source:type_name -> ocf.dp.EnergySource
+	3,  // 31: ocf.dp.GetLocationResponse.latlng:type_name -> ocf.dp.LatLng
+	0,  // 32: ocf.dp.CreateObservationsRequest.energy_source:type_name -> ocf.dp.EnergySource
+	1,  // 33: ocf.dp.CreateObservationsRequest.yields:type_name -> ocf.dp.Yield
+	37, // 34: ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta.timestamp_unix:type_name -> google.protobuf.Timestamp
+	0,  // 35: ocf.dp.CreateForecastRequest.Forecast.energy_source:type_name -> ocf.dp.EnergySource
+	37, // 36: ocf.dp.CreateForecastRequest.Forecast.init_time_utc:type_name -> google.protobuf.Timestamp
+	37, // [37:37] is the sub-list for method output_type
+	37, // [37:37] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_ocf_dp_dp_messages_proto_init() }
@@ -2203,7 +2488,7 @@ func file_ocf_dp_dp_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ocf_dp_dp_messages_proto_rawDesc), len(file_ocf_dp_dp_messages_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   33,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

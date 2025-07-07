@@ -17,39 +17,34 @@ CREATE SCHEMA pred;
 /*- Tables ----------------------------------------------------------------------------------*/
 
 /*
-A forecast model is an ML model that generated predicted generation values.
-Each model's name and version number uniquely identifies it.
-
-is_default is a boolean that indicates whether this model is the default.
-It is NULL everywhere except for one row where it is TRUE; enforced by the
-CHECK and the UNIQUE constraint.
+A predictor is a source that generates predicted generation values.
+This is usually an ML model, but could also be an analytical process.
+Each predictor's name and version number uniquely identifies it.
 */
-CREATE TABLE pred.models (
-    model_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
-    model_name TEXT NOT NULL
+CREATE TABLE pred.predictors (
+    predictor_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
+    predictor_name TEXT NOT NULL
         CHECK (
-            LENGTH(model_name) > 0 AND LENGTH(model_name) < 64
-            AND model_name = LOWER(model_name)
+            LENGTH(predictor_name) > 0 AND LENGTH(predictor_name) < 64
+            AND predictor_name = LOWER(predictor_name)
         ),
-    model_version TEXT NOT NULL
+    predictor_version TEXT NOT NULL
         CHECK (
-            LENGTH(model_version) > 0 AND LENGTH(model_version) < 64
-            AND model_version = LOWER(model_version)
+            LENGTH(predictor_version) > 0 AND LENGTH(predictor_version) < 64
+            AND predictor_version = LOWER(predictor_version)
         ),
-    is_default BOOLEAN DEFAULT NULL
-        CHECK (is_default),
     created_at_utc TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         CHECK (created_at_utc <= CURRENT_TIMESTAMP),
-    PRIMARY KEY (model_id),
-    UNIQUE (model_name, model_version),
-    UNIQUE (is_default)
+    PRIMARY KEY (predictor_id),
+    UNIQUE (predictor_name, predictor_version)
 );
 
 /*
 Forecasts refer to the generation predictions created by a specific version
-of a forecast model for a specific location with a specific initialization time.
-There can only be one forecast per location per initialization time per model,
-reruns should replace old values.
+of a predictor for a specific location.
+A forecast is created at an initialization time, and contains a timeseries of
+predicted generation values. There can only be one forecast per location per
+initialization time per predictor; reruns should replace old values.
 */
 CREATE TABLE pred.forecasts (
     -- Type of energy source
@@ -61,8 +56,8 @@ CREATE TABLE pred.forecasts (
         REFERENCES loc.locations(location_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    model_id INTEGER NOT NULL
-        REFERENCES pred.models(model_id)
+    predictor_id INTEGER NOT NULL
+        REFERENCES pred.predictors(predictor_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     init_time_utc TIMESTAMP NOT NULL
@@ -71,7 +66,7 @@ CREATE TABLE pred.forecasts (
             AND init_time_utc < CURRENT_TIMESTAMP + make_interval(days => 30)
         ),
     PRIMARY KEY (forecast_id),
-    UNIQUE (location_id, source_type_id, model_id, init_time_utc)
+    UNIQUE (location_id, source_type_id, predictor_id, init_time_utc)
 );
 
 /*
@@ -88,15 +83,16 @@ CREATE TABLE pred.predicted_generation_values (
     horizon_mins SMALLINT NOT NULL
         CHECK (horizon_mins >= 0),
     -- Predicted generation confidence level values, as a percentage of capacity
-    -- represented by the smallint range. Since it isn't impossible to predict a little
-    -- over capacity, 30000 represents 100% of capacity intead of the max smallint value
-    -- (32767). This is to allow for a little bit of leeway in the predictions.
-    p10 SMALLINT DEFAULT NULL
-        CHECK (p10 IS NULL or p10 >= 0),
-    p50 SMALLINT NOT NULL
-        CHECK (p50 >= 0),
-    p90 SMALLINT DEFAULT NULL
-        CHECK (p90 IS NULL or p90 >= 0),
+    -- represented by a smallint percentage (sip). Since it isn't impossible to
+    -- predict a little over capacity, 30000 represents 100% of capacity
+    -- intead of the max smallint value (32767). This is to allow for a
+    -- little bit of leeway in the predictions.
+    p50_sip SMALLINT NOT NULL
+        CHECK (p50_sip >= 0),
+    p10_sip SMALLINT DEFAULT NULL
+        CHECK (p10_sip IS NULL or p10_sip >= 0),
+    p90_sip SMALLINT DEFAULT NULL
+        CHECK (p90_sip IS NULL or p90_sip >= 0),
     forecast_id INTEGER NOT NULL
         REFERENCES pred.forecasts(forecast_id)
         ON DELETE CASCADE

@@ -24,13 +24,13 @@ var File_ocf_dp_dp_service_proto protoreflect.FileDescriptor
 
 const file_ocf_dp_dp_service_proto_rawDesc = "" +
 	"\n" +
-	"\x17ocf/dp/dp.service.proto\x12\x06ocf.dp\x1a\x18ocf/dp/dp.messages.proto2\xc0\t\n" +
+	"\x17ocf/dp/dp.service.proto\x12\x06ocf.dp\x1a\x18ocf/dp/dp.messages.proto2\xc9\t\n" +
 	"\x13DataPlatformService\x12k\n" +
 	"\x16GetPredictedTimeseries\x12%.ocf.dp.GetPredictedTimeseriesRequest\x1a&.ocf.dp.GetPredictedTimeseriesResponse\"\x000\x01\x12{\n" +
 	"\x1cGetPredictedTimeseriesDeltas\x12+.ocf.dp.GetPredictedTimeseriesDeltasRequest\x1a,.ocf.dp.GetPredictedTimeseriesDeltasResponse\"\x00\x12o\n" +
 	"\x18GetPredictedCrossSection\x12'.ocf.dp.GetPredictedCrossSectionRequest\x1a(.ocf.dp.GetPredictedCrossSectionResponse\"\x00\x12f\n" +
-	"\x15GetObservedTimeseries\x12$.ocf.dp.GetObservedTimeseriesRequest\x1a%.ocf.dp.GetObservedTimeseriesResponse\"\x00\x12Z\n" +
-	"\x11GetLatestForecast\x12 .ocf.dp.GetLatestForecastRequest\x1a!.ocf.dp.GetLatestForecastResponse\"\x00\x12f\n" +
+	"\x15GetObservedTimeseries\x12$.ocf.dp.GetObservedTimeseriesRequest\x1a%.ocf.dp.GetObservedTimeseriesResponse\"\x00\x12c\n" +
+	"\x14GetLatestPredictions\x12#.ocf.dp.GetLatestPredictionsRequest\x1a$.ocf.dp.GetLatestPredictionsResponse\"\x00\x12f\n" +
 	"\x15GetLocationsAsGeoJSON\x12$.ocf.dp.GetLocationsAsGeoJSONRequest\x1a%.ocf.dp.GetLocationsAsGeoJSONResponse\"\x00\x12E\n" +
 	"\n" +
 	"CreateSite\x12\x19.ocf.dp.CreateSiteRequest\x1a\x1a.ocf.dp.CreateSiteResponse\"\x00\x12B\n" +
@@ -46,7 +46,7 @@ var file_ocf_dp_dp_service_proto_goTypes = []any{
 	(*GetPredictedTimeseriesDeltasRequest)(nil),  // 1: ocf.dp.GetPredictedTimeseriesDeltasRequest
 	(*GetPredictedCrossSectionRequest)(nil),      // 2: ocf.dp.GetPredictedCrossSectionRequest
 	(*GetObservedTimeseriesRequest)(nil),         // 3: ocf.dp.GetObservedTimeseriesRequest
-	(*GetLatestForecastRequest)(nil),             // 4: ocf.dp.GetLatestForecastRequest
+	(*GetLatestPredictionsRequest)(nil),          // 4: ocf.dp.GetLatestPredictionsRequest
 	(*GetLocationsAsGeoJSONRequest)(nil),         // 5: ocf.dp.GetLocationsAsGeoJSONRequest
 	(*CreateSiteRequest)(nil),                    // 6: ocf.dp.CreateSiteRequest
 	(*CreateGspRequest)(nil),                     // 7: ocf.dp.CreateGspRequest
@@ -59,7 +59,7 @@ var file_ocf_dp_dp_service_proto_goTypes = []any{
 	(*GetPredictedTimeseriesDeltasResponse)(nil), // 14: ocf.dp.GetPredictedTimeseriesDeltasResponse
 	(*GetPredictedCrossSectionResponse)(nil),     // 15: ocf.dp.GetPredictedCrossSectionResponse
 	(*GetObservedTimeseriesResponse)(nil),        // 16: ocf.dp.GetObservedTimeseriesResponse
-	(*GetLatestForecastResponse)(nil),            // 17: ocf.dp.GetLatestForecastResponse
+	(*GetLatestPredictionsResponse)(nil),         // 17: ocf.dp.GetLatestPredictionsResponse
 	(*GetLocationsAsGeoJSONResponse)(nil),        // 18: ocf.dp.GetLocationsAsGeoJSONResponse
 	(*CreateSiteResponse)(nil),                   // 19: ocf.dp.CreateSiteResponse
 	(*CreateGspResponse)(nil),                    // 20: ocf.dp.CreateGspResponse
@@ -74,7 +74,7 @@ var file_ocf_dp_dp_service_proto_depIdxs = []int32{
 	1,  // 1: ocf.dp.DataPlatformService.GetPredictedTimeseriesDeltas:input_type -> ocf.dp.GetPredictedTimeseriesDeltasRequest
 	2,  // 2: ocf.dp.DataPlatformService.GetPredictedCrossSection:input_type -> ocf.dp.GetPredictedCrossSectionRequest
 	3,  // 3: ocf.dp.DataPlatformService.GetObservedTimeseries:input_type -> ocf.dp.GetObservedTimeseriesRequest
-	4,  // 4: ocf.dp.DataPlatformService.GetLatestForecast:input_type -> ocf.dp.GetLatestForecastRequest
+	4,  // 4: ocf.dp.DataPlatformService.GetLatestPredictions:input_type -> ocf.dp.GetLatestPredictionsRequest
 	5,  // 5: ocf.dp.DataPlatformService.GetLocationsAsGeoJSON:input_type -> ocf.dp.GetLocationsAsGeoJSONRequest
 	6,  // 6: ocf.dp.DataPlatformService.CreateSite:input_type -> ocf.dp.CreateSiteRequest
 	7,  // 7: ocf.dp.DataPlatformService.CreateGsp:input_type -> ocf.dp.CreateGspRequest
@@ -87,7 +87,7 @@ var file_ocf_dp_dp_service_proto_depIdxs = []int32{
 	14, // 14: ocf.dp.DataPlatformService.GetPredictedTimeseriesDeltas:output_type -> ocf.dp.GetPredictedTimeseriesDeltasResponse
 	15, // 15: ocf.dp.DataPlatformService.GetPredictedCrossSection:output_type -> ocf.dp.GetPredictedCrossSectionResponse
 	16, // 16: ocf.dp.DataPlatformService.GetObservedTimeseries:output_type -> ocf.dp.GetObservedTimeseriesResponse
-	17, // 17: ocf.dp.DataPlatformService.GetLatestForecast:output_type -> ocf.dp.GetLatestForecastResponse
+	17, // 17: ocf.dp.DataPlatformService.GetLatestPredictions:output_type -> ocf.dp.GetLatestPredictionsResponse
 	18, // 18: ocf.dp.DataPlatformService.GetLocationsAsGeoJSON:output_type -> ocf.dp.GetLocationsAsGeoJSONResponse
 	19, // 19: ocf.dp.DataPlatformService.CreateSite:output_type -> ocf.dp.CreateSiteResponse
 	20, // 20: ocf.dp.DataPlatformService.CreateGsp:output_type -> ocf.dp.CreateGspResponse

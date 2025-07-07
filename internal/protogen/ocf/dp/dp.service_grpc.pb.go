@@ -23,7 +23,7 @@ const (
 	DataPlatformService_GetPredictedTimeseriesDeltas_FullMethodName = "/ocf.dp.DataPlatformService/GetPredictedTimeseriesDeltas"
 	DataPlatformService_GetPredictedCrossSection_FullMethodName     = "/ocf.dp.DataPlatformService/GetPredictedCrossSection"
 	DataPlatformService_GetObservedTimeseries_FullMethodName        = "/ocf.dp.DataPlatformService/GetObservedTimeseries"
-	DataPlatformService_GetLatestForecast_FullMethodName            = "/ocf.dp.DataPlatformService/GetLatestForecast"
+	DataPlatformService_GetLatestPredictions_FullMethodName         = "/ocf.dp.DataPlatformService/GetLatestPredictions"
 	DataPlatformService_GetLocationsAsGeoJSON_FullMethodName        = "/ocf.dp.DataPlatformService/GetLocationsAsGeoJSON"
 	DataPlatformService_CreateSite_FullMethodName                   = "/ocf.dp.DataPlatformService/CreateSite"
 	DataPlatformService_CreateGsp_FullMethodName                    = "/ocf.dp.DataPlatformService/CreateGsp"
@@ -38,11 +38,20 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataPlatformServiceClient interface {
+	// GetPredictedTimeseries fetches a horizontal slice of predicted data:
+	// i.e. many points in time at a single location.
 	GetPredictedTimeseries(ctx context.Context, in *GetPredictedTimeseriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetPredictedTimeseriesResponse], error)
+	// GetPredictedTimeseriesDeltas fetches a horizontal slice of data:
+	// i.e. many points in time at a single location.
+	// The deltas represent the difference between the predicted and observed value at each time.
 	GetPredictedTimeseriesDeltas(ctx context.Context, in *GetPredictedTimeseriesDeltasRequest, opts ...grpc.CallOption) (*GetPredictedTimeseriesDeltasResponse, error)
+	// GetPredictedCrossSection fetches a vertical slice of predicted data:
+	// i.e. many locations at a single point in time.
 	GetPredictedCrossSection(ctx context.Context, in *GetPredictedCrossSectionRequest, opts ...grpc.CallOption) (*GetPredictedCrossSectionResponse, error)
+	// GetObservedTimeseries fetches a horizontal slice of observed data:
+	// i.e. many points in time at a single location.
 	GetObservedTimeseries(ctx context.Context, in *GetObservedTimeseriesRequest, opts ...grpc.CallOption) (*GetObservedTimeseriesResponse, error)
-	GetLatestForecast(ctx context.Context, in *GetLatestForecastRequest, opts ...grpc.CallOption) (*GetLatestForecastResponse, error)
+	GetLatestPredictions(ctx context.Context, in *GetLatestPredictionsRequest, opts ...grpc.CallOption) (*GetLatestPredictionsResponse, error)
 	GetLocationsAsGeoJSON(ctx context.Context, in *GetLocationsAsGeoJSONRequest, opts ...grpc.CallOption) (*GetLocationsAsGeoJSONResponse, error)
 	CreateSite(ctx context.Context, in *CreateSiteRequest, opts ...grpc.CallOption) (*CreateSiteResponse, error)
 	CreateGsp(ctx context.Context, in *CreateGspRequest, opts ...grpc.CallOption) (*CreateGspResponse, error)
@@ -110,10 +119,10 @@ func (c *dataPlatformServiceClient) GetObservedTimeseries(ctx context.Context, i
 	return out, nil
 }
 
-func (c *dataPlatformServiceClient) GetLatestForecast(ctx context.Context, in *GetLatestForecastRequest, opts ...grpc.CallOption) (*GetLatestForecastResponse, error) {
+func (c *dataPlatformServiceClient) GetLatestPredictions(ctx context.Context, in *GetLatestPredictionsRequest, opts ...grpc.CallOption) (*GetLatestPredictionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetLatestForecastResponse)
-	err := c.cc.Invoke(ctx, DataPlatformService_GetLatestForecast_FullMethodName, in, out, cOpts...)
+	out := new(GetLatestPredictionsResponse)
+	err := c.cc.Invoke(ctx, DataPlatformService_GetLatestPredictions_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -204,11 +213,20 @@ func (c *dataPlatformServiceClient) CreateObservations(ctx context.Context, in *
 // All implementations should embed UnimplementedDataPlatformServiceServer
 // for forward compatibility.
 type DataPlatformServiceServer interface {
+	// GetPredictedTimeseries fetches a horizontal slice of predicted data:
+	// i.e. many points in time at a single location.
 	GetPredictedTimeseries(*GetPredictedTimeseriesRequest, grpc.ServerStreamingServer[GetPredictedTimeseriesResponse]) error
+	// GetPredictedTimeseriesDeltas fetches a horizontal slice of data:
+	// i.e. many points in time at a single location.
+	// The deltas represent the difference between the predicted and observed value at each time.
 	GetPredictedTimeseriesDeltas(context.Context, *GetPredictedTimeseriesDeltasRequest) (*GetPredictedTimeseriesDeltasResponse, error)
+	// GetPredictedCrossSection fetches a vertical slice of predicted data:
+	// i.e. many locations at a single point in time.
 	GetPredictedCrossSection(context.Context, *GetPredictedCrossSectionRequest) (*GetPredictedCrossSectionResponse, error)
+	// GetObservedTimeseries fetches a horizontal slice of observed data:
+	// i.e. many points in time at a single location.
 	GetObservedTimeseries(context.Context, *GetObservedTimeseriesRequest) (*GetObservedTimeseriesResponse, error)
-	GetLatestForecast(context.Context, *GetLatestForecastRequest) (*GetLatestForecastResponse, error)
+	GetLatestPredictions(context.Context, *GetLatestPredictionsRequest) (*GetLatestPredictionsResponse, error)
 	GetLocationsAsGeoJSON(context.Context, *GetLocationsAsGeoJSONRequest) (*GetLocationsAsGeoJSONResponse, error)
 	CreateSite(context.Context, *CreateSiteRequest) (*CreateSiteResponse, error)
 	CreateGsp(context.Context, *CreateGspRequest) (*CreateGspResponse, error)
@@ -238,8 +256,8 @@ func (UnimplementedDataPlatformServiceServer) GetPredictedCrossSection(context.C
 func (UnimplementedDataPlatformServiceServer) GetObservedTimeseries(context.Context, *GetObservedTimeseriesRequest) (*GetObservedTimeseriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetObservedTimeseries not implemented")
 }
-func (UnimplementedDataPlatformServiceServer) GetLatestForecast(context.Context, *GetLatestForecastRequest) (*GetLatestForecastResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestForecast not implemented")
+func (UnimplementedDataPlatformServiceServer) GetLatestPredictions(context.Context, *GetLatestPredictionsRequest) (*GetLatestPredictionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestPredictions not implemented")
 }
 func (UnimplementedDataPlatformServiceServer) GetLocationsAsGeoJSON(context.Context, *GetLocationsAsGeoJSONRequest) (*GetLocationsAsGeoJSONResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLocationsAsGeoJSON not implemented")
@@ -350,20 +368,20 @@ func _DataPlatformService_GetObservedTimeseries_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DataPlatformService_GetLatestForecast_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLatestForecastRequest)
+func _DataPlatformService_GetLatestPredictions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestPredictionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DataPlatformServiceServer).GetLatestForecast(ctx, in)
+		return srv.(DataPlatformServiceServer).GetLatestPredictions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DataPlatformService_GetLatestForecast_FullMethodName,
+		FullMethod: DataPlatformService_GetLatestPredictions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataPlatformServiceServer).GetLatestForecast(ctx, req.(*GetLatestForecastRequest))
+		return srv.(DataPlatformServiceServer).GetLatestPredictions(ctx, req.(*GetLatestPredictionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -532,8 +550,8 @@ var DataPlatformService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DataPlatformService_GetObservedTimeseries_Handler,
 		},
 		{
-			MethodName: "GetLatestForecast",
-			Handler:    _DataPlatformService_GetLatestForecast_Handler,
+			MethodName: "GetLatestPredictions",
+			Handler:    _DataPlatformService_GetLatestPredictions_Handler,
 		},
 		{
 			MethodName: "GetLocationsAsGeoJSON",
