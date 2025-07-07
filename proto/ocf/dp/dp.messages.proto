@@ -49,7 +49,12 @@ message LatLng {
 }
 
 message Model {
-  string model_name = 1;
+  /* The name of the model to use.
+   * The name must be at least 3 characters long.
+   */
+  string model_name = 1 [
+    (buf.validate.field).string.min_len = 3
+  ];
   /* The version of the model to use.
    * If not specified, the latest version will be used.
    */
@@ -98,10 +103,10 @@ message GetPredictedTimeseriesRequest {
    * to 36 hours after the current time.
    */
   TimeWindow time_window = 4;
-  /* The model to fetch predicted yields from.
-   * If not specified, the default model will be used.
-   */
-  Model model = 5;
+  /* The model to fetch predicted yields from.*/
+  Model model = 5[
+    (buf.validate.field).required = true
+  ];
 }
 
 message GetPredictedTimeseriesResponse {
@@ -119,9 +124,7 @@ message GetPredictedTimeseriesDeltasRequest {
    * 0 gives the most recently predicted deltas, and is the default if not specified.
    */
   int32 horizon_mins = 3;
-  /* The model to fetch predicted yields from.
-   * If not specified, the default model will be used.
-   */
+  /* The model to fetch predicted yields from. */
   Model model = 4;
   /* The name of the observer to compare predicted yields against.
    * If not specified, the default observer will be used.
@@ -168,9 +171,7 @@ message GetPredictedCrossSectionRequest {
   repeated int32 location_ids = 1;
   EnergySource energy_source = 2;
   google.protobuf.Timestamp timestamp_unix = 3;
-  /* The model to fetch predicted yields from.
-   * If not specified, the default model will be used.
-   */
+  /* The model to fetch predicted yields from. */
   Model model = 4;
 }
 
@@ -193,9 +194,7 @@ message GetLatestPredictionsRequest {
    * If not specified, the current time will be used.
    */
   google.protobuf.Timestamp pivot_timestamp_unix = 3;
-  /* The model to fetch the latest forecast from.
-   * If not specified, the default model will be used.
-   */
+  /* The model to fetch the latest forecast from. */
   Model model = 4;
 }
 

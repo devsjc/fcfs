@@ -5,20 +5,26 @@ INSERT INTO pred.predictors (predictor_name, predictor_version) VALUES (
     $1, $2
 ) RETURNING predictor_id;
 
--- name: GetLatestPredictorByName :one
+-- name: GetPredictorElseLatest :one
+/* GetPredictor retrieves a predictor by its name and version.
+ * If no version is provided (empty string), it defaults to the latest version
+ * for the given predictor name.
+*/
 SELECT
     predictor_id, predictor_name, predictor_version, created_at_utc
 FROM pred.predictors
-WHERE predictor_name = $1
-ORDER BY created_at_utc DESC
-LIMIT 1;
-
--- name: GetPredictor :one
-SELECT
-    predictor_id, predictor_name, predictor_version, created_at_utc
-FROM pred.predictors
-WHERE predictor_name = $1
-AND predictor_version = $2;
+WHERE 
+    predictor_name = sqlc.arg(predictor_name)::text
+    AND predictor_version = COALESCE(
+        NULLIF(sqlc.arg(predictor_version)::text, ''),
+        (
+            SELECT p.predictor_version
+            FROM pred.predictors p
+            WHERE p.predictor_name = sqlc.arg(predictor_name)::text
+            ORDER BY p.created_at_utc DESC
+            LIMIT 1
+        )
+    );
 
 -- name: ListPredictors :many
 SELECT
@@ -36,7 +42,7 @@ INSERT INTO pred.forecasts(
 ) RETURNING forecast_id, init_time_utc, source_type_id, location_id, predictor_id;
 
 -- name: CreateForecastsUsingCopy :batchone
--- CreateForecastsUsingBatch inserts a new forecasts as a batch process.
+/* CreateForecastsUsingBatch inserts a new forecasts as a batch process. */
 INSERT INTO pred.forecasts(
     location_id, source_type_id, predictor_id, init_time_utc
 ) VALUES (
@@ -44,10 +50,11 @@ INSERT INTO pred.forecasts(
 ) RETURNING *;
 
 -- name: CreatePredictionsAsInt16UsingCopy :copyfrom
--- CreatePredictionsAsInt16UsingCopy inserts predicted generation values using
--- postgres COPY protocol, making it the fastest way to perform large inserts of predictions.
--- Input p-values are expected as smallint percentages (sip) of capacity,
--- with 0 representing 0% and 30000 representing 100% of capacity.
+/* CreatePredictionsAsInt16UsingCopy inserts predicted generation values using
+ * postgres COPY protocol, making it the fastest way to perform large inserts of predictions.
+ * Input p-values are expected as smallint percentages (sip) of capacity,
+ * with 0 representing 0% and 30000 representing 100% of capacity.
+ */
 INSERT INTO pred.predicted_generation_values (
     horizon_mins, p10_sip, p50_sip, p90_sip, forecast_id, target_time_utc, metadata
 ) VALUES (
@@ -55,9 +62,10 @@ INSERT INTO pred.predicted_generation_values (
 );
 
 -- name: GetLatestForecastAtHorizonSincePivot :one
--- GetLatestForecastAtHorizonSincePivot retrieves the latest forecast for a given location,
--- source type, and predictor. Only forecasts that are older than the pivot time
--- minus the specified horizon are considered.
+/* GetLatestForecastAtHorizonSincePivot retrieves the latest forecast for a given location,
+ * source type, and predictor. Only forecasts that are older than the pivot time
+ * minus the specified horizon are considered.
+ */
 SELECT
     f.forecast_id,
     f.init_time_utc,
@@ -73,9 +81,10 @@ ORDER BY f.init_time_utc DESC
 LIMIT 1;
 
 -- name: ListPredictionsForForecast :many
--- ListPredictionsForForecast retrieves predicted generation values
--- for a given forecast as smallint percentages (sip) of capacity;
--- with 0 representing 0% and 30000 representing 100% of capacity.
+/* ListPredictionsForForecast retrieves predicted generation values
+ * for a given forecast as smallint percentages (sip) of capacity;
+ * with 0 representing 0% and 30000 representing 100% of capacity.
+ */
 SELECT
     horizon_mins,
     p10_sip,
@@ -87,13 +96,14 @@ FROM pred.predicted_generation_values
 WHERE forecast_id = $1;
 
 -- name: ListPredictionsForLocation :many
--- ListPredictionsForLocation retrieves predicted generation values as a timeseries.
--- Multiple overlapping forecasts can make up the timeseries, so predictions with the same target time
--- are filtered by lowest allowable horizon (i.e. predicted closest to their target time).
--- Predicted values are smallint percentages (sip) of capcity;
--- with 0 representing 0% and 30000 representing 100% of capacity.
+/* ListPredictionsForLocation retrieves predicted generation values as a timeseries.
+ * Multiple overlapping forecasts can make up the timeseries, so predictions with the same target time
+ * are filtered by lowest allowable horizon (i.e. predicted closest to their target time).
+ * Predicted values are smallint percentages (sip) of capcity;
+ * with 0 representing 0% and 30000 representing 100% of capacity.
+ */
 WITH relevant_forecasts AS (
-    -- Get all the forecasts that fall within the time window for the given location, source, and predictor
+    /* Get all the forecasts that fall within the time window for the given location, source, and predictor */
     SELECT
         f.forecast_id
     FROM pred.forecasts f
@@ -105,8 +115,8 @@ WITH relevant_forecasts AS (
         AND sqlc.arg(end_timestamp)::timestamp
 ),
 filteredPredictions AS (
-    -- Get all the predicted generation values for the relevant forecasts who's horizon is greater than
-    -- or equal to the specified horizon_mins
+    /* Get all the predicted generation values for the relevant forecasts who's horizon is greater than
+     * or equal to the specified horizon_mins */
     SELECT
         pv.horizon_mins,
         pv.p10_sip,
@@ -122,14 +132,14 @@ filteredPredictions AS (
     AND pv.horizon_mins >= sqlc.arg(horizon_mins)::integer
 ),
 rankedPredictions AS (
-    -- Rank the predictions by horizon_mins for each target_time_utc
+    /* Rank the predictions by horizon_mins for each target_time_utc */
     SELECT
         *,
         ROW_NUMBER() OVER (PARTITION BY target_time_utc ORDER BY horizon_mins ASC) AS rn
     FROM filteredPredictions
 )
 SELECT
-    -- For each target time, choose the value with the lowest available horizon
+    /* For each target time, choose the value with the lowest available horizon */
     rp.horizon_mins,
     p10_sip,
     p50_sip,
@@ -142,10 +152,11 @@ ORDER BY rp.target_time_utc ASC;
 
 
 -- name: ListPredictionsAtTimeForLocations :many
--- ListPredictionsAtTimeForLocations retrieves predicted generation values as percentages
--- of capacity for a specific time and horizon.
--- This is useful for comparing predictions across multiple locations.
--- Predicted values are 16-bit integers, with 0 representing 0% and 30000 representing 100% of capacity.
+/* ListPredictionsAtTimeForLocations retrieves predicted generation values as percentages
+ * of capacity for a specific time and horizon.
+ * This is useful for comparing predictions across multiple locations.
+ * Predicted values are 16-bit integers, with 0 representing 0% and 30000 representing 100% of capacity.
+ */
 WITH relevant_forecasts AS (
     SELECT
         f.forecast_id,

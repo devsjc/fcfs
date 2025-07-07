@@ -111,10 +111,6 @@ CREATE TABLE loc.location_sources (
     location_id INTEGER NOT NULL
         REFERENCES loc.locations(location_id)
         ON DELETE CASCADE,
-    -- The ID of the default predictor to use when getting predicted values for this location source
-    default_predictor_id INTEGER DEFAULT NULL
-        REFERENCES pred.predictors(predictor_id)
-        ON DELETE SET NULL,
     -- Metadata about the source, e.g. tilt, orientation, etc.
     metadata JSONB DEFAULT NULL
         CHECK ( metadata IS NULL OR metadata <> '{}'::jsonb ), -- Null is cheaper than empty JSON
@@ -161,10 +157,10 @@ BEGIN
             NEW.sys_period = TSRANGE(current_ts, NULL, '[]');
             INSERT INTO loc.location_sources (
                 location_id, source_type_id, capacity, capacity_unit_prefix_factor,
-                capacity_limit_sip, default_predictor_id, metadata, sys_period
+                capacity_limit_sip, metadata, sys_period
             ) VALUES (
                 NEW.location_id, NEW.source_type_id, NEW.capacity, NEW.capacity_unit_prefix_factor,
-                NEW.capacity_limit_sip, NEW.default_predictor_id, NEW.metadata, NEW.sys_period
+                NEW.capacity_limit_sip, NEW.metadata, NEW.sys_period
             );
             -- Cancel the original update action
             RETURN NULL;

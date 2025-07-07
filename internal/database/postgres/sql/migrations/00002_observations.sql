@@ -37,7 +37,7 @@ CREATE TABLE obs.observed_generation_values (
     -- 30000 represents 100% of capacity instead of the max smallint value (32767).
     -- This allows for some measurement leeway.
     value_sip SMALLINT NOT NULL
-        CHECK ( value >= 0 ),
+        CHECK ( value_sip >= 0 ),
     source_type_id SMALLINT NOT NULL
         REFERENCES loc.source_types(source_type_id)
         ON DELETE RESTRICT,

@@ -24,7 +24,6 @@ type LocLocationSource struct {
 	CapacityLimitSip         *int16
 	RecordID                 int32
 	LocationID               int32
-	DefaultPredictorID       *int32
 	Metadata                 []byte
 	SysPeriod                pgtype.Range[pgtype.Timestamp]
 }

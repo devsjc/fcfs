@@ -21,20 +21,12 @@ type Querier interface {
 	// and 30000 representing 100% of capacity.
 	CreateObservationsAsInt16UsingCopy(ctx context.Context, arg []CreateObservationsAsInt16UsingCopyParams) (int64, error)
 	CreateObserver(ctx context.Context, observerName string) (int32, error)
-	// CreatePredictionsAsInt16UsingCopy inserts predicted generation values using
-	// postgres COPY protocol, making it the fastest way to perform large inserts of predictions.
-	// Input p-values are expected as smallint percentages (sip) of capacity,
-	// with 0 representing 0% and 30000 representing 100% of capacity.
 	CreatePredictionsAsInt16UsingCopy(ctx context.Context, arg []CreatePredictionsAsInt16UsingCopyParams) (int64, error)
 	// --- Predictor ------------------------------------------------------------------------------
 	CreatePredictor(ctx context.Context, arg CreatePredictorParams) (int32, error)
 	DecomissionLocationSource(ctx context.Context, arg DecomissionLocationSourceParams) error
 	GetForecastsTimeComponent(ctx context.Context, arg GetForecastsTimeComponentParams) ([]GetForecastsTimeComponentRow, error)
-	// GetLatestForecastAtHorizonSincePivot retrieves the latest forecast for a given location,
-	// source type, and predictor. Only forecasts that are older than the pivot time
-	// minus the specified horizon are considered.
 	GetLatestForecastAtHorizonSincePivot(ctx context.Context, arg GetLatestForecastAtHorizonSincePivotParams) (GetLatestForecastAtHorizonSincePivotRow, error)
-	GetLatestPredictorByName(ctx context.Context, predictorName string) (PredPredictor, error)
 	GetLocationById(ctx context.Context, locationID int32) (GetLocationByIdRow, error)
 	GetLocationGeoJSONByIds(ctx context.Context, arg GetLocationGeoJSONByIdsParams) ([]byte, error)
 	// Get latest active record via the UPPER(sys_period) IS NULL condition
@@ -44,7 +36,7 @@ type Querier interface {
 	// and 30000 representing 100% of capacity. This is faster than converting the values to percentages.
 	GetObservationsAsInt16Between(ctx context.Context, arg GetObservationsAsInt16BetweenParams) ([]GetObservationsAsInt16BetweenRow, error)
 	GetObserverByName(ctx context.Context, observerName string) (ObsObserver, error)
-	GetPredictor(ctx context.Context, arg GetPredictorParams) (PredPredictor, error)
+	GetPredictorElseLatest(ctx context.Context, arg GetPredictorElseLatestParams) (PredPredictor, error)
 	//- Queries for the locations table ------------------------------
 	GetSourceTypeByName(ctx context.Context, sourceTypeName string) (LocSourceType, error)
 	ListLocationGeometryByType(ctx context.Context, locationTypeName string) ([]ListLocationGeometryByTypeRow, error)
@@ -54,20 +46,8 @@ type Querier interface {
 	ListLocationsByType(ctx context.Context, locationTypeName string) ([]LocLocation, error)
 	ListLocationsSources(ctx context.Context, arg ListLocationsSourcesParams) ([]ListLocationsSourcesRow, error)
 	ListObservers(ctx context.Context) ([]ObsObserver, error)
-	// ListPredictionsAtTimeForLocations retrieves predicted generation values as percentages
-	// of capacity for a specific time and horizon.
-	// This is useful for comparing predictions across multiple locations.
-	// Predicted values are 16-bit integers, with 0 representing 0% and 30000 representing 100% of capacity.
 	ListPredictionsAtTimeForLocations(ctx context.Context, arg ListPredictionsAtTimeForLocationsParams) ([]ListPredictionsAtTimeForLocationsRow, error)
-	// ListPredictionsForForecast retrieves predicted generation values
-	// for a given forecast as smallint percentages (sip) of capacity;
-	// with 0 representing 0% and 30000 representing 100% of capacity.
 	ListPredictionsForForecast(ctx context.Context, forecastID int32) ([]ListPredictionsForForecastRow, error)
-	// ListPredictionsForLocation retrieves predicted generation values as a timeseries.
-	// Multiple overlapping forecasts can make up the timeseries, so predictions with the same target time
-	// are filtered by lowest allowable horizon (i.e. predicted closest to their target time).
-	// Predicted values are smallint percentages (sip) of capcity;
-	// with 0 representing 0% and 30000 representing 100% of capacity.
 	ListPredictionsForLocation(ctx context.Context, arg ListPredictionsForLocationParams) ([]ListPredictionsForLocationRow, error)
 	ListPredictors(ctx context.Context) ([]PredPredictor, error)
 	// UpdateLocationSource modifies an existing location source record.

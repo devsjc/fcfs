@@ -203,7 +203,7 @@ func TestCapacityToMultiplier(t *testing.T) {
 func TestCreateSolarSite(t *testing.T) {
 	c := setupClient(t, createPostgresContainer(t))
 
-	defaultSite := &pb.CreateSiteRequest{
+	defaultReq := &pb.CreateSiteRequest{
 		Name: "GREENWICH OBSERVATORY",
 		Latlng: &pb.LatLng{
 			Latitude:  51.4769,
@@ -216,44 +216,44 @@ func TestCreateSolarSite(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		site        *pb.CreateSiteRequest
+		req        *pb.CreateSiteRequest
 		shouldError bool
 	}{
 		{
 			name:        "Should create default site",
-			site:        defaultSite,
+			req:        defaultReq,
 			shouldError: false,
 		},
 		{
 			name: "Should create site with large capacity",
-			site: &pb.CreateSiteRequest{
+			req: &pb.CreateSiteRequest{
 				Name:          "LARGE CAPACITY SITE",
-				Latlng:        defaultSite.Latlng,
+				Latlng:        defaultReq.Latlng,
 				CapacityWatts: 100000000000, // 100 GW
-				Metadata:      defaultSite.Metadata,
-				EnergySource:  defaultSite.EnergySource,
+				Metadata:      defaultReq.Metadata,
+				EnergySource:  defaultReq.EnergySource,
 			},
 			shouldError: false,
 		},
 		{
 			name: "Shouldn't create site with invalid metadata",
-			site: &pb.CreateSiteRequest{
+			req: &pb.CreateSiteRequest{
 				Name:          "INVALID METADATA SITE",
-				Latlng:        defaultSite.Latlng,
-				CapacityWatts: defaultSite.CapacityWatts,
+				Latlng:        defaultReq.Latlng,
+				CapacityWatts: defaultReq.CapacityWatts,
 				Metadata:      "{}", // Empty metadata
-				EnergySource:  defaultSite.EnergySource,
+				EnergySource:  defaultReq.EnergySource,
 			},
 			shouldError: true,
 		},
 		{
 			name: "Shouldn't create site with invalid name",
-			site: &pb.CreateSiteRequest{
+			req: &pb.CreateSiteRequest{
 				Name:          "",
-				Latlng:        defaultSite.Latlng,
-				CapacityWatts: defaultSite.CapacityWatts,
-				Metadata:      defaultSite.Metadata,
-				EnergySource:  defaultSite.EnergySource,
+				Latlng:        defaultReq.Latlng,
+				CapacityWatts: defaultReq.CapacityWatts,
+				Metadata:      defaultReq.Metadata,
+				EnergySource:  defaultReq.EnergySource,
 			},
 			shouldError: true,
 		},
@@ -261,7 +261,7 @@ func TestCreateSolarSite(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := c.CreateSite(t.Context(), tt.site)
+			resp, err := c.CreateSite(t.Context(), tt.req)
 			if tt.shouldError {
 				require.Error(t, err)
 			} else {
@@ -269,14 +269,17 @@ func TestCreateSolarSite(t *testing.T) {
 				// Try to read it back
 				resp2, err := c.GetLocation(
 					t.Context(),
-					&pb.GetLocationRequest{LocationId: resp.LocationId},
+					&pb.GetLocationRequest{
+						LocationId: resp.LocationId,
+						EnergySource: defaultReq.EnergySource,
+					},
 				)
 				require.NoError(t, err)
-				require.Equal(t, tt.site.Name, resp2.Name)
-				require.Equal(t, tt.site.Latlng.Latitude, resp2.Latlng.Latitude)
-				require.Equal(t, tt.site.Latlng.Longitude, resp2.Latlng.Longitude)
-				require.Equal(t, tt.site.CapacityWatts, resp2.CapacityWatts)
-				require.Equal(t, tt.site.Metadata, resp2.Metadata)
+				require.Equal(t, tt.req.Name, resp2.Name)
+				require.Equal(t, tt.req.Latlng.Latitude, resp2.Latlng.Latitude)
+				require.Equal(t, tt.req.Latlng.Longitude, resp2.Latlng.Longitude)
+				require.Equal(t, tt.req.CapacityWatts, resp2.CapacityWatts)
+				require.Equal(t, tt.req.Metadata, resp2.Metadata)
 			}
 		})
 	}
@@ -376,7 +379,10 @@ func TestCreateSolarGSP(t *testing.T) {
 				require.NoError(t, err)
 				// Try to read it back
 				resp2, err := c.GetLocation(
-					t.Context(), &pb.GetLocationRequest{LocationId: resp.LocationId},
+					t.Context(), &pb.GetLocationRequest{
+						LocationId: resp.LocationId,
+						EnergySource: tt.gsp.EnergySource,
+					},
 				)
 				require.NoError(t, err)
 				require.Equal(t, tt.gsp.Name, resp2.Name)
@@ -413,7 +419,8 @@ func TestGetPredictedCrossSection(t *testing.T) {
 		EnergySource:  pb.EnergySource_SOLAR,
 		TimestampUnix: timestamppb.New(pivotTime),
 		LocationIds:   locationIds,
-	})
+		Model: &pb.Model{ModelName: "test_model", ModelVersion: "v10",
+	}})
 	require.NoError(t, err)
 	require.NotNil(t, crossSectionResp)
 	require.Len(t, crossSectionResp.Yields, len(locationIds))
@@ -520,6 +527,7 @@ func TestGetPredictedTimeseries(t *testing.T) {
 			stream, err := c.GetPredictedTimeseries(t.Context(), &pb.GetPredictedTimeseriesRequest{
 				LocationIds: []int32{0},
 				HorizonMins: int32(tt.horizonMins),
+				Model: &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
 			})
 			require.NoError(t, err)
 
@@ -572,6 +580,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 		t.Run(fmt.Sprintf("Start %s End %s", tt.startTime, tt.endTime), func(t *testing.T) {
 			resp, err := c.GetObservedTimeseries(t.Context(), &pb.GetObservedTimeseriesRequest{
 				LocationId: 1,
+				EnergySource: pb.EnergySource_SOLAR,
 				TimeWindow: &pb.TimeWindow{
 					StartTimestampUnix: timestamppb.New(tt.startTime),
 					EndTimestampUnix:   timestamppb.New(tt.endTime),
@@ -621,14 +630,15 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 				HorizonMins:  int32(tt.horizonMins),
 				EnergySource: pb.EnergySource_SOLAR,
 				ObserverName: "test_observer",
+				Model: &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
 			})
 			require.NoError(t, err)
 
 			targetTimes := make([]int64, len(deltaResp.Deltas))
-			actualValues := make([]int64, len(deltaResp.Deltas))
+			actualValues := make([]float32, len(deltaResp.Deltas))
 			for i, v := range deltaResp.Deltas {
 				targetTimes[i] = v.TimestampUnix.AsTime().Unix()
-				actualValues[i] = int64(v.DeltaPercent)
+				actualValues[i] = v.DeltaPercent
 			}
 			require.IsIncreasing(t, targetTimes)
 			require.Equal(t, tt.expectedValues, actualValues)

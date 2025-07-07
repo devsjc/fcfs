@@ -14,12 +14,11 @@ DECLARE
     num_pgvs_per_forecast INTEGER := forecast_length_mins / gv_resolution_mins;
     earliest_forecast_offset_mins INTEGER := num_forecasts_per_location * forecast_resolution_mins;
 BEGIN
-    -- Insert models
-    INSERT INTO pred.models (model_name, model_version, is_default)
+    -- Insert predictors
+    INSERT INTO pred.predictors (predictor_name, predictor_version)
     SELECT
         'test_model',
-        'v' || i,
-        CASE WHEN i = 10 THEN TRUE ELSE NULL END
+        'v' || i
     FROM generate_series(1, 10) AS i;
 
     -- Insert locations
@@ -27,7 +26,7 @@ BEGIN
       (location_name, location_type_id, geom)
     SELECT
         'LOCATION-' || i AS location_name,
-        (SELECT location_type_id FROM loc.location_types WHERE location_type_name = 'site'),
+        (SELECT location_type_id FROM loc.location_types WHERE location_type_name = 'SITE'),
         ST_SetSRID(ST_MakePoint(random() * 360 - 180, random() * 180 - 90), 4326)
     FROM generate_series(0, num_locations - 1) as i;
     RAISE NOTICE 'Inserted % locations', (SELECT COUNT(*) FROM loc.locations);
@@ -40,7 +39,7 @@ BEGIN
         INSERT INTO loc.location_sources
             (source_type_id, capacity, capacity_unit_prefix_factor, location_id, metadata)
         VALUES (
-            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'solar'),
+            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'SOLAR'),
             1000::SMALLINT,
             3,
             loc_id,
@@ -48,20 +47,20 @@ BEGIN
 
         -- Insert forecasts for each location
         INSERT INTO pred.forecasts
-            (source_type_id, location_id, model_id, init_time_utc)
+            (source_type_id, location_id, predictor_id, init_time_utc)
         SELECT
-            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'solar'),
+            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'SOLAR'),
             loc_id,
-            (SELECT model_id FROM pred.models WHERE is_default = TRUE),
+            (SELECT MAX(predictor_id) FROM pred.predictors),
             pivot_time - (i || ' minutes')::interval
         FROM generate_series(0, earliest_forecast_offset_mins - forecast_resolution_mins, forecast_resolution_mins) AS i;
         
         -- Insert observed generation values covering all the forecast period, always half the capacity
         INSERT INTO obs.observed_generation_values
-            (value, source_type_id, observer_id, location_id, observation_time_utc)
+            (value_sip, source_type_id, observer_id, location_id, observation_time_utc)
         SELECT
             15000::SMALLINT,
-            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'solar'),
+            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'SOLAR'),
             (SELECT observer_id FROM obs.observers WHERE observer_name = 'test_observer'),
             loc_id,
             pivot_time - (i || ' minutes')::interval
@@ -72,7 +71,7 @@ BEGIN
     -- Insert predicted generation values for each forecast
     FOR result IN SELECT forecast_id, init_time_utc FROM pred.forecasts LOOP
         INSERT INTO pred.predicted_generation_values
-            (horizon_mins, p10, p50, p90, forecast_id, target_time_utc, metadata)
+            (horizon_mins, p10_sip, p50_sip, p90_sip, forecast_id, target_time_utc, metadata)
         SELECT
             i,
             GREATEST(CAST((100 / num_pgvs_per_forecast) * (i / gv_resolution_mins) * (30000/100) AS SMALLINT) - 300::SMALLINT, 0::SMALLINT),

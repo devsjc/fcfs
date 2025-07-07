@@ -155,6 +155,10 @@ func (q *Queries) GetForecastsTimeComponent(ctx context.Context, arg GetForecast
 }
 
 const getLatestForecastAtHorizonSincePivot = `-- name: GetLatestForecastAtHorizonSincePivot :one
+/* GetLatestForecastAtHorizonSincePivot retrieves the latest forecast for a given location,
+ * source type, and predictor. Only forecasts that are older than the pivot time
+ * minus the specified horizon are considered.
+ */
 SELECT
     f.forecast_id,
     f.init_time_utc,
@@ -186,9 +190,6 @@ type GetLatestForecastAtHorizonSincePivotRow struct {
 	PredictorID  int32
 }
 
-// GetLatestForecastAtHorizonSincePivot retrieves the latest forecast for a given location,
-// source type, and predictor. Only forecasts that are older than the pivot time
-// minus the specified horizon are considered.
 func (q *Queries) GetLatestForecastAtHorizonSincePivot(ctx context.Context, arg GetLatestForecastAtHorizonSincePivotParams) (GetLatestForecastAtHorizonSincePivotRow, error) {
 	row := q.db.QueryRow(ctx, getLatestForecastAtHorizonSincePivot,
 		arg.LocationID,
@@ -208,42 +209,35 @@ func (q *Queries) GetLatestForecastAtHorizonSincePivot(ctx context.Context, arg 
 	return i, err
 }
 
-const getLatestPredictorByName = `-- name: GetLatestPredictorByName :one
+const getPredictorElseLatest = `-- name: GetPredictorElseLatest :one
+/* GetPredictor retrieves a predictor by its name and version.
+ * If no version is provided (empty string), it defaults to the latest version
+ * for the given predictor name.
+*/
 SELECT
     predictor_id, predictor_name, predictor_version, created_at_utc
 FROM pred.predictors
-WHERE predictor_name = $1
-ORDER BY created_at_utc DESC
-LIMIT 1
+WHERE 
+    predictor_name = $1::text
+    AND predictor_version = COALESCE(
+        NULLIF($2::text, ''),
+        (
+            SELECT p.predictor_version
+            FROM pred.predictors p
+            WHERE p.predictor_name = $1::text
+            ORDER BY p.created_at_utc DESC
+            LIMIT 1
+        )
+    )
 `
 
-func (q *Queries) GetLatestPredictorByName(ctx context.Context, predictorName string) (PredPredictor, error) {
-	row := q.db.QueryRow(ctx, getLatestPredictorByName, predictorName)
-	var i PredPredictor
-	err := row.Scan(
-		&i.PredictorID,
-		&i.PredictorName,
-		&i.PredictorVersion,
-		&i.CreatedAtUtc,
-	)
-	return i, err
-}
-
-const getPredictor = `-- name: GetPredictor :one
-SELECT
-    predictor_id, predictor_name, predictor_version, created_at_utc
-FROM pred.predictors
-WHERE predictor_name = $1
-AND predictor_version = $2
-`
-
-type GetPredictorParams struct {
+type GetPredictorElseLatestParams struct {
 	PredictorName    string
 	PredictorVersion string
 }
 
-func (q *Queries) GetPredictor(ctx context.Context, arg GetPredictorParams) (PredPredictor, error) {
-	row := q.db.QueryRow(ctx, getPredictor, arg.PredictorName, arg.PredictorVersion)
+func (q *Queries) GetPredictorElseLatest(ctx context.Context, arg GetPredictorElseLatestParams) (PredPredictor, error) {
+	row := q.db.QueryRow(ctx, getPredictorElseLatest, arg.PredictorName, arg.PredictorVersion)
 	var i PredPredictor
 	err := row.Scan(
 		&i.PredictorID,
@@ -255,6 +249,11 @@ func (q *Queries) GetPredictor(ctx context.Context, arg GetPredictorParams) (Pre
 }
 
 const listPredictionsAtTimeForLocations = `-- name: ListPredictionsAtTimeForLocations :many
+/* ListPredictionsAtTimeForLocations retrieves predicted generation values as percentages
+ * of capacity for a specific time and horizon.
+ * This is useful for comparing predictions across multiple locations.
+ * Predicted values are 16-bit integers, with 0 representing 0% and 30000 representing 100% of capacity.
+ */
 WITH relevant_forecasts AS (
     SELECT
         f.forecast_id,
@@ -306,10 +305,6 @@ type ListPredictionsAtTimeForLocationsRow struct {
 	Metadata      []byte
 }
 
-// ListPredictionsAtTimeForLocations retrieves predicted generation values as percentages
-// of capacity for a specific time and horizon.
-// This is useful for comparing predictions across multiple locations.
-// Predicted values are 16-bit integers, with 0 representing 0% and 30000 representing 100% of capacity.
 func (q *Queries) ListPredictionsAtTimeForLocations(ctx context.Context, arg ListPredictionsAtTimeForLocationsParams) ([]ListPredictionsAtTimeForLocationsRow, error) {
 	rows, err := q.db.Query(ctx, listPredictionsAtTimeForLocations,
 		arg.SourceTypeID,
@@ -345,6 +340,10 @@ func (q *Queries) ListPredictionsAtTimeForLocations(ctx context.Context, arg Lis
 }
 
 const listPredictionsForForecast = `-- name: ListPredictionsForForecast :many
+/* ListPredictionsForForecast retrieves predicted generation values
+ * for a given forecast as smallint percentages (sip) of capacity;
+ * with 0 representing 0% and 30000 representing 100% of capacity.
+ */
 SELECT
     horizon_mins,
     p10_sip,
@@ -365,9 +364,6 @@ type ListPredictionsForForecastRow struct {
 	Metadata      []byte
 }
 
-// ListPredictionsForForecast retrieves predicted generation values
-// for a given forecast as smallint percentages (sip) of capacity;
-// with 0 representing 0% and 30000 representing 100% of capacity.
 func (q *Queries) ListPredictionsForForecast(ctx context.Context, forecastID int32) ([]ListPredictionsForForecastRow, error) {
 	rows, err := q.db.Query(ctx, listPredictionsForForecast, forecastID)
 	if err != nil {
@@ -396,8 +392,14 @@ func (q *Queries) ListPredictionsForForecast(ctx context.Context, forecastID int
 }
 
 const listPredictionsForLocation = `-- name: ListPredictionsForLocation :many
+/* ListPredictionsForLocation retrieves predicted generation values as a timeseries.
+ * Multiple overlapping forecasts can make up the timeseries, so predictions with the same target time
+ * are filtered by lowest allowable horizon (i.e. predicted closest to their target time).
+ * Predicted values are smallint percentages (sip) of capcity;
+ * with 0 representing 0% and 30000 representing 100% of capacity.
+ */
 WITH relevant_forecasts AS (
-    -- Get all the forecasts that fall within the time window for the given location, source, and predictor
+    /* Get all the forecasts that fall within the time window for the given location, source, and predictor */
     SELECT
         f.forecast_id
     FROM pred.forecasts f
@@ -409,8 +411,8 @@ WITH relevant_forecasts AS (
         AND $6::timestamp
 ),
 filteredPredictions AS (
-    -- Get all the predicted generation values for the relevant forecasts who's horizon is greater than
-    -- or equal to the specified horizon_mins
+    /* Get all the predicted generation values for the relevant forecasts who's horizon is greater than
+     * or equal to the specified horizon_mins */
     SELECT
         pv.horizon_mins,
         pv.p10_sip,
@@ -426,14 +428,14 @@ filteredPredictions AS (
     AND pv.horizon_mins >= $5::integer
 ),
 rankedPredictions AS (
-    -- Rank the predictions by horizon_mins for each target_time_utc
+    /* Rank the predictions by horizon_mins for each target_time_utc */
     SELECT
         horizon_mins, p10_sip, p50_sip, p90_sip, target_time_utc, metadata,
         ROW_NUMBER() OVER (PARTITION BY target_time_utc ORDER BY horizon_mins ASC) AS rn
     FROM filteredPredictions
 )
 SELECT
-    -- For each target time, choose the value with the lowest available horizon
+    /* For each target time, choose the value with the lowest available horizon */
     rp.horizon_mins,
     p10_sip,
     p50_sip,
@@ -463,11 +465,6 @@ type ListPredictionsForLocationRow struct {
 	Metadata      []byte
 }
 
-// ListPredictionsForLocation retrieves predicted generation values as a timeseries.
-// Multiple overlapping forecasts can make up the timeseries, so predictions with the same target time
-// are filtered by lowest allowable horizon (i.e. predicted closest to their target time).
-// Predicted values are smallint percentages (sip) of capcity;
-// with 0 representing 0% and 30000 representing 100% of capacity.
 func (q *Queries) ListPredictionsForLocation(ctx context.Context, arg ListPredictionsForLocationParams) ([]ListPredictionsForLocationRow, error) {
 	rows, err := q.db.Query(ctx, listPredictionsForLocation,
 		arg.LocationID,

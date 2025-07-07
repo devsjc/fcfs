@@ -89,7 +89,6 @@ SELECT
     capacity,
     capacity_unit_prefix_factor,
     capacity_limit_sip,
-    default_predictor_id,
     metadata::json AS metadata
 FROM loc.location_sources
 WHERE 
@@ -112,11 +111,10 @@ WHERE
 
 -- name: CreateLocationSource :one
 INSERT INTO loc.location_sources (
-    location_id, source_type_id, capacity, capacity_unit_prefix_factor, capacity_limit_sip, default_predictor_id, metadata
+    location_id, source_type_id, capacity, capacity_unit_prefix_factor, capacity_limit_sip, metadata
 ) SELECT 
     $1, $2, $3, $4,
     sqlc.narg(capacity_limit_percent)::smallint,
-    sqlc.narg(default_predictor_id)::integer,
     sqlc.narg(metadata)::json::jsonb
 RETURNING record_id, capacity, capacity_unit_prefix_factor;
 
@@ -130,8 +128,7 @@ UPDATE loc.location_sources SET
     capacity = $3,
     capacity_unit_prefix_factor = $4,
     capacity_limit_sip = $5,
-    metadata = $6,
-    default_predictor_id = $7
+    metadata = $6
 WHERE 
     location_id = $1
     AND source_type_id = $2

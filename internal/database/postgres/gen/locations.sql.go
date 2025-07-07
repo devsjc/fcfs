@@ -39,12 +39,11 @@ func (q *Queries) CreateLocation(ctx context.Context, arg CreateLocationParams) 
 
 const createLocationSource = `-- name: CreateLocationSource :one
 INSERT INTO loc.location_sources (
-    location_id, source_type_id, capacity, capacity_unit_prefix_factor, capacity_limit_sip, default_predictor_id, metadata
+    location_id, source_type_id, capacity, capacity_unit_prefix_factor, capacity_limit_sip, metadata
 ) SELECT 
     $1, $2, $3, $4,
     $5::smallint,
-    $6::integer,
-    $7::json::jsonb
+    $6::json::jsonb
 RETURNING record_id, capacity, capacity_unit_prefix_factor
 `
 
@@ -54,7 +53,6 @@ type CreateLocationSourceParams struct {
 	Capacity                 int16
 	CapacityUnitPrefixFactor int16
 	CapacityLimitPercent     *int16
-	DefaultPredictorID       *int32
 	Metadata                 []byte
 }
 
@@ -71,7 +69,6 @@ func (q *Queries) CreateLocationSource(ctx context.Context, arg CreateLocationSo
 		arg.Capacity,
 		arg.CapacityUnitPrefixFactor,
 		arg.CapacityLimitPercent,
-		arg.DefaultPredictorID,
 		arg.Metadata,
 	)
 	var i CreateLocationSourceRow
@@ -171,7 +168,6 @@ SELECT
     capacity,
     capacity_unit_prefix_factor,
     capacity_limit_sip,
-    default_predictor_id,
     metadata::json AS metadata
 FROM loc.location_sources
 WHERE 
@@ -190,7 +186,6 @@ type GetLocationSourceRow struct {
 	Capacity                 int16
 	CapacityUnitPrefixFactor int16
 	CapacityLimitSip         *int16
-	DefaultPredictorID       *int32
 	Metadata                 []byte
 }
 
@@ -203,7 +198,6 @@ func (q *Queries) GetLocationSource(ctx context.Context, arg GetLocationSourcePa
 		&i.Capacity,
 		&i.CapacityUnitPrefixFactor,
 		&i.CapacityLimitSip,
-		&i.DefaultPredictorID,
 		&i.Metadata,
 	)
 	return i, err
@@ -449,8 +443,7 @@ UPDATE loc.location_sources SET
     capacity = $3,
     capacity_unit_prefix_factor = $4,
     capacity_limit_sip = $5,
-    metadata = $6,
-    default_predictor_id = $7
+    metadata = $6
 WHERE 
     location_id = $1
     AND source_type_id = $2
@@ -464,7 +457,6 @@ type UpdateLocationSourceParams struct {
 	CapacityUnitPrefixFactor int16
 	CapacityLimitSip         *int16
 	Metadata                 []byte
-	DefaultPredictorID       *int32
 }
 
 // UpdateLocationSource modifies an existing location source record.
@@ -480,7 +472,6 @@ func (q *Queries) UpdateLocationSource(ctx context.Context, arg UpdateLocationSo
 		arg.CapacityUnitPrefixFactor,
 		arg.CapacityLimitSip,
 		arg.Metadata,
-		arg.DefaultPredictorID,
 	)
 	return err
 }

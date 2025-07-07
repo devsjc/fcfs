@@ -242,8 +242,10 @@ func (x *LatLng) GetLongitude() float32 {
 }
 
 type Model struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	ModelName string                 `protobuf:"bytes,1,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the model to use.
+	// The name must be at least 3 characters long.
+	ModelName string `protobuf:"bytes,1,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
 	// The version of the model to use.
 	// If not specified, the latest version will be used.
 	ModelVersion  string `protobuf:"bytes,2,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
@@ -364,7 +366,6 @@ type GetPredictedTimeseriesRequest struct {
 	// to 36 hours after the current time.
 	TimeWindow *TimeWindow `protobuf:"bytes,4,opt,name=time_window,json=timeWindow,proto3" json:"time_window,omitempty"`
 	// The model to fetch predicted yields from.
-	// If not specified, the default model will be used.
 	Model         *Model `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -503,7 +504,6 @@ type GetPredictedTimeseriesDeltasRequest struct {
 	// 0 gives the most recently predicted deltas, and is the default if not specified.
 	HorizonMins int32 `protobuf:"varint,3,opt,name=horizon_mins,json=horizonMins,proto3" json:"horizon_mins,omitempty"`
 	// The model to fetch predicted yields from.
-	// If not specified, the default model will be used.
 	Model *Model `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
 	// The name of the observer to compare predicted yields against.
 	// If not specified, the default observer will be used.
@@ -785,7 +785,6 @@ type GetPredictedCrossSectionRequest struct {
 	EnergySource  EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
 	TimestampUnix *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=timestamp_unix,json=timestampUnix,proto3" json:"timestamp_unix,omitempty"`
 	// The model to fetch predicted yields from.
-	// If not specified, the default model will be used.
 	Model         *Model `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -909,7 +908,6 @@ type GetLatestPredictionsRequest struct {
 	// If not specified, the current time will be used.
 	PivotTimestampUnix *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=pivot_timestamp_unix,json=pivotTimestampUnix,proto3" json:"pivot_timestamp_unix,omitempty"`
 	// The model to fetch the latest forecast from.
-	// If not specified, the default model will be used.
 	Model         *Model `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2224,10 +2222,10 @@ const file_ocf_dp_dp_messages_proto_rawDesc = "" +
 	"\x1d\x00\x00\xb4B-\x00\x00\xb4\xc2R\blatitude\x12-\n" +
 	"\tlongitude\x18\x02 \x01(\x02B\x0f\xbaH\f\n" +
 	"\n" +
-	"\x1d\x00\x004C-\x00\x004\xc3R\tlongitude\"K\n" +
-	"\x05Model\x12\x1d\n" +
+	"\x1d\x00\x004C-\x00\x004\xc3R\tlongitude\"T\n" +
+	"\x05Model\x12&\n" +
 	"\n" +
-	"model_name\x18\x01 \x01(\tR\tmodelName\x12#\n" +
+	"model_name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x03R\tmodelName\x12#\n" +
 	"\rmodel_version\x18\x02 \x01(\tR\fmodelVersion\"\xbc\x03\n" +
 	"\n" +
 	"TimeWindow\x12]\n" +
@@ -2235,14 +2233,14 @@ const file_ocf_dp_dp_messages_proto_rawDesc = "" +
 	"\x12end_timestamp_unix\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\r\xbaH\n" +
 	"\xb2\x01\a*\x05\b\x80\xf8\xb35R\x10endTimestampUnix:\xf5\x01\xbaH\xf1\x01\x1ax\n" +
 	"\x13maximum_window_size\x12\"window size must not exceed 7 days\x1a=(end_timestamp_unix - start_timestamp_unix) <= duration('7d')\x1au\n" +
-	"\x10start_before_end\x126start_timestamp_unix must be before end_timestamp_unix\x1a)start_timestamp_unix < end_timestamp_unix\"\xfa\x01\n" +
+	"\x10start_before_end\x126start_timestamp_unix must be before end_timestamp_unix\x1a)start_timestamp_unix < end_timestamp_unix\"\x82\x02\n" +
 	"\x1dGetPredictedTimeseriesRequest\x12!\n" +
 	"\flocation_ids\x18\x01 \x03(\x05R\vlocationIds\x129\n" +
 	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x12!\n" +
 	"\fhorizon_mins\x18\x03 \x01(\x05R\vhorizonMins\x123\n" +
 	"\vtime_window\x18\x04 \x01(\v2\x12.ocf.dp.TimeWindowR\n" +
-	"timeWindow\x12#\n" +
-	"\x05model\x18\x05 \x01(\v2\r.ocf.dp.ModelR\x05model\"\x99\x01\n" +
+	"timeWindow\x12+\n" +
+	"\x05model\x18\x05 \x01(\v2\r.ocf.dp.ModelB\x06\xbaH\x03\xc8\x01\x01R\x05model\"\x99\x01\n" +
 	"\x1eGetPredictedTimeseriesResponse\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\x05R\n" +
 	"locationId\x12%\n" +

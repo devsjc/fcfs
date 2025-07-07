@@ -83,10 +83,6 @@ func (r iteratorForCreatePredictionsAsInt16UsingCopy) Err() error {
 	return nil
 }
 
-// CreatePredictionsAsInt16UsingCopy inserts predicted generation values using
-// postgres COPY protocol, making it the fastest way to perform large inserts of predictions.
-// Input p-values are expected as smallint percentages (sip) of capacity,
-// with 0 representing 0% and 30000 representing 100% of capacity.
 func (q *Queries) CreatePredictionsAsInt16UsingCopy(ctx context.Context, arg []CreatePredictionsAsInt16UsingCopyParams) (int64, error) {
 	return q.db.CopyFrom(ctx, []string{"pred", "predicted_generation_values"}, []string{"horizon_mins", "p10_sip", "p50_sip", "p90_sip", "forecast_id", "target_time_utc", "metadata"}, &iteratorForCreatePredictionsAsInt16UsingCopy{rows: arg})
 }
