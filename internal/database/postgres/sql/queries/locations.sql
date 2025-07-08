@@ -84,17 +84,23 @@ FROM (
 */
 
 -- name: GetLocationSource :one
-SELECT 
-    record_id,
-    capacity,
-    capacity_unit_prefix_factor,
-    capacity_limit_sip,
-    metadata::json AS metadata
-FROM loc.location_sources
-WHERE 
-    location_id = $1
-    AND source_type_id = $2
-    AND UPPER(sys_period) IS NULL;
+SELECT
+    ls.record_id,
+    ls.capacity,
+    ls.source_type_id,
+    ls.capacity_unit_prefix_factor,
+    ls.capacity_limit_sip,
+    ls.metadata::json AS metadata,
+    l.location_name,
+    ST_Y(l.centroid)::real AS latitude,
+    ST_X(l.centroid)::real AS longitude
+FROM loc.location_sources AS ls
+JOIN loc.source_types AS st ON ls.source_type_id = st.source_type_id
+JOIN loc.locations AS l USING (location_id)
+WHERE
+    ls.location_id = $1
+    AND st.source_type_name = UPPER(sqlc.arg(source_type_name)::text)
+    AND UPPER(ls.sys_period) IS NULL;
 
 -- name: ListLocationsSources :many
 SELECT 

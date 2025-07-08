@@ -32,6 +32,7 @@ const (
 	DataPlatformService_CreateForecast_FullMethodName               = "/ocf.dp.DataPlatformService/CreateForecast"
 	DataPlatformService_CreateObserver_FullMethodName               = "/ocf.dp.DataPlatformService/CreateObserver"
 	DataPlatformService_CreateObservations_FullMethodName           = "/ocf.dp.DataPlatformService/CreateObservations"
+	DataPlatformService_GetWeekAverageDeltas_FullMethodName         = "/ocf.dp.DataPlatformService/GetWeekAverageDeltas"
 )
 
 // DataPlatformServiceClient is the client API for DataPlatformService service.
@@ -60,6 +61,7 @@ type DataPlatformServiceClient interface {
 	CreateForecast(ctx context.Context, in *CreateForecastRequest, opts ...grpc.CallOption) (*CreateForecastResponse, error)
 	CreateObserver(ctx context.Context, in *CreateObserverRequest, opts ...grpc.CallOption) (*CreateObserverResponse, error)
 	CreateObservations(ctx context.Context, in *CreateObservationsRequest, opts ...grpc.CallOption) (*CreateObservationsResponse, error)
+	GetWeekAverageDeltas(ctx context.Context, in *GetWeekAverageDeltasRequest, opts ...grpc.CallOption) (*GetWeekAverageDeltasResponse, error)
 }
 
 type dataPlatformServiceClient struct {
@@ -209,6 +211,16 @@ func (c *dataPlatformServiceClient) CreateObservations(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *dataPlatformServiceClient) GetWeekAverageDeltas(ctx context.Context, in *GetWeekAverageDeltasRequest, opts ...grpc.CallOption) (*GetWeekAverageDeltasResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetWeekAverageDeltasResponse)
+	err := c.cc.Invoke(ctx, DataPlatformService_GetWeekAverageDeltas_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataPlatformServiceServer is the server API for DataPlatformService service.
 // All implementations should embed UnimplementedDataPlatformServiceServer
 // for forward compatibility.
@@ -235,6 +247,7 @@ type DataPlatformServiceServer interface {
 	CreateForecast(context.Context, *CreateForecastRequest) (*CreateForecastResponse, error)
 	CreateObserver(context.Context, *CreateObserverRequest) (*CreateObserverResponse, error)
 	CreateObservations(context.Context, *CreateObservationsRequest) (*CreateObservationsResponse, error)
+	GetWeekAverageDeltas(context.Context, *GetWeekAverageDeltasRequest) (*GetWeekAverageDeltasResponse, error)
 }
 
 // UnimplementedDataPlatformServiceServer should be embedded to have
@@ -282,6 +295,9 @@ func (UnimplementedDataPlatformServiceServer) CreateObserver(context.Context, *C
 }
 func (UnimplementedDataPlatformServiceServer) CreateObservations(context.Context, *CreateObservationsRequest) (*CreateObservationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateObservations not implemented")
+}
+func (UnimplementedDataPlatformServiceServer) GetWeekAverageDeltas(context.Context, *GetWeekAverageDeltasRequest) (*GetWeekAverageDeltasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWeekAverageDeltas not implemented")
 }
 func (UnimplementedDataPlatformServiceServer) testEmbeddedByValue() {}
 
@@ -530,6 +546,24 @@ func _DataPlatformService_CreateObservations_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DataPlatformService_GetWeekAverageDeltas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWeekAverageDeltasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataPlatformServiceServer).GetWeekAverageDeltas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataPlatformService_GetWeekAverageDeltas_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataPlatformServiceServer).GetWeekAverageDeltas(ctx, req.(*GetWeekAverageDeltasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DataPlatformService_ServiceDesc is the grpc.ServiceDesc for DataPlatformService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -584,6 +618,10 @@ var DataPlatformService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateObservations",
 			Handler:    _DataPlatformService_CreateObservations_Handler,
+		},
+		{
+			MethodName: "GetWeekAverageDeltas",
+			Handler:    _DataPlatformService_GetWeekAverageDeltas_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

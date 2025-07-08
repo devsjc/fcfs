@@ -189,26 +189,64 @@ FROM pred.predicted_generation_values pgv
 INNER JOIN latest_relevant_forecasts rf USING (forecast_id)
 WHERE pgv.horizon_mins = sqlc.arg(horizon_mins)::integer;
 
--- name: GetForecastsTimeComponent :many
+-- name: GetWeekAverageDeltasForLocations :many
+/* GetWeekAverageDeltasForLocations retrieves the average deltas between predicted and observed generation values
+ * for a given source type, predictor, and observer, across a week of forecasts made with the same init time.
+ * The pivot timestamp is used to determine the week and init time of interest.
+ * The results are grouped by location and horizon.
+ */
 WITH desired_init_times AS (
     SELECT 
-        (d.day::date + make_time(sqlq.arg(hour)::integer, sqlc.arg(minute)::integer, 0))::timestamp AS init_time_utc 
+        (d.day::date + sqlc.arg(pivot_timestamp)::timestamp::time)::timestamp AS init_time_utc 
     FROM generate_series(
-        NOW() - INTERVAL '7 days',
-        NOW() - INTERVAL '1 day',
+        sqlc.arg(pivot_timestamp)::timestamp::date - INTERVAL '7 days',
+        sqlc.arg(pivot_timestamp)::timestamp::date - INTERVAL '1 day',
         INTERVAL '1 day'
     ) AS d(day)
     ORDER BY d.day ASC
+),
+relevant_forecasts AS (
+    SELECT 
+        f.forecast_id,
+        f.init_time_utc,
+        f.source_type_id,
+        f.location_id,
+        f.predictor_id
+    FROM pred.forecasts f
+    INNER JOIN desired_init_times dit ON f.init_time_utc = dit.init_time_utc
+    WHERE f.location_id = ANY(sqlc.arg(location_ids)::integer[])
+    AND f.source_type_id = $1
+    AND f.predictor_id = $2
+),
+predicted_values AS (
+    SELECT
+        rf.location_id,
+        rf.forecast_id,
+        rf.source_type_id,
+        pgv.target_time_utc,
+        pgv.horizon_mins,
+        pgv.p50_sip
+    FROM relevant_forecasts rf
+    INNER JOIN pred.predicted_generation_values pgv USING (forecast_id)
+),
+deltas AS (
+    SELECT
+        pv.location_id,
+        pv.source_type_id,
+        pv.forecast_id,
+        pv.target_time_utc,
+        pv.horizon_mins,
+        pv.p50_sip - ov.value_sip AS delta_sip
+    FROM predicted_values pv
+    LEFT JOIN obs.observed_generation_values ov USING (location_id, source_type_id)
+    WHERE
+        ov.observer_id = $3
+        AND ov.observation_time_utc = pv.target_time_utc
 )
 SELECT
-    f.forecast_id,
-    f.init_time_utc,
-    f.source_type_id,
-    f.location_id,
-    f.predictor_id
-FROM pred.forecasts f
-INNER JOIN desired_init_times dit ON f.init_time_utc = dit.init_time_utc
-WHERE f.location_id = $1
-AND f.source_type_id = $2
-AND f.predictor_id = $3;
-
+    d.location_id,
+    d.horizon_mins,
+    AVG(d.delta_sip) AS avg_delta_sip
+FROM deltas d
+GROUP BY d.location_id, d.horizon_mins
+ORDER BY d.location_id, d.horizon_mins;

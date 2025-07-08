@@ -84,76 +84,6 @@ func (q *Queries) CreatePredictor(ctx context.Context, arg CreatePredictorParams
 	return predictor_id, err
 }
 
-const getForecastsTimeComponent = `-- name: GetForecastsTimeComponent :many
-WITH desired_init_times AS (
-    SELECT 
-        (d.day::date + make_time(sqlq.arg(hour)::integer, $4::integer, 0))::timestamp AS init_time_utc 
-    FROM generate_series(
-        NOW() - INTERVAL '7 days',
-        NOW() - INTERVAL '1 day',
-        INTERVAL '1 day'
-    ) AS d(day)
-    ORDER BY d.day ASC
-)
-SELECT
-    f.forecast_id,
-    f.init_time_utc,
-    f.source_type_id,
-    f.location_id,
-    f.predictor_id
-FROM pred.forecasts f
-INNER JOIN desired_init_times dit ON f.init_time_utc = dit.init_time_utc
-WHERE f.location_id = $1
-AND f.source_type_id = $2
-AND f.predictor_id = $3
-`
-
-type GetForecastsTimeComponentParams struct {
-	LocationID   int32
-	SourceTypeID int16
-	PredictorID  int32
-	Minute       int32
-}
-
-type GetForecastsTimeComponentRow struct {
-	ForecastID   int32
-	InitTimeUtc  pgtype.Timestamp
-	SourceTypeID int16
-	LocationID   int32
-	PredictorID  int32
-}
-
-func (q *Queries) GetForecastsTimeComponent(ctx context.Context, arg GetForecastsTimeComponentParams) ([]GetForecastsTimeComponentRow, error) {
-	rows, err := q.db.Query(ctx, getForecastsTimeComponent,
-		arg.LocationID,
-		arg.SourceTypeID,
-		arg.PredictorID,
-		arg.Minute,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []GetForecastsTimeComponentRow{}
-	for rows.Next() {
-		var i GetForecastsTimeComponentRow
-		if err := rows.Scan(
-			&i.ForecastID,
-			&i.InitTimeUtc,
-			&i.SourceTypeID,
-			&i.LocationID,
-			&i.PredictorID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getLatestForecastAtHorizonSincePivot = `-- name: GetLatestForecastAtHorizonSincePivot :one
 /* GetLatestForecastAtHorizonSincePivot retrieves the latest forecast for a given location,
  * source type, and predictor. Only forecasts that are older than the pivot time
@@ -246,6 +176,109 @@ func (q *Queries) GetPredictorElseLatest(ctx context.Context, arg GetPredictorEl
 		&i.CreatedAtUtc,
 	)
 	return i, err
+}
+
+const getWeekAverageDeltasForLocations = `-- name: GetWeekAverageDeltasForLocations :many
+/* GetWeekAverageDeltasForLocations retrieves the average deltas between predicted and observed generation values
+ * for a given source type, predictor, and observer, across a week of forecasts made with the same init time.
+ * The pivot timestamp is used to determine the week and init time of interest.
+ * The results are grouped by location and horizon.
+ */
+WITH desired_init_times AS (
+    SELECT 
+        (d.day::date + $4::timestamp::time)::timestamp AS init_time_utc 
+    FROM generate_series(
+        $4::timestamp::date - INTERVAL '7 days',
+        $4::timestamp::date - INTERVAL '1 day',
+        INTERVAL '1 day'
+    ) AS d(day)
+    ORDER BY d.day ASC
+),
+relevant_forecasts AS (
+    SELECT 
+        f.forecast_id,
+        f.init_time_utc,
+        f.source_type_id,
+        f.location_id,
+        f.predictor_id
+    FROM pred.forecasts f
+    INNER JOIN desired_init_times dit ON f.init_time_utc = dit.init_time_utc
+    WHERE f.location_id = ANY($5::integer[])
+    AND f.source_type_id = $1
+    AND f.predictor_id = $2
+),
+predicted_values AS (
+    SELECT
+        rf.location_id,
+        rf.forecast_id,
+        rf.source_type_id,
+        pgv.target_time_utc,
+        pgv.horizon_mins,
+        pgv.p50_sip
+    FROM relevant_forecasts rf
+    INNER JOIN pred.predicted_generation_values pgv USING (forecast_id)
+),
+deltas AS (
+    SELECT
+        pv.location_id,
+        pv.source_type_id,
+        pv.forecast_id,
+        pv.target_time_utc,
+        pv.horizon_mins,
+        pv.p50_sip - ov.value_sip AS delta_sip
+    FROM predicted_values pv
+    LEFT JOIN obs.observed_generation_values ov USING (location_id, source_type_id)
+    WHERE
+        ov.observer_id = $3
+        AND ov.observation_time_utc = pv.target_time_utc
+)
+SELECT
+    d.location_id,
+    d.horizon_mins,
+    AVG(d.delta_sip) AS avg_delta_sip
+FROM deltas d
+GROUP BY d.location_id, d.horizon_mins
+ORDER BY d.location_id, d.horizon_mins
+`
+
+type GetWeekAverageDeltasForLocationsParams struct {
+	SourceTypeID   int16
+	PredictorID    int32
+	ObserverID     int32
+	PivotTimestamp pgtype.Timestamp
+	LocationIds    []int32
+}
+
+type GetWeekAverageDeltasForLocationsRow struct {
+	LocationID  int32
+	HorizonMins int16
+	AvgDeltaSip float64
+}
+
+func (q *Queries) GetWeekAverageDeltasForLocations(ctx context.Context, arg GetWeekAverageDeltasForLocationsParams) ([]GetWeekAverageDeltasForLocationsRow, error) {
+	rows, err := q.db.Query(ctx, getWeekAverageDeltasForLocations,
+		arg.SourceTypeID,
+		arg.PredictorID,
+		arg.ObserverID,
+		arg.PivotTimestamp,
+		arg.LocationIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetWeekAverageDeltasForLocationsRow{}
+	for rows.Next() {
+		var i GetWeekAverageDeltasForLocationsRow
+		if err := rows.Scan(&i.LocationID, &i.HorizonMins, &i.AvgDeltaSip); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPredictionsAtTimeForLocations = `-- name: ListPredictionsAtTimeForLocations :many

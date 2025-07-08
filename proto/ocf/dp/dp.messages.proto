@@ -321,3 +321,31 @@ message CreateObserverResponse {
   int32 observer_id = 1;
 }
 
+
+message GetWeekAverageDeltasRequest {
+  int32 location_id = 1;
+  EnergySource energy_source = 2;
+  /* The characteristic time to detrmine averages for.
+   * The time component specifies the initialization time,
+   * and the date component is to define the end of the seven-day period.
+   */
+  google.protobuf.Timestamp pivot_time = 3;
+  Model model = 4 [
+    (buf.validate.field).required = true
+  ];
+  string observer_name = 5;
+}
+
+message GetWeekAverageDeltasResponse {
+  message AverageDelta {
+    int32 horizon_mins = 1;
+    float delta_percent = 2;
+  }
+
+  repeated AverageDelta deltas = 1;
+  uint64 capacity_watts = 2;
+  /* The initialisation time that was compared across the week.
+   * Formatted as HH:MM, e.g. "12:00"
+   */
+  string init_time = 3;
+}

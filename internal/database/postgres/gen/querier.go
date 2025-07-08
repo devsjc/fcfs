@@ -25,7 +25,6 @@ type Querier interface {
 	// --- Predictor ------------------------------------------------------------------------------
 	CreatePredictor(ctx context.Context, arg CreatePredictorParams) (int32, error)
 	DecomissionLocationSource(ctx context.Context, arg DecomissionLocationSourceParams) error
-	GetForecastsTimeComponent(ctx context.Context, arg GetForecastsTimeComponentParams) ([]GetForecastsTimeComponentRow, error)
 	GetLatestForecastAtHorizonSincePivot(ctx context.Context, arg GetLatestForecastAtHorizonSincePivotParams) (GetLatestForecastAtHorizonSincePivotRow, error)
 	GetLocationById(ctx context.Context, locationID int32) (GetLocationByIdRow, error)
 	GetLocationGeoJSONByIds(ctx context.Context, arg GetLocationGeoJSONByIdsParams) ([]byte, error)
@@ -39,6 +38,7 @@ type Querier interface {
 	GetPredictorElseLatest(ctx context.Context, arg GetPredictorElseLatestParams) (PredPredictor, error)
 	//- Queries for the locations table ------------------------------
 	GetSourceTypeByName(ctx context.Context, sourceTypeName string) (LocSourceType, error)
+	GetWeekAverageDeltasForLocations(ctx context.Context, arg GetWeekAverageDeltasForLocationsParams) ([]GetWeekAverageDeltasForLocationsRow, error)
 	ListLocationGeometryByType(ctx context.Context, locationTypeName string) ([]ListLocationGeometryByTypeRow, error)
 	ListLocationIdsByType(ctx context.Context, locationTypeName string) ([]ListLocationIdsByTypeRow, error)
 	// ListLocationSourceHistory shows all the historical records for a given location and source type.

@@ -1893,6 +1893,147 @@ func (x *CreateObserverResponse) GetObserverId() int32 {
 	return 0
 }
 
+type GetWeekAverageDeltasRequest struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	LocationId   int32                  `protobuf:"varint,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	EnergySource EnergySource           `protobuf:"varint,2,opt,name=energy_source,json=energySource,proto3,enum=ocf.dp.EnergySource" json:"energy_source,omitempty"`
+	// The characteristic time to detrmine averages for.
+	// The time component specifies the initialization time,
+	// and the date component is to define the end of the seven-day period.
+	PivotTime     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=pivot_time,json=pivotTime,proto3" json:"pivot_time,omitempty"`
+	Model         *Model                 `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	ObserverName  string                 `protobuf:"bytes,5,opt,name=observer_name,json=observerName,proto3" json:"observer_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWeekAverageDeltasRequest) Reset() {
+	*x = GetWeekAverageDeltasRequest{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWeekAverageDeltasRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWeekAverageDeltasRequest) ProtoMessage() {}
+
+func (x *GetWeekAverageDeltasRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWeekAverageDeltasRequest.ProtoReflect.Descriptor instead.
+func (*GetWeekAverageDeltasRequest) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GetWeekAverageDeltasRequest) GetLocationId() int32 {
+	if x != nil {
+		return x.LocationId
+	}
+	return 0
+}
+
+func (x *GetWeekAverageDeltasRequest) GetEnergySource() EnergySource {
+	if x != nil {
+		return x.EnergySource
+	}
+	return EnergySource_UNSPECIFIED
+}
+
+func (x *GetWeekAverageDeltasRequest) GetPivotTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PivotTime
+	}
+	return nil
+}
+
+func (x *GetWeekAverageDeltasRequest) GetModel() *Model {
+	if x != nil {
+		return x.Model
+	}
+	return nil
+}
+
+func (x *GetWeekAverageDeltasRequest) GetObserverName() string {
+	if x != nil {
+		return x.ObserverName
+	}
+	return ""
+}
+
+type GetWeekAverageDeltasResponse struct {
+	state         protoimpl.MessageState                       `protogen:"open.v1"`
+	Deltas        []*GetWeekAverageDeltasResponse_AverageDelta `protobuf:"bytes,1,rep,name=deltas,proto3" json:"deltas,omitempty"`
+	CapacityWatts uint64                                       `protobuf:"varint,2,opt,name=capacity_watts,json=capacityWatts,proto3" json:"capacity_watts,omitempty"`
+	// The initialisation time that was compared across the week.
+	// Formatted as HH:MM, e.g. "12:00"
+	InitTime      string `protobuf:"bytes,3,opt,name=init_time,json=initTime,proto3" json:"init_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWeekAverageDeltasResponse) Reset() {
+	*x = GetWeekAverageDeltasResponse{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWeekAverageDeltasResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWeekAverageDeltasResponse) ProtoMessage() {}
+
+func (x *GetWeekAverageDeltasResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWeekAverageDeltasResponse.ProtoReflect.Descriptor instead.
+func (*GetWeekAverageDeltasResponse) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetWeekAverageDeltasResponse) GetDeltas() []*GetWeekAverageDeltasResponse_AverageDelta {
+	if x != nil {
+		return x.Deltas
+	}
+	return nil
+}
+
+func (x *GetWeekAverageDeltasResponse) GetCapacityWatts() uint64 {
+	if x != nil {
+		return x.CapacityWatts
+	}
+	return 0
+}
+
+func (x *GetWeekAverageDeltasResponse) GetInitTime() string {
+	if x != nil {
+		return x.InitTime
+	}
+	return ""
+}
+
 type YieldPrediction_Uncertainty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LowerPercent  float32                `protobuf:"fixed32,1,opt,name=lower_percent,json=lowerPercent,proto3" json:"lower_percent,omitempty"`
@@ -1903,7 +2044,7 @@ type YieldPrediction_Uncertainty struct {
 
 func (x *YieldPrediction_Uncertainty) Reset() {
 	*x = YieldPrediction_Uncertainty{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1915,7 +2056,7 @@ func (x *YieldPrediction_Uncertainty) String() string {
 func (*YieldPrediction_Uncertainty) ProtoMessage() {}
 
 func (x *YieldPrediction_Uncertainty) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[31]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1955,7 +2096,7 @@ type GetPredictedTimeseriesDeltasResponse_YieldDelta struct {
 
 func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) Reset() {
 	*x = GetPredictedTimeseriesDeltasResponse_YieldDelta{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1967,7 +2108,7 @@ func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) String() string {
 func (*GetPredictedTimeseriesDeltasResponse_YieldDelta) ProtoMessage() {}
 
 func (x *GetPredictedTimeseriesDeltasResponse_YieldDelta) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[32]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2008,7 +2149,7 @@ type GetPredictedCrossSectionResponse_YieldPredictionAtLocation struct {
 
 func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) Reset() {
 	*x = GetPredictedCrossSectionResponse_YieldPredictionAtLocation{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[33]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2020,7 +2161,7 @@ func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) String() st
 func (*GetPredictedCrossSectionResponse_YieldPredictionAtLocation) ProtoMessage() {}
 
 func (x *GetPredictedCrossSectionResponse_YieldPredictionAtLocation) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[33]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2070,7 +2211,7 @@ type CreateForecastRequest_PredictedGenerationValue struct {
 
 func (x *CreateForecastRequest_PredictedGenerationValue) Reset() {
 	*x = CreateForecastRequest_PredictedGenerationValue{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[34]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2082,7 +2223,7 @@ func (x *CreateForecastRequest_PredictedGenerationValue) String() string {
 func (*CreateForecastRequest_PredictedGenerationValue) ProtoMessage() {}
 
 func (x *CreateForecastRequest_PredictedGenerationValue) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[34]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2145,7 +2286,7 @@ type CreateForecastRequest_Forecast struct {
 
 func (x *CreateForecastRequest_Forecast) Reset() {
 	*x = CreateForecastRequest_Forecast{}
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[35]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2157,7 +2298,7 @@ func (x *CreateForecastRequest_Forecast) String() string {
 func (*CreateForecastRequest_Forecast) ProtoMessage() {}
 
 func (x *CreateForecastRequest_Forecast) ProtoReflect() protoreflect.Message {
-	mi := &file_ocf_dp_dp_messages_proto_msgTypes[35]
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2199,6 +2340,58 @@ func (x *CreateForecastRequest_Forecast) GetInitTimeUtc() *timestamppb.Timestamp
 		return x.InitTimeUtc
 	}
 	return nil
+}
+
+type GetWeekAverageDeltasResponse_AverageDelta struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	HorizonMins   int32                  `protobuf:"varint,1,opt,name=horizon_mins,json=horizonMins,proto3" json:"horizon_mins,omitempty"`
+	DeltaPercent  float32                `protobuf:"fixed32,2,opt,name=delta_percent,json=deltaPercent,proto3" json:"delta_percent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWeekAverageDeltasResponse_AverageDelta) Reset() {
+	*x = GetWeekAverageDeltasResponse_AverageDelta{}
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWeekAverageDeltasResponse_AverageDelta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWeekAverageDeltasResponse_AverageDelta) ProtoMessage() {}
+
+func (x *GetWeekAverageDeltasResponse_AverageDelta) ProtoReflect() protoreflect.Message {
+	mi := &file_ocf_dp_dp_messages_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWeekAverageDeltasResponse_AverageDelta.ProtoReflect.Descriptor instead.
+func (*GetWeekAverageDeltasResponse_AverageDelta) Descriptor() ([]byte, []int) {
+	return file_ocf_dp_dp_messages_proto_rawDescGZIP(), []int{32, 0}
+}
+
+func (x *GetWeekAverageDeltasResponse_AverageDelta) GetHorizonMins() int32 {
+	if x != nil {
+		return x.HorizonMins
+	}
+	return 0
+}
+
+func (x *GetWeekAverageDeltasResponse_AverageDelta) GetDeltaPercent() float32 {
+	if x != nil {
+		return x.DeltaPercent
+	}
+	return 0
 }
 
 var File_ocf_dp_dp_messages_proto protoreflect.FileDescriptor
@@ -2370,7 +2563,22 @@ const file_ocf_dp_dp_messages_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"9\n" +
 	"\x16CreateObserverResponse\x12\x1f\n" +
 	"\vobserver_id\x18\x01 \x01(\x05R\n" +
-	"observerId*4\n" +
+	"observerId\"\x86\x02\n" +
+	"\x1bGetWeekAverageDeltasRequest\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\x05R\n" +
+	"locationId\x129\n" +
+	"\renergy_source\x18\x02 \x01(\x0e2\x14.ocf.dp.EnergySourceR\fenergySource\x129\n" +
+	"\n" +
+	"pivot_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tpivotTime\x12+\n" +
+	"\x05model\x18\x04 \x01(\v2\r.ocf.dp.ModelB\x06\xbaH\x03\xc8\x01\x01R\x05model\x12#\n" +
+	"\robserver_name\x18\x05 \x01(\tR\fobserverName\"\x85\x02\n" +
+	"\x1cGetWeekAverageDeltasResponse\x12I\n" +
+	"\x06deltas\x18\x01 \x03(\v21.ocf.dp.GetWeekAverageDeltasResponse.AverageDeltaR\x06deltas\x12%\n" +
+	"\x0ecapacity_watts\x18\x02 \x01(\x04R\rcapacityWatts\x12\x1b\n" +
+	"\tinit_time\x18\x03 \x01(\tR\binitTime\x1aV\n" +
+	"\fAverageDelta\x12!\n" +
+	"\fhorizon_mins\x18\x01 \x01(\x05R\vhorizonMins\x12#\n" +
+	"\rdelta_percent\x18\x02 \x01(\x02R\fdeltaPercent*4\n" +
 	"\fEnergySource\x12\x0f\n" +
 	"\vUNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05SOLAR\x10\x01\x12\b\n" +
@@ -2389,7 +2597,7 @@ func file_ocf_dp_dp_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_ocf_dp_dp_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ocf_dp_dp_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_ocf_dp_dp_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_ocf_dp_dp_messages_proto_goTypes = []any{
 	(EnergySource)(0),                                                  // 0: ocf.dp.EnergySource
 	(*Yield)(nil),                                                      // 1: ocf.dp.Yield
@@ -2423,19 +2631,22 @@ var file_ocf_dp_dp_messages_proto_goTypes = []any{
 	(*CreateObservationsResponse)(nil),                                 // 29: ocf.dp.CreateObservationsResponse
 	(*CreateObserverRequest)(nil),                                      // 30: ocf.dp.CreateObserverRequest
 	(*CreateObserverResponse)(nil),                                     // 31: ocf.dp.CreateObserverResponse
-	(*YieldPrediction_Uncertainty)(nil),                                // 32: ocf.dp.YieldPrediction.Uncertainty
-	(*GetPredictedTimeseriesDeltasResponse_YieldDelta)(nil),            // 33: ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta
-	(*GetPredictedCrossSectionResponse_YieldPredictionAtLocation)(nil), // 34: ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
-	(*CreateForecastRequest_PredictedGenerationValue)(nil),             // 35: ocf.dp.CreateForecastRequest.PredictedGenerationValue
-	(*CreateForecastRequest_Forecast)(nil),                             // 36: ocf.dp.CreateForecastRequest.Forecast
-	(*timestamppb.Timestamp)(nil),                                      // 37: google.protobuf.Timestamp
+	(*GetWeekAverageDeltasRequest)(nil),                                // 32: ocf.dp.GetWeekAverageDeltasRequest
+	(*GetWeekAverageDeltasResponse)(nil),                               // 33: ocf.dp.GetWeekAverageDeltasResponse
+	(*YieldPrediction_Uncertainty)(nil),                                // 34: ocf.dp.YieldPrediction.Uncertainty
+	(*GetPredictedTimeseriesDeltasResponse_YieldDelta)(nil),            // 35: ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta
+	(*GetPredictedCrossSectionResponse_YieldPredictionAtLocation)(nil), // 36: ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
+	(*CreateForecastRequest_PredictedGenerationValue)(nil),             // 37: ocf.dp.CreateForecastRequest.PredictedGenerationValue
+	(*CreateForecastRequest_Forecast)(nil),                             // 38: ocf.dp.CreateForecastRequest.Forecast
+	(*GetWeekAverageDeltasResponse_AverageDelta)(nil),                  // 39: ocf.dp.GetWeekAverageDeltasResponse.AverageDelta
+	(*timestamppb.Timestamp)(nil),                                      // 40: google.protobuf.Timestamp
 }
 var file_ocf_dp_dp_messages_proto_depIdxs = []int32{
-	37, // 0: ocf.dp.Yield.timestamp_unix:type_name -> google.protobuf.Timestamp
-	37, // 1: ocf.dp.YieldPrediction.timestamp_unix:type_name -> google.protobuf.Timestamp
-	32, // 2: ocf.dp.YieldPrediction.uncertainty:type_name -> ocf.dp.YieldPrediction.Uncertainty
-	37, // 3: ocf.dp.TimeWindow.start_timestamp_unix:type_name -> google.protobuf.Timestamp
-	37, // 4: ocf.dp.TimeWindow.end_timestamp_unix:type_name -> google.protobuf.Timestamp
+	40, // 0: ocf.dp.Yield.timestamp_unix:type_name -> google.protobuf.Timestamp
+	40, // 1: ocf.dp.YieldPrediction.timestamp_unix:type_name -> google.protobuf.Timestamp
+	34, // 2: ocf.dp.YieldPrediction.uncertainty:type_name -> ocf.dp.YieldPrediction.Uncertainty
+	40, // 3: ocf.dp.TimeWindow.start_timestamp_unix:type_name -> google.protobuf.Timestamp
+	40, // 4: ocf.dp.TimeWindow.end_timestamp_unix:type_name -> google.protobuf.Timestamp
 	0,  // 5: ocf.dp.GetPredictedTimeseriesRequest.energy_source:type_name -> ocf.dp.EnergySource
 	5,  // 6: ocf.dp.GetPredictedTimeseriesRequest.time_window:type_name -> ocf.dp.TimeWindow
 	4,  // 7: ocf.dp.GetPredictedTimeseriesRequest.model:type_name -> ocf.dp.Model
@@ -2443,21 +2654,21 @@ var file_ocf_dp_dp_messages_proto_depIdxs = []int32{
 	0,  // 9: ocf.dp.GetPredictedTimeseriesDeltasRequest.energy_source:type_name -> ocf.dp.EnergySource
 	4,  // 10: ocf.dp.GetPredictedTimeseriesDeltasRequest.model:type_name -> ocf.dp.Model
 	5,  // 11: ocf.dp.GetPredictedTimeseriesDeltasRequest.time_window:type_name -> ocf.dp.TimeWindow
-	33, // 12: ocf.dp.GetPredictedTimeseriesDeltasResponse.deltas:type_name -> ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta
+	35, // 12: ocf.dp.GetPredictedTimeseriesDeltasResponse.deltas:type_name -> ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta
 	0,  // 13: ocf.dp.GetObservedTimeseriesRequest.energy_source:type_name -> ocf.dp.EnergySource
 	5,  // 14: ocf.dp.GetObservedTimeseriesRequest.time_window:type_name -> ocf.dp.TimeWindow
 	1,  // 15: ocf.dp.GetObservedTimeseriesResponse.yields:type_name -> ocf.dp.Yield
 	0,  // 16: ocf.dp.GetPredictedCrossSectionRequest.energy_source:type_name -> ocf.dp.EnergySource
-	37, // 17: ocf.dp.GetPredictedCrossSectionRequest.timestamp_unix:type_name -> google.protobuf.Timestamp
+	40, // 17: ocf.dp.GetPredictedCrossSectionRequest.timestamp_unix:type_name -> google.protobuf.Timestamp
 	4,  // 18: ocf.dp.GetPredictedCrossSectionRequest.model:type_name -> ocf.dp.Model
-	37, // 19: ocf.dp.GetPredictedCrossSectionResponse.timestamp_unix:type_name -> google.protobuf.Timestamp
-	34, // 20: ocf.dp.GetPredictedCrossSectionResponse.yields:type_name -> ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
+	40, // 19: ocf.dp.GetPredictedCrossSectionResponse.timestamp_unix:type_name -> google.protobuf.Timestamp
+	36, // 20: ocf.dp.GetPredictedCrossSectionResponse.yields:type_name -> ocf.dp.GetPredictedCrossSectionResponse.YieldPredictionAtLocation
 	0,  // 21: ocf.dp.GetLatestPredictionsRequest.energy_source:type_name -> ocf.dp.EnergySource
-	37, // 22: ocf.dp.GetLatestPredictionsRequest.pivot_timestamp_unix:type_name -> google.protobuf.Timestamp
+	40, // 22: ocf.dp.GetLatestPredictionsRequest.pivot_timestamp_unix:type_name -> google.protobuf.Timestamp
 	4,  // 23: ocf.dp.GetLatestPredictionsRequest.model:type_name -> ocf.dp.Model
 	2,  // 24: ocf.dp.GetLatestPredictionsResponse.yields:type_name -> ocf.dp.YieldPrediction
-	36, // 25: ocf.dp.CreateForecastRequest.forecast:type_name -> ocf.dp.CreateForecastRequest.Forecast
-	35, // 26: ocf.dp.CreateForecastRequest.predicted_generation_values:type_name -> ocf.dp.CreateForecastRequest.PredictedGenerationValue
+	38, // 25: ocf.dp.CreateForecastRequest.forecast:type_name -> ocf.dp.CreateForecastRequest.Forecast
+	37, // 26: ocf.dp.CreateForecastRequest.predicted_generation_values:type_name -> ocf.dp.CreateForecastRequest.PredictedGenerationValue
 	0,  // 27: ocf.dp.CreateSiteRequest.energy_source:type_name -> ocf.dp.EnergySource
 	3,  // 28: ocf.dp.CreateSiteRequest.latlng:type_name -> ocf.dp.LatLng
 	0,  // 29: ocf.dp.CreateGspRequest.energy_source:type_name -> ocf.dp.EnergySource
@@ -2465,14 +2676,18 @@ var file_ocf_dp_dp_messages_proto_depIdxs = []int32{
 	3,  // 31: ocf.dp.GetLocationResponse.latlng:type_name -> ocf.dp.LatLng
 	0,  // 32: ocf.dp.CreateObservationsRequest.energy_source:type_name -> ocf.dp.EnergySource
 	1,  // 33: ocf.dp.CreateObservationsRequest.yields:type_name -> ocf.dp.Yield
-	37, // 34: ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta.timestamp_unix:type_name -> google.protobuf.Timestamp
-	0,  // 35: ocf.dp.CreateForecastRequest.Forecast.energy_source:type_name -> ocf.dp.EnergySource
-	37, // 36: ocf.dp.CreateForecastRequest.Forecast.init_time_utc:type_name -> google.protobuf.Timestamp
-	37, // [37:37] is the sub-list for method output_type
-	37, // [37:37] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	0,  // 34: ocf.dp.GetWeekAverageDeltasRequest.energy_source:type_name -> ocf.dp.EnergySource
+	40, // 35: ocf.dp.GetWeekAverageDeltasRequest.pivot_time:type_name -> google.protobuf.Timestamp
+	4,  // 36: ocf.dp.GetWeekAverageDeltasRequest.model:type_name -> ocf.dp.Model
+	39, // 37: ocf.dp.GetWeekAverageDeltasResponse.deltas:type_name -> ocf.dp.GetWeekAverageDeltasResponse.AverageDelta
+	40, // 38: ocf.dp.GetPredictedTimeseriesDeltasResponse.YieldDelta.timestamp_unix:type_name -> google.protobuf.Timestamp
+	0,  // 39: ocf.dp.CreateForecastRequest.Forecast.energy_source:type_name -> ocf.dp.EnergySource
+	40, // 40: ocf.dp.CreateForecastRequest.Forecast.init_time_utc:type_name -> google.protobuf.Timestamp
+	41, // [41:41] is the sub-list for method output_type
+	41, // [41:41] is the sub-list for method input_type
+	41, // [41:41] is the sub-list for extension type_name
+	41, // [41:41] is the sub-list for extension extendee
+	0,  // [0:41] is the sub-list for field type_name
 }
 
 func init() { file_ocf_dp_dp_messages_proto_init() }
@@ -2486,7 +2701,7 @@ func file_ocf_dp_dp_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ocf_dp_dp_messages_proto_rawDesc), len(file_ocf_dp_dp_messages_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   36,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -43,6 +43,10 @@ service DataPlatformService {
 
   rpc CreateObserver(CreateObserverRequest) returns (CreateObserverResponse) {}
   rpc CreateObservations(CreateObservationsRequest) returns (CreateObservationsResponse) {}
+
+  // --- Analysis ----------------------------------------------------------------
+
+  rpc GetWeekAverageDeltas(GetWeekAverageDeltasRequest) returns (GetWeekAverageDeltasResponse) {}
 }
 
 

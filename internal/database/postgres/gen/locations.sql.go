@@ -163,42 +163,56 @@ const getLocationSource = `-- name: GetLocationSource :one
 /*- Queries for the location_sources table ---------------------------
 */
 
-SELECT 
-    record_id,
-    capacity,
-    capacity_unit_prefix_factor,
-    capacity_limit_sip,
-    metadata::json AS metadata
-FROM loc.location_sources
-WHERE 
-    location_id = $1
-    AND source_type_id = $2
-    AND UPPER(sys_period) IS NULL
+SELECT
+    ls.record_id,
+    ls.capacity,
+    ls.source_type_id,
+    ls.capacity_unit_prefix_factor,
+    ls.capacity_limit_sip,
+    ls.metadata::json AS metadata,
+    l.location_name,
+    ST_Y(l.centroid)::real AS latitude,
+    ST_X(l.centroid)::real AS longitude
+FROM loc.location_sources AS ls
+JOIN loc.source_types AS st ON ls.source_type_id = st.source_type_id
+JOIN loc.locations AS l USING (location_id)
+WHERE
+    ls.location_id = $1
+    AND st.source_type_name = UPPER($2::text)
+    AND UPPER(ls.sys_period) IS NULL
 `
 
 type GetLocationSourceParams struct {
-	LocationID   int32
-	SourceTypeID int16
+	LocationID     int32
+	SourceTypeName string
 }
 
 type GetLocationSourceRow struct {
 	RecordID                 int32
 	Capacity                 int16
+	SourceTypeID             int16
 	CapacityUnitPrefixFactor int16
 	CapacityLimitSip         *int16
 	Metadata                 []byte
+	LocationName             string
+	Latitude                 float32
+	Longitude                float32
 }
 
 // Get latest active record via the UPPER(sys_period) IS NULL condition
 func (q *Queries) GetLocationSource(ctx context.Context, arg GetLocationSourceParams) (GetLocationSourceRow, error) {
-	row := q.db.QueryRow(ctx, getLocationSource, arg.LocationID, arg.SourceTypeID)
+	row := q.db.QueryRow(ctx, getLocationSource, arg.LocationID, arg.SourceTypeName)
 	var i GetLocationSourceRow
 	err := row.Scan(
 		&i.RecordID,
 		&i.Capacity,
+		&i.SourceTypeID,
 		&i.CapacityUnitPrefixFactor,
 		&i.CapacityLimitSip,
 		&i.Metadata,
+		&i.LocationName,
+		&i.Latitude,
+		&i.Longitude,
 	)
 	return i, err
 }

@@ -646,6 +646,30 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 	}
 }
 
+func TestGetWeekAverageDeltas(t *testing.T) {
+	pgConnString := createPostgresContainer(t)
+	c := setupClient(t, pgConnString)
+	_ = seed(t, pgConnString, seedDBParams{
+		NumLocations:            1,
+		NumModels:               1,
+		NumForecastsPerLocation: 500,
+		PgvResolutionMins:       30,
+		ForecastResolutionMins:  30,
+		ForecastLengthHours:     8,
+	})
+
+	deltaResp, err := c.GetWeekAverageDeltas(t.Context(), &pb.GetWeekAverageDeltasRequest{
+		LocationId:   1,
+		EnergySource: pb.EnergySource_SOLAR,
+		Model:        &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
+		ObserverName: "test_observer",
+		PivotTime: timestamppb.New(time.Now().UTC().Truncate(time.Minute)),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, deltaResp)
+	require.Len(t, deltaResp.Deltas, 8 * 60 / 30) // One per horizon
+}
+
 // --- BENCHMARKS ---------------------------------------------------------------------------------
 
 func BenchmarkPostgresClient(b *testing.B) {

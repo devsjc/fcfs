@@ -24,7 +24,8 @@ var File_ocf_dp_dp_service_proto protoreflect.FileDescriptor
 
 const file_ocf_dp_dp_service_proto_rawDesc = "" +
 	"\n" +
-	"\x17ocf/dp/dp.service.proto\x12\x06ocf.dp\x1a\x18ocf/dp/dp.messages.proto2\xc9\t\n" +
+	"\x17ocf/dp/dp.service.proto\x12\x06ocf.dp\x1a\x18ocf/dp/dp.messages.proto2\xae\n" +
+	"\n" +
 	"\x13DataPlatformService\x12k\n" +
 	"\x16GetPredictedTimeseries\x12%.ocf.dp.GetPredictedTimeseriesRequest\x1a&.ocf.dp.GetPredictedTimeseriesResponse\"\x000\x01\x12{\n" +
 	"\x1cGetPredictedTimeseriesDeltas\x12+.ocf.dp.GetPredictedTimeseriesDeltasRequest\x1a,.ocf.dp.GetPredictedTimeseriesDeltasResponse\"\x00\x12o\n" +
@@ -39,7 +40,8 @@ const file_ocf_dp_dp_service_proto_rawDesc = "" +
 	"\vCreateModel\x12\x1a.ocf.dp.CreateModelRequest\x1a\x1b.ocf.dp.CreateModelResponse\"\x00\x12Q\n" +
 	"\x0eCreateForecast\x12\x1d.ocf.dp.CreateForecastRequest\x1a\x1e.ocf.dp.CreateForecastResponse\"\x00\x12Q\n" +
 	"\x0eCreateObserver\x12\x1d.ocf.dp.CreateObserverRequest\x1a\x1e.ocf.dp.CreateObserverResponse\"\x00\x12]\n" +
-	"\x12CreateObservations\x12!.ocf.dp.CreateObservationsRequest\x1a\".ocf.dp.CreateObservationsResponse\"\x00B7Z5github.com/devsjc/fcfs/dp/internal/protogen/ocf/dp;dpb\x06proto3"
+	"\x12CreateObservations\x12!.ocf.dp.CreateObservationsRequest\x1a\".ocf.dp.CreateObservationsResponse\"\x00\x12c\n" +
+	"\x14GetWeekAverageDeltas\x12#.ocf.dp.GetWeekAverageDeltasRequest\x1a$.ocf.dp.GetWeekAverageDeltasResponse\"\x00B7Z5github.com/devsjc/fcfs/dp/internal/protogen/ocf/dp;dpb\x06proto3"
 
 var file_ocf_dp_dp_service_proto_goTypes = []any{
 	(*GetPredictedTimeseriesRequest)(nil),        // 0: ocf.dp.GetPredictedTimeseriesRequest
@@ -55,19 +57,21 @@ var file_ocf_dp_dp_service_proto_goTypes = []any{
 	(*CreateForecastRequest)(nil),                // 10: ocf.dp.CreateForecastRequest
 	(*CreateObserverRequest)(nil),                // 11: ocf.dp.CreateObserverRequest
 	(*CreateObservationsRequest)(nil),            // 12: ocf.dp.CreateObservationsRequest
-	(*GetPredictedTimeseriesResponse)(nil),       // 13: ocf.dp.GetPredictedTimeseriesResponse
-	(*GetPredictedTimeseriesDeltasResponse)(nil), // 14: ocf.dp.GetPredictedTimeseriesDeltasResponse
-	(*GetPredictedCrossSectionResponse)(nil),     // 15: ocf.dp.GetPredictedCrossSectionResponse
-	(*GetObservedTimeseriesResponse)(nil),        // 16: ocf.dp.GetObservedTimeseriesResponse
-	(*GetLatestPredictionsResponse)(nil),         // 17: ocf.dp.GetLatestPredictionsResponse
-	(*GetLocationsAsGeoJSONResponse)(nil),        // 18: ocf.dp.GetLocationsAsGeoJSONResponse
-	(*CreateSiteResponse)(nil),                   // 19: ocf.dp.CreateSiteResponse
-	(*CreateGspResponse)(nil),                    // 20: ocf.dp.CreateGspResponse
-	(*GetLocationResponse)(nil),                  // 21: ocf.dp.GetLocationResponse
-	(*CreateModelResponse)(nil),                  // 22: ocf.dp.CreateModelResponse
-	(*CreateForecastResponse)(nil),               // 23: ocf.dp.CreateForecastResponse
-	(*CreateObserverResponse)(nil),               // 24: ocf.dp.CreateObserverResponse
-	(*CreateObservationsResponse)(nil),           // 25: ocf.dp.CreateObservationsResponse
+	(*GetWeekAverageDeltasRequest)(nil),          // 13: ocf.dp.GetWeekAverageDeltasRequest
+	(*GetPredictedTimeseriesResponse)(nil),       // 14: ocf.dp.GetPredictedTimeseriesResponse
+	(*GetPredictedTimeseriesDeltasResponse)(nil), // 15: ocf.dp.GetPredictedTimeseriesDeltasResponse
+	(*GetPredictedCrossSectionResponse)(nil),     // 16: ocf.dp.GetPredictedCrossSectionResponse
+	(*GetObservedTimeseriesResponse)(nil),        // 17: ocf.dp.GetObservedTimeseriesResponse
+	(*GetLatestPredictionsResponse)(nil),         // 18: ocf.dp.GetLatestPredictionsResponse
+	(*GetLocationsAsGeoJSONResponse)(nil),        // 19: ocf.dp.GetLocationsAsGeoJSONResponse
+	(*CreateSiteResponse)(nil),                   // 20: ocf.dp.CreateSiteResponse
+	(*CreateGspResponse)(nil),                    // 21: ocf.dp.CreateGspResponse
+	(*GetLocationResponse)(nil),                  // 22: ocf.dp.GetLocationResponse
+	(*CreateModelResponse)(nil),                  // 23: ocf.dp.CreateModelResponse
+	(*CreateForecastResponse)(nil),               // 24: ocf.dp.CreateForecastResponse
+	(*CreateObserverResponse)(nil),               // 25: ocf.dp.CreateObserverResponse
+	(*CreateObservationsResponse)(nil),           // 26: ocf.dp.CreateObservationsResponse
+	(*GetWeekAverageDeltasResponse)(nil),         // 27: ocf.dp.GetWeekAverageDeltasResponse
 }
 var file_ocf_dp_dp_service_proto_depIdxs = []int32{
 	0,  // 0: ocf.dp.DataPlatformService.GetPredictedTimeseries:input_type -> ocf.dp.GetPredictedTimeseriesRequest
@@ -83,21 +87,23 @@ var file_ocf_dp_dp_service_proto_depIdxs = []int32{
 	10, // 10: ocf.dp.DataPlatformService.CreateForecast:input_type -> ocf.dp.CreateForecastRequest
 	11, // 11: ocf.dp.DataPlatformService.CreateObserver:input_type -> ocf.dp.CreateObserverRequest
 	12, // 12: ocf.dp.DataPlatformService.CreateObservations:input_type -> ocf.dp.CreateObservationsRequest
-	13, // 13: ocf.dp.DataPlatformService.GetPredictedTimeseries:output_type -> ocf.dp.GetPredictedTimeseriesResponse
-	14, // 14: ocf.dp.DataPlatformService.GetPredictedTimeseriesDeltas:output_type -> ocf.dp.GetPredictedTimeseriesDeltasResponse
-	15, // 15: ocf.dp.DataPlatformService.GetPredictedCrossSection:output_type -> ocf.dp.GetPredictedCrossSectionResponse
-	16, // 16: ocf.dp.DataPlatformService.GetObservedTimeseries:output_type -> ocf.dp.GetObservedTimeseriesResponse
-	17, // 17: ocf.dp.DataPlatformService.GetLatestPredictions:output_type -> ocf.dp.GetLatestPredictionsResponse
-	18, // 18: ocf.dp.DataPlatformService.GetLocationsAsGeoJSON:output_type -> ocf.dp.GetLocationsAsGeoJSONResponse
-	19, // 19: ocf.dp.DataPlatformService.CreateSite:output_type -> ocf.dp.CreateSiteResponse
-	20, // 20: ocf.dp.DataPlatformService.CreateGsp:output_type -> ocf.dp.CreateGspResponse
-	21, // 21: ocf.dp.DataPlatformService.GetLocation:output_type -> ocf.dp.GetLocationResponse
-	22, // 22: ocf.dp.DataPlatformService.CreateModel:output_type -> ocf.dp.CreateModelResponse
-	23, // 23: ocf.dp.DataPlatformService.CreateForecast:output_type -> ocf.dp.CreateForecastResponse
-	24, // 24: ocf.dp.DataPlatformService.CreateObserver:output_type -> ocf.dp.CreateObserverResponse
-	25, // 25: ocf.dp.DataPlatformService.CreateObservations:output_type -> ocf.dp.CreateObservationsResponse
-	13, // [13:26] is the sub-list for method output_type
-	0,  // [0:13] is the sub-list for method input_type
+	13, // 13: ocf.dp.DataPlatformService.GetWeekAverageDeltas:input_type -> ocf.dp.GetWeekAverageDeltasRequest
+	14, // 14: ocf.dp.DataPlatformService.GetPredictedTimeseries:output_type -> ocf.dp.GetPredictedTimeseriesResponse
+	15, // 15: ocf.dp.DataPlatformService.GetPredictedTimeseriesDeltas:output_type -> ocf.dp.GetPredictedTimeseriesDeltasResponse
+	16, // 16: ocf.dp.DataPlatformService.GetPredictedCrossSection:output_type -> ocf.dp.GetPredictedCrossSectionResponse
+	17, // 17: ocf.dp.DataPlatformService.GetObservedTimeseries:output_type -> ocf.dp.GetObservedTimeseriesResponse
+	18, // 18: ocf.dp.DataPlatformService.GetLatestPredictions:output_type -> ocf.dp.GetLatestPredictionsResponse
+	19, // 19: ocf.dp.DataPlatformService.GetLocationsAsGeoJSON:output_type -> ocf.dp.GetLocationsAsGeoJSONResponse
+	20, // 20: ocf.dp.DataPlatformService.CreateSite:output_type -> ocf.dp.CreateSiteResponse
+	21, // 21: ocf.dp.DataPlatformService.CreateGsp:output_type -> ocf.dp.CreateGspResponse
+	22, // 22: ocf.dp.DataPlatformService.GetLocation:output_type -> ocf.dp.GetLocationResponse
+	23, // 23: ocf.dp.DataPlatformService.CreateModel:output_type -> ocf.dp.CreateModelResponse
+	24, // 24: ocf.dp.DataPlatformService.CreateForecast:output_type -> ocf.dp.CreateForecastResponse
+	25, // 25: ocf.dp.DataPlatformService.CreateObserver:output_type -> ocf.dp.CreateObserverResponse
+	26, // 26: ocf.dp.DataPlatformService.CreateObservations:output_type -> ocf.dp.CreateObservationsResponse
+	27, // 27: ocf.dp.DataPlatformService.GetWeekAverageDeltas:output_type -> ocf.dp.GetWeekAverageDeltasResponse
+	14, // [14:28] is the sub-list for method output_type
+	0,  // [0:14] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
