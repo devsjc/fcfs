@@ -525,18 +525,19 @@ func TestGetPredictedTimeseries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins", tt.horizonMins), func(t *testing.T) {
 			resp, err := c.GetPredictedTimeseries(t.Context(), &pb.GetPredictedTimeseriesRequest{
-				LocationId: 0,
+				LocationId: 1,
 				HorizonMins: int32(tt.horizonMins),
 				Model: &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
+				EnergySource: pb.EnergySource_SOLAR,
 			})
 			require.NoError(t, err)
 			require.NotNil(t, resp)
 
 			targetTimes := make([]int64, len(resp.Yields))
-			actualValues := make([]int64, len(resp.Yields))
+			actualValues := make([]float32, len(resp.Yields))
 			for i, v := range resp.Yields {
 				targetTimes[i] = v.TimestampUnix.AsTime().Unix()
-				actualValues[i] = int64(v.YieldPercent)
+				actualValues[i] = v.YieldPercent
 			}
 			require.IsIncreasing(t, targetTimes)
 			require.Equal(t, tt.expectedValues, actualValues)
