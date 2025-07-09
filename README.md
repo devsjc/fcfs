@@ -2,6 +2,12 @@
 
 **Reimagining OCF's Data Platform for Performance and Useability**
 
+- 200x faster than current dataplatform (milliseconds vs seconds)
+- Fully typed implementations in Python and Typescript
+- Able to scale to fit OCF's ambition for increased size and scope
+- Simple to understand due to boilerplate code generation
+- Costly metrics and blend apps obsoleted for free on-the-fly calculation
+- Safer platform with single, considered source of entry to data
 
 ## Documentation
 
@@ -28,7 +34,20 @@ This will populate the `protogen` directory with language-specific bindings for 
 of server and client code.
 
 
-## Example usage
+## Examples
+
+### Python notebook
+
+There is an example python notebook outlining using the data platform as a data analysis tool.
+It shows an how an analysis workflow would use the generated python library code. To run it,
+ensure the DataPlatform API is running on `localhost:50051`, and that colocated with the script
+are the latest generated python bindings; then use uvx to run the notebook:
+
+```bash
+$ make gen-proto-python && cp -r protogen/python/* examples/python-notebook/
+$ uvx --with="marimo" marimo edit --headless examples/python-notebook/example.py 
+```
+
 
 ```bash
 $ go run src/cmd/main/go
