@@ -571,7 +571,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("Start %s End %s", tt.startTime, tt.endTime), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", tt.expectedSize), func(t *testing.T) {
 			resp, err := c.GetObservedTimeseries(t.Context(), &pb.GetObservedTimeseriesRequest{
 				LocationId: 1,
 				EnergySource: pb.EnergySource_SOLAR,
