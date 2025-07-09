@@ -2,12 +2,12 @@
 
 **Reimagining OCF's Data Platform for Performance and Useability**
 
-- 200x faster than current dataplatform (milliseconds vs seconds)
-- Fully typed implementations in Python and Typescript
+- 2 orders of magnitude faster than current dataplatform (milliseconds vs seconds)
 - Able to scale to fit OCF's ambition for increased size and scope
-- Simple to understand due to boilerplate code generation
-- Costly metrics and blend apps obsoleted for free on-the-fly calculation
-- Safer platform with single, considered source of entry to data
+- Fully typed implementations in Python and Typescript
+- Simple to understand due to codegen of boilerplate
+- Costly metrics and blend apps obsoleted with on-the-fly calculation capability
+- Safer data platform with single, considered source of entry to database
 
 ## Documentation
 
@@ -45,7 +45,7 @@ are the latest generated python bindings; then use uvx to run the notebook:
 
 ```bash
 $ make gen-proto-python && cp -r protogen/python/* examples/python-notebook/
-$ uvx --with="marimo" marimo edit --headless examples/python-notebook/example.py 
+$ cd examples/python-notebook && uvx --with="marimo" marimo edit --headless example.py 
 ```
 
 
