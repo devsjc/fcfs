@@ -23,6 +23,15 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Check linting
+        run: |
+          make lint >> $OUTPUT
+          if [ -n "$(cat $OUTPUT)" ]; then
+            echo "## Lint errors in the following files:" >> $GITHUB_STEP_SUMMARY
+            echo $OUTPUT >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
       - name: Run unit tests
         run: make test
 

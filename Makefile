@@ -10,6 +10,10 @@ bench:
 	@test -s benchstat || go install golang.org/x/perf/cmd/benchstat@latest
 	@test -e bench-master.txt && benchstat bench-master.txt bench-$(REF_NAME).txt || benchstat bench-$(REF_NAME).txt
 
+lint:
+	@go mod tidy
+	@gofmt -l -w .
+
 gen-int: gen-db-internal gen-proto-internal
 
 gen-ext: gen-proto-python gen-proto-openapi gen-proto-typescript
