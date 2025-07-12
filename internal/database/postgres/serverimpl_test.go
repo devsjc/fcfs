@@ -678,10 +678,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 	pivotTime := time.Now().UTC().Truncate(time.Minute)
 
 	tests := []seedDBParams{
-		{NumLocations: 373, PgvResolutionMins: 30, ForecastResolutionMins: 60, ForecastLengthHours: 8, NumForecastsPerLocation: 10},
-		{NumLocations: 373, PgvResolutionMins: 5, ForecastResolutionMins: 60, ForecastLengthHours: 16, NumForecastsPerLocation: 48},
-		{NumLocations: 1000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
-		{NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76},
+		// {NumLocations: 373, PgvResolutionMins: 30, ForecastResolutionMins: 60, ForecastLengthHours: 8, NumForecastsPerLocation: 10},
+		// {NumLocations: 373, PgvResolutionMins: 5, ForecastResolutionMins: 60, ForecastLengthHours: 16, NumForecastsPerLocation: 48},
+		{NumLocations: 500, PgvResolutionMins: 30, ForecastResolutionMins: 30, ForecastLengthHours: 24, NumForecastsPerLocation: 256},
+		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76},
 		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256},
 	}
 	for _, tt := range tests {
