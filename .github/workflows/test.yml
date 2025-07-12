@@ -25,10 +25,10 @@ jobs:
 
       - name: Check linting
         run: |
-          make lint >> $OUTPUT
-          if [ -n "$(cat $OUTPUT)" ]; then
+          make lint >> $GH_OUTPUT
+          if [ -n "$(cat $GH_OUTPUT)" ]; then
             echo "## Lint errors in the following files:" >> $GITHUB_STEP_SUMMARY
-            echo $OUTPUT >> $GITHUB_STEP_SUMMARY
+            echo $GH_OUTPUT >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
