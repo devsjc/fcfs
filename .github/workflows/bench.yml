@@ -3,11 +3,16 @@ on:
   push:
     tags: ['v*']
     branches: ['main']
-  pull_request:
+    paths-ignore: ['README.md', 'examples/**']
+  pull_request_target:
+    branches: ['main']
+    paths-ignore: ['README.md', 'examples/**']
 
 jobs:
   bench:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -27,4 +32,5 @@ jobs:
           key: ${{ runner.os }}-bench-${{ (github.event.pull_request.base.sha != github.event.after) && github.event.pull_request.base.sha || github.event.after }}
 
       - name: Run benchmarks
-        run: REF_NAME=${GITHUB_REF##*/} make bench
+        run: |
+          REF_NAME=${GITHUB_REF##*/} make bench >> $GITHUB_STEP_SUMMARY
