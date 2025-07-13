@@ -1,10 +1,12 @@
 FROM golang:1.24 AS build
 
-# Download protoc binary
-ARG PROTOC_VERSION=23.3
-RUN wget -q https://github.com/protocolbuffers/protobuf/releases/download/v31.1/protoc-31.1-linux-x86_64.zip -O /tmp/protoc.zip && \
-    unzip -q /tmp/protoc.zip -d /usr/local/bin && \
-    rm /tmp/protoc.zip
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PB_REL="https://github.com/protocolbuffers/protobuf/releases"
+RUN curl -LO $PB_REL/download/v30.2/protoc-30.2-linux-x86_64.zip \
+    unzip protoc-30.2-linux-x86_64.zip -d /usr/local
 
 WORKDIR /go/src/app
 COPY go.mod go.sum Makefile ./

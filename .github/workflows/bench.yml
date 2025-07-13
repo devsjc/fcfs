@@ -37,14 +37,8 @@ jobs:
         run: |
           REF_NAME=${GITHUB_REF##*/} make bench
           OUTPUT=$(cat bench-${GITHUB_REF##*/}.txt)
-          OUTPUT="${OUTPUT//'%'/'%25'}"
-          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "result=$OUTPUT" >> $GITHUB_OUTPUT
           OUTPUT=$(REF_NAME=${GITHUB_REF##*/} make bench-stat)
-          OUTPUT="${OUTPUT//'%'/'%25'}"
-          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "diff=$OUTPUT" >> $GITHUB_OUTPUT
 
       - name: Write result to PR comment
