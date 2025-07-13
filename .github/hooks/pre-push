@@ -7,15 +7,19 @@ cd "$REPO_ROOT" || exit 1
 go mod tidy
 if ! git diff --quiet go.mod go.sum;
 then
-    echo "ERROR: `go mod tidy` updated go.mod or go.sum."
-    echo "Please stage and commit these changes before pushing."
+    echo "ERROR: 'go mod tidy' updated go.mod or go.sum."
+    echo "       Please stage and commit these changes before pushing."
+    echo "       (hint: 'git commit go.mod go.sum -m \"chore(go): Tidy dependencies\"')"
     exit 1
 fi
 
-UNFORMATTED_FILES=$(gofmt -l -w .)
+UNFORMATTED_FILES=$(gofmt -l -w  -s.)
 if [ -n "$UNFORMATTED_FILES" ]; then
-    echo "ERROR: `gofmt -l -w .`  reformatted the following files:"
-    echo "$UNFORMATTED_FILES"
-    echo "Please stage and commit these changes before pushing."
+    echo "ERROR: 'gofmt -l -w -s .'  reformatted the following files:"
+    for file in $UNFORMATTED_FILES; do
+        echo "       - $file"
+    done
+    echo "       Please stage and commit these changes before pushing."
+    echo "       (hint: 'git commit -a -m \"chore(go): Format code\"')"
     exit 1
 fi
