@@ -32,7 +32,7 @@ jobs:
       - name: Generate code
         run: go install tool && make gen
 
-      - name: Restore cache if exists
+      - name: Restore PR base branch benchmarks
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: 'bench-main.txt'
@@ -45,7 +45,13 @@ jobs:
           make bench >> bench-${GITHUB_REF##*/}.txt
           PAYLOAD=$(cat bench-${GITHUB_REF##*/}.txt)
           echo "result<<EOF"$'\n'"$PAYLOAD"$'\n'EOF >> "$GITHUB_OUTPUT"
-          REF_NAME=${GITHUB_REF##*/} make bench-stat >> bench-diff.txt
+          cat bench-${GITHUB_REF##*/}.txt
+
+      - name: Compare benchmarks
+        id: bench-diff
+        if: github.event_name == 'pull_request_target'
+        run: |
+          go tool benchstat bench-main.txt bench-${GITHUB_REF##*/}.txt >> bench-diff.txt
           PAYLOAD=$(cat bench-diff.txt)
           echo "diff<<EOF"$'\n'"$PAYLOAD"$'\n'EOF >> "$GITHUB_OUTPUT"
 
@@ -58,12 +64,14 @@ jobs:
             ### Benchmark Results
 
             <details><summary>Benchmark results</summary>
+
             ```
             ${{ steps.bench.outputs.result }}
             ```
             </details>
 
             <details><summary>Benchmark vs base branch</summary>
+
             ```
             ${{ steps.bench.outputs.diff }}
             ```
