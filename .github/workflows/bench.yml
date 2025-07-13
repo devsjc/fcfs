@@ -62,7 +62,6 @@ jobs:
           header: bench
           message: |
             ### Benchmark Results
-
             <details><summary>Benchmark results</summary>
 
             ```
