@@ -68,3 +68,16 @@ This will fetch the dependencies, and install the git hooks required for develop
 > Since this project is uses lots of generated code, these hooks are vital to keep this generated
 > code up to date, and as such running `make init` is a vital step towards a smooth development
 > experience.
+
+### Running tests
+
+Unit tests can be run using `make test`. Benchmarks can be run using `make bench`.
+Both of these utilise [TestContainers](https://github.com/testcontainers/testcontainers-go),
+so ensure you meet their 
+[general system requirements](https://golang.testcontainers.org/system_requirements/).
+
+### Generating code
+
+If you make changes to the SQL migrations or queries, or to the Protocol Buffers schema,
+you will need to regenrate the Go library code to reflect these changes. Again there is a make
+target for this, `make gen`.
