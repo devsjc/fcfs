@@ -53,17 +53,18 @@ $ cd examples/python-notebook && uvx --with="marimo" marimo edit --headless exam
 $ go run src/cmd/main/go
 ```
 
-## Installation
+## Development
 
-Install using docker
+This project requires the [Go Toolchain](https://go.dev/doc/install) to be installed.
+Clone the repository, then run
 
 ```bash
-$ docker build . --tag api:local
+$ make init
 ```
 
-or via Go
+This will fetch the dependencies, and install the git hooks required for development.
 
-```
-$ go install github.com/devsjc/fcfs
-```
-
+> [!Note]
+> Since this project is uses lots of generated code, these hooks are vital to keep this generated
+> code up to date, and as such running `make init` is a vital step towards a smooth development
+> experience.

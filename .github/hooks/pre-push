@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Ensure in repo root
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT" || exit 1
+
+go mod tidy
+if ! git diff --quiet go.mod go.sum;
+then
+    echo "ERROR: `go mod tidy` updated go.mod or go.sum."
+    echo "Please stage and commit these changes before pushing."
+    exit 1
+fi
+
+UNFORMATTED_FILES=$(gofmt -l -w .)
+if [ -n "$UNFORMATTED_FILES" ]; then
+    echo "ERROR: `gofmt -l -w .`  reformatted the following files:"
+    echo "$UNFORMATTED_FILES"
+    echo "Please stage and commit these changes before pushing."
+    exit 1
+fi

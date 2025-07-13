@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"buf.build/go/protovalidate"
-	pb "github.com/devsjc/fcfs/dp/internal/protogen/ocf/dp"
+	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
