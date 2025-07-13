@@ -426,7 +426,8 @@ func TestGetPredictedCrossSection(t *testing.T) {
 		EnergySource:  pb.EnergySource_SOLAR,
 		TimestampUnix: timestamppb.New(pivotTime),
 		LocationIds:   locationIds,
-		Model:         &pb.Model{ModelName: "test_model", ModelVersion: "v10"}})
+		Model:         &pb.Model{ModelName: "test_model", ModelVersion: "v10"},
+	})
 	require.NoError(t, err)
 	require.NotNil(t, crossSectionResp)
 	require.Len(t, crossSectionResp.Yields, len(locationIds))

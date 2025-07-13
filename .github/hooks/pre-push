@@ -4,22 +4,20 @@
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT" || exit 1
 
-go mod tidy
-if ! git diff --quiet go.mod go.sum;
-then
-    echo "ERROR: 'go mod tidy' updated go.mod or go.sum."
-    echo "       Please stage and commit these changes before pushing."
-    echo "       (hint: 'git commit go.mod go.sum -m \"chore(go): Tidy dependencies\"')"
-    exit 1
-fi
-
-UNFORMATTED_FILES=$(gofmt -l -w  -s .)
+UNFORMATTED_FILES=$(make lint)
 if [ -n "$UNFORMATTED_FILES" ]; then
-    echo "ERROR: 'gofmt -l -w -s .'  reformatted the following files:"
+    echo "ERROR: Linting/fixing reformatted the following files/vendors:"
     for file in $UNFORMATTED_FILES; do
         echo "       - $file"
     done
     echo "       Please stage and commit these changes before pushing."
-    echo "       (hint: 'git commit -a -m \"chore(go): Format code\"')"
+    echo "       (hint: 'git commit -am \"chore(go): Code formatting and mod tidy\"')"
+    exit 1
+fi
+
+make gen
+if ! [ $? -eq 0 ]; then
+    echo "ERROR: code generation failed. Check above output and fix errors."
+    echo "       Then re-run 'make gen'"
     exit 1
 fi

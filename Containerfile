@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PB_REL="https://github.com/protocolbuffers/protobuf/releases"
 RUN curl -LO $PB_REL/download/v30.2/protoc-30.2-linux-x86_64.zip \
-    unzip protoc-30.2-linux-x86_64.zip -d /usr/local
+    && unzip protoc-30.2-linux-x86_64.zip -d /usr/local
 
 WORKDIR /go/src/app
 COPY go.mod go.sum Makefile ./

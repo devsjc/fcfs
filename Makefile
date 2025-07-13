@@ -19,7 +19,7 @@ test:
 
 lint:
 	@go mod tidy
-	@gofmt -l -w -s .
+	@go tool gofumpt -l -w .
 
 bench:
 	go test ./...  -bench=. -run=^a -timeout=15m > bench-$(REF_NAME).txt
