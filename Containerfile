@@ -12,6 +12,7 @@ WORKDIR /go/src/app
 COPY go.mod go.sum Makefile ./
 COPY cmd/ cmd/
 COPY internal/ internal/
+COPY proto/ proto/
 
 RUN go mod download
 RUN go mod verify

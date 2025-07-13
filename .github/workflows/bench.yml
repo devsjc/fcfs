@@ -35,7 +35,7 @@ jobs:
       - name: Run benchmarks
         id: bench
         run: |
-          REF_NAME=${GITHUB_REF##*/} make bench
+          make bench >> bench-${GITHUB_REF##*/}.txt
           PAYLOAD=$(cat bench-${GITHUB_REF##*/}.txt)
           echo "result<<EOF"$'\n'"$PAYLOAD"$'\n'EOF >> "$GITHUB_OUTPUT"
           REF_NAME=${GITHUB_REF##*/} make bench-stat >> bench-diff.txt
