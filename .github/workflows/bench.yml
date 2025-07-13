@@ -41,17 +41,21 @@ jobs:
 
       - name: Run benchmarks
         id: bench
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
         run: |
-          make bench >> bench-${GITHUB_REF##*/}.txt
-          PAYLOAD=$(cat bench-${GITHUB_REF##*/}.txt)
+          make bench >> bench-${BRANCH_NAME}.txt
+          PAYLOAD=$(cat bench-${BRANCH_NAME}.txt)
           echo "result<<EOF"$'\n'"$PAYLOAD"$'\n'EOF >> "$GITHUB_OUTPUT"
           cat bench-${GITHUB_REF##*/}.txt
 
       - name: Compare benchmarks
         id: bench-diff
         if: github.event_name == 'pull_request_target'
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
         run: |
-          go tool benchstat bench-main.txt bench-${GITHUB_REF##*/}.txt >> bench-diff.txt
+          go tool benchstat bench-main.txt bench-${BRANCH_NAME}.txt >> bench-diff.txt
           PAYLOAD=$(cat bench-diff.txt)
           echo "diff<<EOF"$'\n'"$PAYLOAD"$'\n'EOF >> "$GITHUB_OUTPUT"
 
