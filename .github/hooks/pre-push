@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "Running pre-push checks..."
+
 # Ensure in repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT" || exit 1
