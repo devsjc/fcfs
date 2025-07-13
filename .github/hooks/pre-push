@@ -13,7 +13,7 @@ then
     exit 1
 fi
 
-UNFORMATTED_FILES=$(gofmt -l -w  -s.)
+UNFORMATTED_FILES=$(gofmt -l -w  -s .)
 if [ -n "$UNFORMATTED_FILES" ]; then
     echo "ERROR: 'gofmt -l -w -s .'  reformatted the following files:"
     for file in $UNFORMATTED_FILES; do
