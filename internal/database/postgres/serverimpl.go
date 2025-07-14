@@ -137,9 +137,9 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context,
 		}
 	}
 
-    return &pb.GetLocationsWithinResponse{
-    	Locations: locations,
-    }, tx.Commit(ctx)
+	return &pb.GetLocationsWithinResponse{
+		Locations: locations,
+	}, tx.Commit(ctx)
 }
 
 func (s *PostgresDataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *pb.GetWeekAverageDeltasRequest) (*pb.GetWeekAverageDeltasResponse, error) {

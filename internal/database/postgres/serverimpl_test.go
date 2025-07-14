@@ -686,9 +686,15 @@ func TestGetLocationsWithin(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a site within the box
-	lls := []struct{lat float32; lon float32}{
-		{0.1, 0.1}, {4, 4}, {1, 1},
-		{1, 5}, {0, 170},
+	lls := []struct {
+		lat float32
+		lon float32
+	}{
+		{0.1, 0.1},
+		{4, 4},
+		{1, 1},
+		{1, 5},
+		{0, 170},
 	}
 	for i, ll := range lls {
 		_, err := c.CreateSite(t.Context(), &pb.CreateSiteRequest{
@@ -713,7 +719,6 @@ func TestGetLocationsWithin(t *testing.T) {
 		t.Log("Location:", g.Name, "ID:", g.LocationId)
 	}
 	require.Equal(t, expected, result.Locations)
-
 }
 
 // --- BENCHMARKS ---------------------------------------------------------------------------------
