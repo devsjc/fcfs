@@ -388,6 +388,10 @@ FROM pred.predicted_generation_values
 WHERE forecast_id = $1
 `
 
+type ListPredictionsForForecastParams struct {
+	ForecastID int32
+}
+
 type ListPredictionsForForecastRow struct {
 	HorizonMins   int16
 	P10Sip        *int16
@@ -397,8 +401,8 @@ type ListPredictionsForForecastRow struct {
 	Metadata      []byte
 }
 
-func (q *Queries) ListPredictionsForForecast(ctx context.Context, forecastID int32) ([]ListPredictionsForForecastRow, error) {
-	rows, err := q.db.Query(ctx, listPredictionsForForecast, forecastID)
+func (q *Queries) ListPredictionsForForecast(ctx context.Context, arg ListPredictionsForForecastParams) ([]ListPredictionsForForecastRow, error) {
+	rows, err := q.db.Query(ctx, listPredictionsForForecast, arg.ForecastID)
 	if err != nil {
 		return nil, err
 	}

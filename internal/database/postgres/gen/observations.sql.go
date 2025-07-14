@@ -23,8 +23,12 @@ const createObserver = `-- name: CreateObserver :one
 INSERT INTO obs.observers (observer_name) VALUES ($1) RETURNING observer_id
 `
 
-func (q *Queries) CreateObserver(ctx context.Context, observerName string) (int32, error) {
-	row := q.db.QueryRow(ctx, createObserver, observerName)
+type CreateObserverParams struct {
+	ObserverName string
+}
+
+func (q *Queries) CreateObserver(ctx context.Context, arg CreateObserverParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createObserver, arg.ObserverName)
 	var observer_id int32
 	err := row.Scan(&observer_id)
 	return observer_id, err
@@ -100,8 +104,12 @@ FROM obs.observers
 WHERE observer_name = $1
 `
 
-func (q *Queries) GetObserverByName(ctx context.Context, observerName string) (ObsObserver, error) {
-	row := q.db.QueryRow(ctx, getObserverByName, observerName)
+type GetObserverByNameParams struct {
+	ObserverName string
+}
+
+func (q *Queries) GetObserverByName(ctx context.Context, arg GetObserverByNameParams) (ObsObserver, error) {
+	row := q.db.QueryRow(ctx, getObserverByName, arg.ObserverName)
 	var i ObsObserver
 	err := row.Scan(&i.ObserverID, &i.ObserverName)
 	return i, err

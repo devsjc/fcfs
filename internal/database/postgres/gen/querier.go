@@ -20,41 +20,36 @@ type Querier interface {
 	// Input yields are expected as 16-bit integers, with 0 representing 0%
 	// and 30000 representing 100% of capacity.
 	CreateObservationsAsInt16UsingCopy(ctx context.Context, arg []CreateObservationsAsInt16UsingCopyParams) (int64, error)
-	CreateObserver(ctx context.Context, observerName string) (int32, error)
+	CreateObserver(ctx context.Context, arg CreateObserverParams) (int32, error)
 	CreatePredictionsAsInt16UsingCopy(ctx context.Context, arg []CreatePredictionsAsInt16UsingCopyParams) (int64, error)
 	// --- Predictor ------------------------------------------------------------------------------
 	CreatePredictor(ctx context.Context, arg CreatePredictorParams) (int32, error)
 	DecomissionLocationSource(ctx context.Context, arg DecomissionLocationSourceParams) error
 	GetLatestForecastAtHorizonSincePivot(ctx context.Context, arg GetLatestForecastAtHorizonSincePivotParams) (GetLatestForecastAtHorizonSincePivotRow, error)
-	GetLocationById(ctx context.Context, locationID int32) (GetLocationByIdRow, error)
+	GetLocationById(ctx context.Context, arg GetLocationByIdParams) (GetLocationByIdRow, error)
 	GetLocationGeoJSONByIds(ctx context.Context, arg GetLocationGeoJSONByIdsParams) ([]byte, error)
+	GetLocationIdsWithin(ctx context.Context, arg GetLocationIdsWithinParams) ([]GetLocationIdsWithinRow, error)
 	// Get latest active record via the UPPER(sys_period) IS NULL condition
 	GetLocationSource(ctx context.Context, arg GetLocationSourceParams) (GetLocationSourceRow, error)
 	// GetObservationsAsInt16 gets observations between two timestamps
 	// and returns their values as 16-bit integers, with 0 representing 0%
 	// and 30000 representing 100% of capacity. This is faster than converting the values to percentages.
 	GetObservationsAsInt16Between(ctx context.Context, arg GetObservationsAsInt16BetweenParams) ([]GetObservationsAsInt16BetweenRow, error)
-	GetObserverByName(ctx context.Context, observerName string) (ObsObserver, error)
+	GetObserverByName(ctx context.Context, arg GetObserverByNameParams) (ObsObserver, error)
 	GetPredictorElseLatest(ctx context.Context, arg GetPredictorElseLatestParams) (PredPredictor, error)
 	//- Queries for the locations table ------------------------------
-	GetSourceTypeByName(ctx context.Context, sourceTypeName string) (LocSourceType, error)
+	GetSourceTypeByName(ctx context.Context, arg GetSourceTypeByNameParams) (LocSourceType, error)
 	GetWeekAverageDeltasForLocations(ctx context.Context, arg GetWeekAverageDeltasForLocationsParams) ([]GetWeekAverageDeltasForLocationsRow, error)
-	ListLocationGeometryByType(ctx context.Context, locationTypeName string) ([]ListLocationGeometryByTypeRow, error)
-	ListLocationIdsByType(ctx context.Context, locationTypeName string) ([]ListLocationIdsByTypeRow, error)
+	ListLocationIdsByType(ctx context.Context, arg ListLocationIdsByTypeParams) ([]ListLocationIdsByTypeRow, error)
 	// ListLocationSourceHistory shows all the historical records for a given location and source type.
 	ListLocationSourceHistory(ctx context.Context, arg ListLocationSourceHistoryParams) ([]ListLocationSourceHistoryRow, error)
-	ListLocationsByType(ctx context.Context, locationTypeName string) ([]LocLocation, error)
+	ListLocationsByType(ctx context.Context, arg ListLocationsByTypeParams) ([]LocLocation, error)
 	ListLocationsSources(ctx context.Context, arg ListLocationsSourcesParams) ([]ListLocationsSourcesRow, error)
 	ListObservers(ctx context.Context) ([]ObsObserver, error)
 	ListPredictionsAtTimeForLocations(ctx context.Context, arg ListPredictionsAtTimeForLocationsParams) ([]ListPredictionsAtTimeForLocationsRow, error)
-	ListPredictionsForForecast(ctx context.Context, forecastID int32) ([]ListPredictionsForForecastRow, error)
+	ListPredictionsForForecast(ctx context.Context, arg ListPredictionsForForecastParams) ([]ListPredictionsForForecastRow, error)
 	ListPredictionsForLocation(ctx context.Context, arg ListPredictionsForLocationParams) ([]ListPredictionsForLocationRow, error)
 	ListPredictors(ctx context.Context) ([]PredPredictor, error)
-	// UpdateLocationSource modifies an existing location source record.
-	// Updates targeting tracked columns (capacity, capacity_unit_prefix_factor, capacity_limit, metadata)
-	// create a new record instead of modifying the existing one.
-	// Fields that want to remain unchanged should be set to their current values,
-	// as the database cannot know if NULL is intended to be a new value or a flag to ignore the update.
 	UpdateLocationSource(ctx context.Context, arg UpdateLocationSourceParams) error
 }
 
