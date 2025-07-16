@@ -7,12 +7,13 @@
 #     "grpclib==0.4.8",
 #     "pandas==2.3.1",
 #     "matplotlib==3.10.3",
+#     "vega-datasets==0.9.0",
 # ]
 # ///
 
 import marimo
 
-__generated_with = "0.14.10"
+__generated_with = "0.14.11"
 app = marimo.App(width="medium")
 
 
@@ -26,7 +27,9 @@ def _():
     import pandas as pd
     import matplotlib.pyplot as plt
     import marimo as mo
-    return Channel, dp, dt, mo, plt
+    import altair as alt
+    from vega_datasets import data
+    return Channel, alt, data, dp, dt, mo, pd, plt
 
 
 @app.cell
@@ -45,8 +48,8 @@ async def _(client, dp, dt):
             minute=0, second=0, microsecond=0, tzinfo=dt.UTC
         ),
         model=dp.Model(
-            model_name="test_model",
-            model_version="v10",
+            model_name="test_model_1",
+            model_version="v1",
         ),
     )
     response = await client.get_latest_predictions(request)
@@ -81,8 +84,8 @@ async def _(client, dp, dt, horizon_slider):
             end_timestamp_unix=dt.datetime.now().replace(tzinfo=dt.UTC),
         ),
         model=dp.Model(
-            model_name="test_model",
-            model_version="v10",
+            model_name="test_model_1",
+            model_version="v1",
         ),
     )
     response2 = await client.get_predicted_timeseries(request2)
@@ -91,11 +94,23 @@ async def _(client, dp, dt, horizon_slider):
 
 
 @app.cell
-def _(plt, response2):
-    xs2 = [p.yield_percent for p in response2.yields]
-    ys2 = [p.timestamp_unix for p in response2.yields]
-    plt.plot(ys2, xs2)
-    plt.show()
+def _(alt, pd, response2):
+    response2df = pd.DataFrame.from_dict(response2.to_dict()["yields"])
+    chart = alt.Chart(response2df).mark_point().encode(
+        y='yieldPercent',
+        x='timestampUnix:T',
+    )
+    chart
+    return
+
+
+@app.cell
+def _(alt, data):
+    countries = alt.topo_feature(data.world_110m.url, "countries")
+
+    alt.Chart(countries).mark_geoshape(fill="lightgray", stroke="white").project(
+        "equirectangular"
+    ).properties(width=500, height=300)
     return
 
 
