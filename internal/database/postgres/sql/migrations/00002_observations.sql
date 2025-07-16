@@ -1,12 +1,11 @@
 -- +goose Up
 
 /*
-Schema and tables to handle observed generation data.
-
-Observations of generation data is usually measured by providers of inverters,
-which are required in many sources of renewable energy to convert power from DC to AC.
-Partnerships with these providers provide access to the data in order to
-test the accuracy of predictions.
+ * Schema and tables to handle observed generation data.
+ *
+ * Observations of generation data is usually measured by providers of inverters, which are
+ * required in many sources of renewable energy to convert power from DC to AC. Partnerships
+ * with these providers provide access to the data in order to test the accuracy of predictions.
 */
 
 CREATE SCHEMA obs;
@@ -14,9 +13,9 @@ CREATE SCHEMA obs;
 /*- Tables ----------------------------------------------------------------------------------*/
 
 /* 
-Table to store observers.
-These are providers of actual recorded generation values from inverters
-(mostly - looking at you, pvlive...)
+ * Table to store observers.
+ * These are providers of actual recorded generation values from inverters
+ * (mostly - looking at you, pvlive...)
 */
 CREATE TABLE obs.observers (
     observer_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,

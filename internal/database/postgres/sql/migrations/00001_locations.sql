@@ -1,16 +1,16 @@
 -- +goose Up
 
 /*
-Schema and tables to handle location-based data.
+ * Schema and tables to handle location-based data.
+ * 
+ * The generation data we store, be it predicted or otherwise, is always tied to a certain 
+ * location. These locations vary in size and scope, from a single site to an entire country,
+ * and the metadata we may want to store about them will also vary accordingly.
 
-The generation data we store, be it predicted or otherwise, is always tied to a certain 
-location. These locations vary in size and scope, from a single site to an entire country,
-and the metadata we may want to store about them will also vary accordingly.
-
-From an application standpoint, the location is pertinent in the case where we care about
-the generated power as a fraction of the capacity of the location, as well as allowing us
-to represent the data on a map.
-*/
+ * From an application standpoint, the location is pertinent in the case where we care about
+ * the generated power as a fraction of the capacity of the location, as well as allowing us
+ * to represent the data on a map.
+ */
 
 CREATE SCHEMA loc;
 CREATE EXTENSION IF NOT EXISTS "btree_gist";
@@ -79,11 +79,11 @@ CREATE INDEX ON loc.locations (ST_GeometryType(geom));
 CREATE INDEX ON loc.locations (location_type_id);
 
 /*
-Table to store the current and historic generation capability of locations.
-Each location can have multiple sources of generation (solar, wind, etc),
-and each source can change over time. This is handled via a temporal range
-for each record and a trigger to update records when the source is modified.
-*/
+ * Table to store the current and historic generation capability of locations.
+ * Each location can have multiple sources of generation (solar, wind, etc),
+ * and each source can change over time. This is handled via a temporal range
+ * for each record and a trigger to update records when the source is modified.
+ */
 CREATE TABLE loc.location_sources (
     source_type_id SMALLINT NOT NULL
         REFERENCES loc.source_types(source_type_id)

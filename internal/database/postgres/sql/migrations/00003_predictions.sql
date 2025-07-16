@@ -1,26 +1,24 @@
 -- +goose Up
 
 /*
-Schema and tables to handle generation data.
-
-Predicted of generation data are produced by various forecast models specific to a location.
-A forecast is a set of predicted generations, beginning at the
-*initialisation time*. Each subsequent generation's *target time* is equivalent to the
-initialisation time plus the *horizon*.
-
-From a frontend standpoint, the latest produced forecast is the most accurate
-for a given location.
-*/
+ * Schema and tables to handle predicted generation data.
+ *
+ * Predicted of generation values are produced by various forecast models for a specific location.
+ * A forecast is a set of predicted generation values, beginning at the initialisation time. Each
+ * subsequent generation's target time is equivalent to the initialisation time plus the horizon.
+ *
+ * The forecast produced most recently will likely be the most accurate.
+ */
 
 CREATE SCHEMA pred;
 
 /*- Tables ----------------------------------------------------------------------------------*/
 
 /*
-A predictor is a source that generates predicted generation values.
-This is usually an ML model, but could also be an analytical process.
-Each predictor's name and version number uniquely identifies it.
-*/
+ * A predictor is a source that generates predicted generation values. This is usually an ML model,
+ * but could also be an analytical process. Each predictor's name and version number uniquely
+ * identifies it.
+ */
 CREATE TABLE pred.predictors (
     predictor_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
     predictor_name TEXT NOT NULL
@@ -40,12 +38,11 @@ CREATE TABLE pred.predictors (
 );
 
 /*
-Forecasts refer to the generation predictions created by a specific version
-of a predictor for a specific location.
-A forecast is created at an initialization time, and contains a timeseries of
-predicted generation values. There can only be one forecast per location per
-initialization time per predictor; reruns should replace old values.
-*/
+ * Forecasts refer to the generation predictions created by a specific version of a predictor for a
+ * specific location. A forecast is created at an initialization time, and contains a timeseries of
+ * predicted generation values. There can only be one forecast per location per initialization time
+ * per predictor; reruns should replace old values.
+ */
 CREATE TABLE pred.forecasts (
     -- Type of energy source
     source_type_id SMALLINT NOT NULL
@@ -70,13 +67,11 @@ CREATE TABLE pred.forecasts (
 );
 
 /*
-Table to store predicted generation values.
-Predicted generation values are the output of a forecast model.
-There can only be one predicted generation per forecast per horizon.
-This table gets very large very quickly, so to save space,
-data is stored as smallints where possible, and the columns are
-ordered to allow for efficient bit-packing.
-*/
+ * Table to store predicted generation values. Predicted generation values are the output of a
+ * forecast model. There can only be one predicted generation per forecast per horizon. This table
+ * gets very large very quickly, so to save space, data is stored as smallints where possible, and
+ * the columns are ordered to allow for efficient bit-packing.
+ */
 CREATE TABLE pred.predicted_generation_values (
     -- Could have the init_time_utc here to denormalise, but it is encoded in
     -- the horizon value anyway, which is itself a more useful index 
