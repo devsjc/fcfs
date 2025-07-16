@@ -1,6 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
+#     "altair==5.5.0",
 #     "betterproto==2.0.0b7",
 #     "marimo",
 #     "grpclib==0.4.8",
