@@ -5,11 +5,13 @@ CREATE OR REPLACE FUNCTION seed_db(
     forecast_resolution_mins INTEGER DEFAULT 30,
     forecast_length_mins INTEGER DEFAULT 480,
     num_forecasts_per_location INTEGER DEFAULT 24,
-    pivot_time TIMESTAMP DEFAULT DATE_TRUNC('minute', NOW())
+    num_models INTEGER DEFAULT 1,
+    pivot_time TIMESTAMP DEFAULT DATE_TRUNC('hour', NOW())
 )
 RETURNS INTEGER AS $$
 DECLARE
     loc_id INTEGER;
+    p_id INTEGER;
     result RECORD;
     num_pgvs_per_forecast INTEGER := forecast_length_mins / gv_resolution_mins;
     earliest_forecast_offset_mins INTEGER := num_forecasts_per_location * forecast_resolution_mins;
@@ -17,9 +19,9 @@ BEGIN
     -- Insert predictors
     INSERT INTO pred.predictors (predictor_name, predictor_version)
     SELECT
-        'test_model',
-        'v' || i
-    FROM generate_series(1, 10) AS i;
+        'test_model_' || i,
+        'v1'
+    FROM generate_series(1, num_models) AS i;
 
     -- Insert locations
     INSERT INTO loc.locations
@@ -45,16 +47,18 @@ BEGIN
             loc_id,
             jsonb_build_object('source', 'test'));
 
-        -- Insert forecasts for each location
-        INSERT INTO pred.forecasts
-            (source_type_id, location_id, predictor_id, init_time_utc)
-        SELECT
-            (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'SOLAR'),
-            loc_id,
-            (SELECT MAX(predictor_id) FROM pred.predictors),
-            pivot_time - (i || ' minutes')::interval
-        FROM generate_series(0, earliest_forecast_offset_mins - forecast_resolution_mins, forecast_resolution_mins) AS i;
-        
+        -- Insert forecasts for each location and model
+        FOR p_id IN SELECT predictor_id FROM pred.predictors LOOP
+            INSERT INTO pred.forecasts
+                (source_type_id, location_id, predictor_id, init_time_utc)
+            SELECT
+                (SELECT source_type_id FROM loc.source_types WHERE source_type_name = 'SOLAR'),
+                loc_id,
+                p_id,
+                pivot_time - (i || ' minutes')::interval
+            FROM generate_series(0, earliest_forecast_offset_mins - forecast_resolution_mins, forecast_resolution_mins) AS i;
+        END LOOP; 
+
         -- Insert observed generation values covering all the forecast period, always half the capacity
         INSERT INTO obs.observed_generation_values
             (value_sip, source_type_id, observer_id, location_id, observation_time_utc)
@@ -67,6 +71,7 @@ BEGIN
         FROM generate_series(0, earliest_forecast_offset_mins - gv_resolution_mins, gv_resolution_mins) AS i;
 
     END LOOP;
+    RAISE NOTICE 'Inserted % observed generation values', (SELECT COUNT(*) FROM obs.observed_generation_values);
 
     -- Insert predicted generation values for each forecast
     FOR result IN SELECT forecast_id, init_time_utc FROM pred.forecasts LOOP
@@ -82,6 +87,7 @@ BEGIN
             jsonb_build_object('source', 'test')
         FROM generate_series(0, forecast_length_mins - gv_resolution_mins, gv_resolution_mins) AS i;
     END LOOP;
+    RAISE NOTICE 'Inserted % predicted generation values', (SELECT COUNT(*) FROM pred.predicted_generation_values);
 
     RETURN(SELECT COUNT(*) from pred.predicted_generation_values);
 END;
