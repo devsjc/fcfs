@@ -3,7 +3,7 @@ name: Unit Test
 on:
   push:
     branches-ignore: ['main']
-    paths-ignore: ['README.md', 'examples/**']
+    paths-ignore: ['README.md', 'examples/**', '/github/workflows/bench.yml', '/github/workflows/build.yml']
 
 jobs:
   test:

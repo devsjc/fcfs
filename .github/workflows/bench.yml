@@ -3,10 +3,10 @@ on:
   push:
     tags: ['v*']
     branches: ['main']
-    paths-ignore: ['README.md', 'examples/**']
+    paths-ignore: ['README.md', 'examples/**', '/github/workflows/test.yml', '/github/workflows/build.yml']
   pull_request_target:
     branches: ['main']
-    paths-ignore: ['README.md', 'examples/**']
+    paths-ignore: ['README.md', 'examples/**', '/github/workflows/test.yml', '/github/workflows/build.yml']
 
 jobs:
   bench:
@@ -47,7 +47,7 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
         run: |
-          make bench > bench-${BRANCH_NAME////-}.txt
+	      go test ./...  -bench=. -run=^a -timeout=15m > bench-${BRANCH_NAME////-}.txt
           PAYLOAD=$(cat bench-${BRANCH_NAME////-}.txt)
           echo "result<<EOF"$'\n'"$PAYLOAD"$'\n'EOF >> "$GITHUB_OUTPUT"
           cat bench-${BRANCH_NAME////-}.txt
