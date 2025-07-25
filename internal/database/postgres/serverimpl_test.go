@@ -105,10 +105,10 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (numPgvs int)
 		err = conn.QueryRow(
 			tb.Context(),
 			fmt.Sprintf(
-				"SELECT seed_db(" +
-				"num_locations=>%d, gv_resolution_mins=>%d, forecast_resolution_mins=>%d," +
-				"forecast_length_mins=>%d, num_forecasts_per_location=>%d, pivot_time=>'%s'::timestamp" +
-			    ");",
+				"SELECT seed_db("+
+					"num_locations=>%d, gv_resolution_mins=>%d, forecast_resolution_mins=>%d,"+
+					"forecast_length_mins=>%d, num_forecasts_per_location=>%d, pivot_time=>'%s'::timestamp"+
+					");",
 				params.NumLocations, params.PgvResolutionMins, params.ForecastResolutionMins,
 				params.ForecastLengthHours*60, params.NumForecastsPerLocation,
 				params.PivotTime.UTC().Format(time.RFC3339),
