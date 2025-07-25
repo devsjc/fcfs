@@ -94,13 +94,54 @@ async def _(client, dp, dt, horizon_slider):
 
 
 @app.cell
-def _(alt, pd, response2):
+def _(pd, response2):
     response2df = pd.DataFrame.from_dict(response2.to_dict()["yields"])
-    chart = alt.Chart(response2df).mark_point().encode(
-        y='yieldPercent',
-        x='timestampUnix:T',
+    response2df
+    return (response2df,)
+
+
+@app.cell
+def _(alt, response2df):
+    chart = (
+        alt.Chart(response2df)
+        .mark_line()
+        .encode(
+            y="yieldPercent",
+            x="timestampUnix:T",
+        )
     )
     chart
+    return
+
+
+@app.cell
+async def _(client, dp, dt):
+    request3 = dp.GetWeekAverageDeltasRequest(
+        location_id=1,
+        energy_source=dp.EnergySource.SOLAR,
+        pivot_time=dt.datetime(2025, 7, 17, 10, tzinfo=dt.UTC),
+        model=dp.Model(
+            model_name="test_model_1",
+            model_version="v1",
+        ),
+        observer_name="test_observer",
+    )
+    response3 = await client.get_week_average_deltas(request3)
+    response3.deltas
+    return (response3,)
+
+
+@app.cell
+def _(alt, pd, response3):
+    chart3 = (
+        alt.Chart(pd.DataFrame.from_dict(response3.to_pydict()["deltas"]))
+        .mark_point()
+        .encode(
+            y="deltaPercent",
+            x="horizonMins",
+        )
+    )
+    chart3
     return
 
 

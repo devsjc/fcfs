@@ -79,12 +79,12 @@ CREATE INDEX ON loc.locations (ST_GeometryType(geom));
 CREATE INDEX ON loc.locations (location_type_id);
 
 /*
- * Table to store the current and historic generation capability of locations.
+ * Table to store the current generation capability of locations.
  * Each location can have multiple sources of generation (solar, wind, etc),
  * and each source can change over time. This is handled via a temporal range
  * for each record and a trigger to update records when the source is modified.
  */
-CREATE TABLE loc.location_sources (
+CREATE TABLE loc.sources (
     source_type_id SMALLINT NOT NULL
         REFERENCES loc.source_types(source_type_id)
         ON DELETE RESTRICT,
@@ -107,101 +107,44 @@ CREATE TABLE loc.location_sources (
             capacity_limit_sip IS NULL
             OR (capacity_limit_sip >= 0 AND capacity_limit_sip < 30000)
         ),
-    record_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
+    source_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
+    source_version INTEGER DEFAULT(1) NOT NULL,
     location_id INTEGER NOT NULL
         REFERENCES loc.locations(location_id)
         ON DELETE CASCADE,
     -- Metadata about the source, e.g. tilt, orientation, etc.
     metadata JSONB DEFAULT NULL
-        CHECK ( metadata IS NULL OR metadata <> '{}'::jsonb ), -- Null is cheaper than empty JSON
+        CHECK ( metadata IS NULL OR metadata <> '{}'::jsonb ), -- Null is cheaper
+    -- Period over which the record is valid (used for history table)
     sys_period TSRANGE NOT NULL
         DEFAULT TSRANGE(NOW()::TIMESTAMP, NULL, '[)')
         CHECK ( sys_period <> 'empty'::tsrange ),
-    PRIMARY KEY (record_id),
-    -- Prevent overlapping records for the same location and energy type
-    EXCLUDE USING GIST (
-        location_id WITH =,
-        source_type_id WITH =,
-        sys_period WITH &&
-    )
+    -- Each location can only have one source of each type
+    UNIQUE (location_id, source_type_id),
+    PRIMARY KEY (source_id)
 );
--- Index to support exclusion constraint and lookups by location, type, and time
-CREATE INDEX ON loc.location_sources USING GIST (location_id, source_type_id, sys_period);
--- Index for purely time-based queries across all records
-CREATE INDEX ON loc.location_sources USING GIST (sys_period);
 
+/* Table to store the historic generation capability of locations.
+ * Only the rows in this table will have their history tracked when updates are made to the main
+ * table, so columns are dropped that have no need for a historical log.
+ */
+CREATE TABLE loc.sources_history (
+    LIKE loc.sources INCLUDING CONSTRAINTS INCLUDING DEFAULTS,
+    PRIMARY KEY (source_id, source_version)
+);
+ALTER TABLE loc.sources_history
+    DROP COLUMN location_id,
+    DROP COLUMN metadata,
+    DROP COLUMN source_type_id;
 
-/*- Functions --------------------------------------------------------------------------------*/
-
--- +goose StatementBegin
--- Function to ensure a properly kept historic record
-CREATE OR REPLACE FUNCTION loc.handle_location_source_change()
-RETURNS TRIGGER AS $$
-DECLARE current_ts TIMESTAMP := transaction_timestamp();
-BEGIN
-    -- Handle UPDATE operations representing source improvements
-    IF (TG_OP = 'UPDATE') THEN
-        -- Check if the capacity, capacity_unit_prefix_factor, or metadata have changed
-        -- without an explicit change to the sys_period
-        IF (
-            OLD.capacity IS DISTINCT FROM NEW.capacity OR
-            OLD.capacity_unit_prefix_factor IS DISTINCT FROM NEW.capacity_unit_prefix_factor OR
-            OLD.metadata IS DISTINCT FROM NEW.metadata OR
-            OLD.capacity_limit_sip IS DISTINCT FROM NEW.capacity_limit_sip
-        ) THEN
-            -- Close the validity period of the old record to current_ts (exclusive end)
-            UPDATE loc.location_sources
-            SET sys_period = TSRANGE(LOWER(OLD.sys_period), current_ts, '[)')
-            WHERE record_id = OLD.record_id;
-            -- Insert a new record with the updated values
-            NEW.sys_period = TSRANGE(current_ts, NULL, '[]');
-            INSERT INTO loc.location_sources (
-                location_id, source_type_id, capacity, capacity_unit_prefix_factor,
-                capacity_limit_sip, metadata, sys_period
-            ) VALUES (
-                NEW.location_id, NEW.source_type_id, NEW.capacity, NEW.capacity_unit_prefix_factor,
-                NEW.capacity_limit_sip, NEW.metadata, NEW.sys_period
-            );
-            -- Cancel the original update action
-            RETURN NULL;
-        ELSE
-            -- If capacity, capacity_unit_prefix_factor, and metadata are unchanged,
-            -- prevent creating unecessary history
-            RAISE WARNING '[INFO] Update on location_sources record_id % did not change
-            tracked data (capacity, capacity_unit_prefix_factor, metadata): ignoring.',
-            OLD.record_id;
-            RETURN NULL;
-        END IF;
-    -- Handle DELETE operations representing decommissioning of sources
-    ELSIF (TG_OP = 'DELETE') THEN
-        -- Close the validity period of the old record to current_ts (exclusive end)
-        UPDATE loc.location_sources
-        SET sys_period = TSRANGE(LOWER(OLD.sys_period), current_ts, '[)')
-        WHERE record_id = OLD.record_id;
-        -- Cancel the original delete action
-        RETURN NULL;
-    END IF;
-    -- Handle INSERT operations representing new sources, prevent if source type exists already
-    IF (TG_OP = 'INSERT') THEN
-        -- Check if a record with the same location_id and source_type_id already exists
-        IF EXISTS (
-            SELECT 1 FROM loc.location_sources
-            WHERE location_id = NEW.location_id
-            AND source_type_id = NEW.source_type_id
-        ) THEN
-            RAISE EXCEPTION 'A record for location_id % and source_type_id % already exists.
-            Use an UPDATE directive to modify the existing record.',
-                NEW.location_id, NEW.source_type_id;
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_location_source_change
-BEFORE UPDATE OR DELETE OR INSERT ON loc.location_sources
-FOR EACH ROW EXECUTE FUNCTION loc.handle_location_source_change();
--- +goose StatementEnd
+CREATE TRIGGER source_history_trigger
+    BEFORE INSERT OR UPDATE OR DELETE ON loc.sources
+    FOR EACH ROW EXECUTE PROCEDURE versioning(
+        'sys_period', 'loc.sources_history',
+        true, true, -- Mitigate conflicts, ignore unchanged
+        true, false, -- Include latest value in history, disable migration mode
+        true, 'source_version' -- Increment version
+    );
 
 -- +goose Down
 DROP SCHEMA loc CASCADE;
