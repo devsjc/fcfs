@@ -19,7 +19,7 @@ lint:
 
 .PHONY: bench
 bench:
-	go test ./...  -bench=. -run=^a -timeout=15m
+	@go test ./...  -bench=. -run=^a -timeout=15m
 
 .PHONY: gen
 gen: gen-db gen-proto
@@ -43,7 +43,7 @@ gen-proto:
 		--go-grpc_opt=paths=source_relative
 	@echo " * Success."
 
-# --- EXTERNAL GENERATION TARGETS --- #
+# --- EXTERNAL GENERATION TARGETS --------------------------------------------------------------- #
 
 .PHONY: gen-ext
 gen-ext: gen-proto-python gen-proto-openapi gen-proto-typescript
@@ -76,7 +76,7 @@ gen-proto-openapi:
 		--openapi_out=gen/openapi
 	npx redocly build-docs gen/openapi.yaml --output gen/index.html
 
-# --- HELPER TARGETS --- #
+# --- LOCAL RUNNING TARGETS --------------------------------------------------------------------- #
 
 .PHONY: run-db
 run-db:
