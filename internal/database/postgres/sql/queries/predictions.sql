@@ -38,7 +38,7 @@ ORDER BY created_at_utc DESC;
 INSERT INTO pred.forecasts(
     location_id, source_type_id, predictor_id, init_time_utc
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, (SELECT predictor_id FROM pred.predictors WHERE predictor_name = $3 AND predictor_version = $4), $5
 ) RETURNING forecast_id, init_time_utc, source_type_id, location_id, predictor_id;
 
 -- name: CreateForecastsUsingCopy :batchone
@@ -74,11 +74,33 @@ SELECT
     f.predictor_id
 FROM pred.forecasts f
 WHERE f.location_id = $1
-AND f.source_type_id = $2
-AND f.predictor_id = $3
-AND f.init_time_utc <= sqlc.arg(pivot_timestamp)::timestamp - MAKE_INTERVAL(mins => sqlc.arg(horizon_mins)::integer)
+    AND f.source_type_id = $2
+    AND f.predictor_id = $3
+    AND f.init_time_utc <= sqlc.arg(pivot_timestamp)::timestamp - MAKE_INTERVAL(mins => sqlc.arg(horizon_mins)::integer)
 ORDER BY f.init_time_utc DESC
 LIMIT 1;
+
+-- name: ListForecasts :many
+/* ListForecasts retrieves all the forecasts for a given location, source type, and predictor
+ * between the input times. It does not return forecast values.
+ */
+SELECT
+    f.forecast_id,
+    f.init_time_utc,
+    f.location_id,
+    sqlc.arg(predictor_name)::text AS predictor_name,
+    sqlc.arg(predictor_version)::text AS predictor_version
+FROM pred.forecasts f
+WHERE f.location_id = $1
+    AND f.source_type_id = $2
+    AND f.predictor_id = (
+        SELECT predictor_id FROM pred.predictors
+        WHERE predictor_name = sqlc.arg(predictor_name)::text
+        AND predictor_version = sqlc.arg(predictor_version)::text
+    )
+    AND f.init_time_utc BETWEEN
+        sqlc.arg(start_timestamp)::timestamp
+        AND sqlc.arg(end_timestamp)::timestamp;
 
 -- name: ListPredictionsForForecast :many
 /* ListPredictionsForForecast retrieves predicted generation values
@@ -86,12 +108,7 @@ LIMIT 1;
  * with 0 representing 0% and 30000 representing 100% of capacity.
  */
 SELECT
-    horizon_mins,
-    p10_sip,
-    p50_sip,
-    p90_sip,
-    target_time_utc,
-    metadata
+    horizon_mins, p10_sip, p50_sip, p90_sip, target_time_utc, metadata
 FROM pred.predicted_generation_values
 WHERE forecast_id = $1;
 
@@ -150,7 +167,6 @@ FROM rankedPredictions rp
 WHERE rp.rn = 1
 ORDER BY rp.target_time_utc ASC;
 
-
 -- name: ListPredictionsAtTimeForLocations :many
 /* ListPredictionsAtTimeForLocations retrieves predicted generation values as percentages
  * of capacity for a specific time and horizon.
@@ -165,9 +181,9 @@ WITH relevant_forecasts AS (
         ROW_NUMBER() OVER (PARTITION BY f.location_id ORDER BY f.init_time_utc DESC) AS rn
     FROM pred.forecasts f
     WHERE f.location_id = ANY(sqlc.arg(location_ids)::integer[])
-    AND f.source_type_id = $1
-    AND f.predictor_id = $2
-    AND f.init_time_utc <= sqlc.arg(time)::timestamp - MAKE_INTERVAL(mins => sqlc.arg(horizon_mins)::integer)
+        AND f.source_type_id = $1
+        AND f.predictor_id = $2
+        AND f.init_time_utc <= sqlc.arg(time)::timestamp - MAKE_INTERVAL(mins => sqlc.arg(horizon_mins)::integer)
 ),
 latest_relevant_forecasts AS (
     SELECT
@@ -196,8 +212,7 @@ WHERE pgv.horizon_mins = sqlc.arg(horizon_mins)::integer;
  * The results are grouped by location and horizon.
  */
 WITH desired_init_times AS (
-    SELECT 
-        (d.day::date + sqlc.arg(pivot_timestamp)::timestamp::time)::timestamp AS init_time_utc 
+    SELECT (d.day::date + sqlc.arg(pivot_timestamp)::timestamp::time)::timestamp AS init_time_utc 
     FROM generate_series(
         sqlc.arg(pivot_timestamp)::timestamp::date - INTERVAL '7 days',
         sqlc.arg(pivot_timestamp)::timestamp::date - INTERVAL '1 day',
