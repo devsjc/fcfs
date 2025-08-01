@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -106,9 +107,96 @@ type PostgresDataPlatformServerImpl struct {
 	pool *pgxpool.Pool
 }
 
+func (s *PostgresDataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRequest, stream grpc.ServerStreamingServer[pb.StreamForecastDataResponse]) error {
+	l := log.With().Str("method", "StreamForecastData").Logger()
+	panic("unimplemented")
+
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(stream.Context())
+	if err != nil {
+		l.Err(err).Msg("q.pool.Begin()")
+		return status.Errorf(codes.Internal, "Encountered database connection error")
+	}
+	defer tx.Rollback(stream.Context())
+	querier := db.New(tx)
+
+	srcParams := db.GetSourceParams{
+		LocationID:     req.LocationId,
+		SourceTypeName: req.EnergySource.String(),
+	}
+	dbSource, err := querier.GetSource(stream.Context(), srcParams)
+	if err != nil {
+		l.Err(err).Msgf("querier.GetSource(%+v)", srcParams)
+		return status.Errorf(
+			codes.NotFound, "No location found for ID %d with source type '%s'.",
+			req.LocationId, req.EnergySource,
+		)
+	}
+
+	forecasts := make([]db.ListForecastsRow, 0)
+	for _, model := range req.Models {
+		fcParams := db.ListForecastsParams{
+			LocationID:       req.LocationId,
+			SourceTypeID:     dbSource.SourceTypeID,
+			PredictorName:    model.ModelName,
+			PredictorVersion: model.ModelVersion,
+			StartTimestamp:   pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUnix.AsTime(), Valid: true},
+			EndTimestamp:     pgtype.Timestamp{Time: req.TimeWindow.EndTimestampUnix.AsTime(), Valid: true},
+		}
+		dbForecasts, err := querier.ListForecasts(stream.Context(), fcParams)
+		if err != nil {
+			l.Err(err).Msgf("querier.ListForecasts(%+v)", fcParams)
+			return status.Errorf(
+				codes.NotFound, "No forecasts found for location %d and model %s:%s between %s and %s.",
+				req.LocationId, model.ModelName, model.ModelVersion,
+				req.TimeWindow.StartTimestampUnix.AsTime(), req.TimeWindow.EndTimestampUnix.AsTime(),
+			)
+		}
+		forecasts = append(forecasts, dbForecasts...)
+	}
+
+	for _, forecast := range forecasts {
+		psParams := db.ListPredictionsForForecastParams{ForecastID: forecast.ForecastID}
+		dbPreds, err := querier.ListPredictionsForForecast(stream.Context(), psParams)
+		if err != nil {
+			l.Err(err).Msgf("querier.ListPredictionsForForecast(%+v)", psParams)
+			return status.Errorf(
+				codes.NotFound, "No predicted generation values found for forecast with init time %s",
+				forecast.InitTimeUtc,
+			)
+		}
+
+		horizons := make([]int32, len(dbPreds))
+		p10sPct := make([]float32, len(dbPreds))
+		p50sPct := make([]float32, len(dbPreds))
+		p90sPct := make([]float32, len(dbPreds))
+		for i := range dbPreds {
+			horizons[i] = int32(dbPreds[i].HorizonMins)
+			p10sPct[i] = (float32(dbPreds[i].P10Sip) / 30000.0) * 100.0
+			p50sPct[i] = (float32(dbPreds[i].P50Sip) / 30000.0) * 100.0
+			p90sPct[i] = (float32(dbPreds[i].P90Sip) / 30000.0) * 100.0
+		}
+
+		err = stream.Send(&pb.StreamForecastDataResponse{
+			InitTimestamp: timestamppb.New(forecast.InitTimeUtc.Time()),
+			LocationId:    forecast.LocationID,
+			ModelName:     forecast.PredictorName,
+			ModelVersion:  forecast.PredictorVersion,
+			HorizonsMins:  horizons,
+			P10SPercent:   p10sPct,
+			P50SPercent:   p50sPct,
+			P90SPercent:   p90sPct,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb.GetLocationsWithinRequest) (*pb.GetLocationsWithinResponse, error) {
 	l := log.With().Str("method", "GetLocationsWithin").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -144,7 +232,6 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context,
 
 func (s *PostgresDataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *pb.GetWeekAverageDeltasRequest) (*pb.GetWeekAverageDeltasResponse, error) {
 	l := log.With().Str("method", "GetWeekAverageDeltas").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -227,7 +314,6 @@ func (s *PostgresDataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Contex
 
 func (s *PostgresDataPlatformServerImpl) GetObservedTimeseries(ctx context.Context, req *pb.GetObservedTimeseriesRequest) (*pb.GetObservedTimeseriesResponse, error) {
 	l := log.With().Str("method", "GetObservedTimeseries").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -296,7 +382,6 @@ func (s *PostgresDataPlatformServerImpl) GetObservedTimeseries(ctx context.Conte
 
 func (s *PostgresDataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb.CreateObservationsRequest) (*pb.CreateObservationsResponse, error) {
 	l := log.With().Str("method", "CreateObservations").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -385,7 +470,6 @@ func (s *PostgresDataPlatformServerImpl) CreateObserver(ctx context.Context, req
 
 func (s *PostgresDataPlatformServerImpl) GetPredictedCrossSection(ctx context.Context, req *pb.GetPredictedCrossSectionRequest) (*pb.GetPredictedCrossSectionResponse, error) {
 	l := log.With().Str("method", "GetPredictedCrossSection").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -485,7 +569,6 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx contex
 		Int32("locationID", req.LocationId).
 		Str("energySource", req.EnergySource.String()).
 		Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -608,7 +691,6 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx contex
 
 func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Context, req *pb.GetLatestPredictionsRequest) (*pb.GetLatestPredictionsResponse, error) {
 	l := log.With().Str("method", "GetLatestPredictions").Logger()
-	l.Debug().Msg("recieved method call")
 
 	currentTime := time.Now().UTC().Truncate(time.Minute)
 
@@ -695,7 +777,6 @@ func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Contex
 
 func (s *PostgresDataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLocationRequest) (*pb.GetLocationResponse, error) {
 	l := log.With().Str("method", "GetLocation").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -731,7 +812,6 @@ func (s *PostgresDataPlatformServerImpl) GetLocation(ctx context.Context, req *p
 
 func (s *PostgresDataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.CreateForecastRequest) (*pb.CreateForecastResponse, error) {
 	l := log.With().Str("method", "CreateForecast").Logger()
-	l.Debug().Msg("recieved method call")
 
 	if len(req.PredictedGenerationValues) == 0 {
 		return nil, fmt.Errorf("no predicted generation values provided")
@@ -759,8 +839,10 @@ func (s *PostgresDataPlatformServerImpl) CreateForecast(ctx context.Context, req
 
 	// Create a new forecast
 	params2 := db.CreateForecastParams{
-		LocationID:   int32(req.Forecast.LocationId),
-		SourceTypeID: dbSource.SourceTypeID,
+		LocationID:       int32(req.Forecast.LocationId),
+		SourceTypeID:     dbSource.SourceTypeID,
+		PredictorName:    req.Forecast.Model.ModelName,
+		PredictorVersion: req.Forecast.Model.ModelVersion,
 		InitTimeUtc: pgtype.Timestamp{
 			Time:  req.Forecast.InitTimeUtc.AsTime(),
 			Valid: true,
@@ -812,7 +894,6 @@ func (s *PostgresDataPlatformServerImpl) CreateForecast(ctx context.Context, req
 
 func (s *PostgresDataPlatformServerImpl) CreateModel(ctx context.Context, req *pb.CreateModelRequest) (*pb.CreateModelResponse, error) {
 	l := log.With().Str("method", "CreateModel").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -833,13 +914,13 @@ func (s *PostgresDataPlatformServerImpl) CreateModel(ctx context.Context, req *p
 			"Invalid model. Ensure name and version are not empty and are lowercase",
 		)
 	}
+	l.Debug().Msgf("Created model with ID %d", modelID)
 
 	return &pb.CreateModelResponse{ModelId: modelID}, tx.Commit(ctx)
 }
 
 func (s *PostgresDataPlatformServerImpl) CreateSite(ctx context.Context, req *pb.CreateSiteRequest) (*pb.CreateSiteResponse, error) {
 	l := log.With().Str("method", "CreateSite").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -909,7 +990,6 @@ func (s *PostgresDataPlatformServerImpl) CreateSite(ctx context.Context, req *pb
 
 func (s *PostgresDataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.CreateGspRequest) (*pb.CreateGspResponse, error) {
 	l := log.With().Str("method", "CreateGsp").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -978,7 +1058,6 @@ func (s *PostgresDataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.
 
 func (s *PostgresDataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req *pb.GetLocationsAsGeoJSONRequest) (*pb.GetLocationsAsGeoJSONResponse, error) {
 	l := log.With().Str("method", "GetLocationsAsGeoJSON").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)
@@ -1012,7 +1091,6 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Conte
 // GetPredictedTimeseries implements proto.QuartzAPIServer.
 func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseries(ctx context.Context, req *pb.GetPredictedTimeseriesRequest) (*pb.GetPredictedTimeseriesResponse, error) {
 	l := log.With().Str("method", "GetPredictedTimeseries").Logger()
-	l.Debug().Msg("recieved method call")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(ctx)

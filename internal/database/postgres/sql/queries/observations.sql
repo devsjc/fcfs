@@ -9,10 +9,10 @@ FROM obs.observers;
 
 -- name: GetObserverByName :one
 SELECT
-    observer_id,
-    observer_name
-FROM obs.observers
-WHERE observer_name = $1;
+    o.observer_id,
+    o.observer_name
+FROM obs.observers AS o
+WHERE o.observer_name = $1;
 
 -- name: CreateObservationsAsInt16UsingCopy :copyfrom
 /* CreateObservationsCopy inserts a batch of observations using postgres COPY protocol,
@@ -33,13 +33,13 @@ INSERT INTO obs.observed_generation_values (
  * This is faster than converting the values to percentages.
  */
 SELECT
-    location_id,
-    source_type_id,
-    observation_time_utc,
-    value_sip
-FROM obs.observed_generation_values
+    og.location_id,
+    og.source_type_id,
+    og.observation_time_utc,
+    og.value_sip
+FROM obs.observed_generation_values AS og
 WHERE
-    location_id = $1
-    AND source_type_id = $2
-    AND observer_id = $3
-    AND observation_time_utc BETWEEN sqlc.arg(start_time_utc)::timestamp AND sqlc.arg(end_time_utc)::timestamp;
+    og.location_id = $1
+    AND og.source_type_id = $2
+    AND og.observer_id = $3
+    AND og.observation_time_utc BETWEEN sqlc.arg(start_time_utc)::timestamp AND sqlc.arg(end_time_utc)::timestamp;
