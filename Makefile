@@ -16,7 +16,7 @@ test:
 lint:
 	@go mod tidy
 	@go tool gofumpt -l -w .
-	@uvx sqlfluff format \
+	@uvx -q sqlfluff fix -q \
 		--disable-progress-bar \
 		--config=internal/database/postgres/sql/.sqlfluff.toml \
 		internal/database/postgres/sql/queries

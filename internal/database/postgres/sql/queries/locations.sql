@@ -82,7 +82,8 @@ SELECT
     l.location_id,
     l.location_name
 FROM loc.locations AS l
-INNER JOIN loc.locations AS l_outer ON ST_WITHIN(
+INNER JOIN
+    loc.locations AS l_outer ON ST_WITHIN(
         l.geom,
         l_outer.geom
     )

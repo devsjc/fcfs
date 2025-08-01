@@ -161,7 +161,7 @@ filtered_predictions AS (
         pg.target_time_utc,
         pg.metadata
     FROM pred.predicted_generation_values pg
-    INNER JOIN relevant_forecasts rf USING (forecast_id)
+    INNER JOIN relevant_forecasts USING (forecast_id)
     WHERE pg.target_time_utc BETWEEN
         sqlc.arg(start_timestamp)::timestamp
         - MAKE_INTERVAL(mins => sqlc.arg(horizon_mins)::integer)
@@ -287,4 +287,3 @@ SELECT
 FROM deltas AS d
 GROUP BY d.location_id, d.horizon_mins
 ORDER BY d.location_id, d.horizon_mins;
-
