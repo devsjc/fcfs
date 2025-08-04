@@ -23,8 +23,8 @@ generated Python bindings (see [Generating Code](#generating-code)). Then use
 [uvx](https://docs.astral.sh/uv/reference/cli/#uv-tool-run) to run the notebook:
 
 ```bash
-$ make gen-proto-python && cp -r gen/python/* examples/python-notebook/
-$ cd examples/python-notebook && uvx --with="marimo" marimo edit --headless example.py 
+$ make gen.proto.python
+$ uvx marimo edit --headless --sandbox examples/python-notebook/example.py 
 ```
 
 ### Typescript Frontend Client

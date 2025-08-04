@@ -20,7 +20,6 @@ WITH desired_version AS (
             LIMIT 1
         )) AS value
 )
-
 SELECT
     p.predictor_id,
     p.predictor_name,
@@ -29,7 +28,7 @@ SELECT
 FROM pred.predictors AS p
 INNER JOIN desired_version ON true
 WHERE p.predictor_name = $1
-    AND p.predictor_version = desired_version.version;
+    AND p.predictor_version = desired_version.value;
 
 -- name: ListPredictors :many
 SELECT

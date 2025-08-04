@@ -80,7 +80,9 @@ FROM (
  */
 SELECT
     l.location_id,
-    l.location_name
+    l.location_name,
+    ST_Y(l.centroid)::real AS latitude,
+    ST_X(l.centroid)::real AS longitude
 FROM loc.locations AS l
 INNER JOIN
     loc.locations AS l_outer ON ST_WITHIN(
@@ -111,11 +113,15 @@ WHERE
 -- name: ListLocationsSources :many
 SELECT
     s.location_id,
+    l.location_name,
+    ST_X(l.centroid)::real AS longitude,
+    ST_Y(l.centroid)::real AS latitude,
     s.capacity,
     s.capacity_unit_prefix_factor,
     s.capacity_limit_sip,
     s.metadata
 FROM loc.sources AS s
+INNER JOIN loc.locations AS l USING (location_id)
 WHERE
     s.location_id = ANY(sqlc.arg(location_ids)::integer [])
     AND s.source_type_id = $1;

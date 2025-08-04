@@ -51,12 +51,14 @@ gen.proto:
 
 .PHONY: gen.proto.python
 gen.proto.python:
+	find examples/python-notebook ! -name 'example.py' -type f -exec rm -f {} +
 	rm -rf gen/python && mkdir -p gen/python
 	uvx --from 'betterproto[compiler]==2.0.0b7' protoc \
 		proto/ocf/dp/*.proto \
 		-I=proto \
 		--python_betterproto_opt=typing.310 \
 		--python_betterproto_out=gen/python
+	cp -r gen/python/* examples/python-notebook/
 
 .PHONY: gen.proto.typescript
 gen.proto.typescript:

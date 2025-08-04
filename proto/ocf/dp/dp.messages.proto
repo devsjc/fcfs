@@ -23,14 +23,10 @@ message Yield {
 }
 
 message YieldPrediction {
-  message Uncertainty {
-    float lower_percent = 1; 
-    float upper_percent = 2; 
-  }
-  
-  float yield_percent = 1;
-  google.protobuf.Timestamp timestamp_unix = 2;
-  Uncertainty uncertainty = 3;
+  google.protobuf.Timestamp timestamp_unix = 1;
+  float yield_percent = 2;
+  float yield_p10_percent = 3;
+  float yield_p90_percent = 4;
 }
 
 /* LatLng represents a WSG84 coordinate pair.
@@ -178,8 +174,10 @@ message GetPredictedCrossSectionRequest {
 message GetPredictedCrossSectionResponse {
   message YieldPredictionAtLocation {
     int32 location_id = 1;
-    uint64 capacity_watts = 2;
-    float yield_percent = 3;
+    string location_name = 2;
+    uint64 capacity_watts = 3;
+    float yield_percent = 4;
+    LatLng latlng = 5;
   }
 
   google.protobuf.Timestamp timestamp_unix = 1;
@@ -357,12 +355,13 @@ message GetLocationsWithinRequest {
 }
 
 message GetLocationsWithinResponse {
-  message IdName {
+  message LocationData {
     int32 location_id = 1;
     string name = 2;
+    LatLng latlng = 3;
   }
 
-  repeated GetLocationsWithinResponse.IdName locations = 1;
+  repeated GetLocationsWithinResponse.LocationData locations = 1;
 }
 
 message StreamForecastDataRequest {
@@ -379,11 +378,10 @@ message StreamForecastDataRequest {
 
 message StreamForecastDataResponse {
   google.protobuf.Timestamp init_timestamp = 1;
-  string location_id = 2;
-  string model_name = 3;
-  string model_version = 4;
-  repeated int32 horizons_mins = 5;
-  repeated float p10s_percent = 6;
-  repeated float p50s_percent = 7;
-  repeated float p90s_percent = 8;
+  int32 location_id = 2;
+  string model_fullname = 3;
+  int32 horizon_mins = 4;
+  float p10_percent = 5;
+  float p50_percent = 6;
+  float p90_percent = 7;
 }

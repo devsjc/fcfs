@@ -109,7 +109,6 @@ type PostgresDataPlatformServerImpl struct {
 
 func (s *PostgresDataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRequest, stream grpc.ServerStreamingServer[pb.StreamForecastDataResponse]) error {
 	l := log.With().Str("method", "StreamForecastData").Logger()
-	panic("unimplemented")
 
 	// Establish a transaction with the database
 	tx, err := s.pool.Begin(stream.Context())
@@ -162,34 +161,40 @@ func (s *PostgresDataPlatformServerImpl) StreamForecastData(req *pb.StreamForeca
 			l.Err(err).Msgf("querier.ListPredictionsForForecast(%+v)", psParams)
 			return status.Errorf(
 				codes.NotFound, "No predicted generation values found for forecast with init time %s",
-				forecast.InitTimeUtc,
+				forecast.InitTimeUtc.Time,
 			)
 		}
 
-		horizons := make([]int32, len(dbPreds))
-		p10sPct := make([]float32, len(dbPreds))
-		p50sPct := make([]float32, len(dbPreds))
-		p90sPct := make([]float32, len(dbPreds))
 		for i := range dbPreds {
-			horizons[i] = int32(dbPreds[i].HorizonMins)
-			p10sPct[i] = (float32(dbPreds[i].P10Sip) / 30000.0) * 100.0
-			p50sPct[i] = (float32(dbPreds[i].P50Sip) / 30000.0) * 100.0
-			p90sPct[i] = (float32(dbPreds[i].P90Sip) / 30000.0) * 100.0
+			var p90 float32
+			if dbPreds[i].P90Sip == nil {
+				p90 = float32(math.NaN())
+			} else {
+				p90 = (float32(*dbPreds[i].P90Sip) / 30000.0) * 100.0
+			}
+
+			var p10 float32
+			if dbPreds[i].P10Sip == nil {
+				p10 = float32(math.NaN())
+			} else {
+				p10 = (float32(*dbPreds[i].P10Sip) / 30000.0) * 100.0
+			}
+
+			err = stream.Send(&pb.StreamForecastDataResponse{
+				InitTimestamp: timestamppb.New(forecast.InitTimeUtc.Time),
+				LocationId:    forecast.LocationID,
+				ModelFullname: fmt.Sprintf("%s:%s", forecast.PredictorName, forecast.PredictorVersion),
+				HorizonMins:   int32(dbPreds[i].HorizonMins),
+				P50Percent:    (float32(dbPreds[i].P50Sip) / 30000.0) * 100.0,
+				P10Percent:    p10,
+				P90Percent:    p90,
+			})
+			if err != nil {
+				return err
+			}
+
 		}
 
-		err = stream.Send(&pb.StreamForecastDataResponse{
-			InitTimestamp: timestamppb.New(forecast.InitTimeUtc.Time()),
-			LocationId:    forecast.LocationID,
-			ModelName:     forecast.PredictorName,
-			ModelVersion:  forecast.PredictorVersion,
-			HorizonsMins:  horizons,
-			P10SPercent:   p10sPct,
-			P50SPercent:   p50sPct,
-			P90SPercent:   p90sPct,
-		})
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -217,11 +222,15 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context,
 		)
 	}
 
-	locations := make([]*pb.GetLocationsWithinResponse_IdName, len(dbLocationIds))
+	locations := make([]*pb.GetLocationsWithinResponse_LocationData, len(dbLocationIds))
 	for i := range dbLocationIds {
-		locations[i] = &pb.GetLocationsWithinResponse_IdName{
+		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
 			LocationId: dbLocationIds[i].LocationID,
 			Name:       dbLocationIds[i].LocationName,
+			Latlng: &pb.LatLng{
+				Latitude:  dbLocationIds[i].Latitude,
+				Longitude: dbLocationIds[i].Longitude,
+			},
 		}
 	}
 
@@ -553,6 +562,11 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedCrossSection(ctx context.Co
 				YieldPercent:  (float32(dbCrossSection[idx].P50Sip) / 30000.0) * 100.0,
 				CapacityWatts: uint64(value.Capacity) * uint64(math.Pow10(int(value.CapacityUnitPrefixFactor))),
 				LocationId:    value.LocationID,
+				LocationName:  value.LocationName,
+				Latlng: &pb.LatLng{
+					Latitude:  value.Latitude,
+					Longitude: value.Longitude,
+				},
 			})
 		}
 	}
@@ -757,14 +771,26 @@ func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Contex
 
 	predictedYields := make([]*pb.YieldPrediction, len(dbValues))
 	for i, value := range dbValues {
+
+		var p10 float32
+		if value.P10Sip == nil {
+			p10 = float32(math.NaN())
+		} else {
+			p10 = (float32(*value.P10Sip) / 30000.0) * 100.0
+		}
+
+		var p90 float32
+		if value.P90Sip == nil {
+			p90 = float32(math.NaN())
+		} else {
+			p90 = (float32(*value.P90Sip) / 30000.0) * 100.0
+		}
+
 		predictedYields[i] = &pb.YieldPrediction{
-			YieldPercent:  (float32(value.P50Sip) / 30000.0) * 100.0,
-			TimestampUnix: timestamppb.New(value.TargetTimeUtc.Time),
-			Uncertainty: &pb.YieldPrediction_Uncertainty{
-				// TODO: Check this is okay to do?
-				UpperPercent: (float32(*value.P90Sip) / 30000.0) * 100.0,
-				LowerPercent: (float32(*value.P10Sip) / 30000.0) * 100.0,
-			},
+			TimestampUnix:   timestamppb.New(value.TargetTimeUtc.Time),
+			YieldPercent:    (float32(value.P50Sip) / 30000.0) * 100.0,
+			YieldP10Percent: p10,
+			YieldP90Percent: p90,
 		}
 	}
 
@@ -1151,14 +1177,27 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseries(ctx context.Cont
 	)
 
 	yields := make([]*pb.YieldPrediction, len(dbValues))
-	for i, yield := range dbValues {
+	for i, value := range dbValues {
+
+		var p10 float32
+		if value.P10Sip == nil {
+			p10 = float32(math.NaN())
+		} else {
+			p10 = (float32(*value.P10Sip) / 30000.0) * 100.0
+		}
+
+		var p90 float32
+		if value.P90Sip == nil {
+			p90 = float32(math.NaN())
+		} else {
+			p90 = (float32(*value.P90Sip) / 30000.0) * 100.0
+		}
+
 		yields[i] = &pb.YieldPrediction{
-			YieldPercent:  (float32(yield.P50Sip) / 30000.0) * 100.0,
-			TimestampUnix: timestamppb.New(yield.TargetTimeUtc.Time),
-			Uncertainty: &pb.YieldPrediction_Uncertainty{
-				UpperPercent: (float32(*yield.P90Sip) / 30000.0) * 100.0,
-				LowerPercent: (float32(*yield.P10Sip) / 30000.0) * 100.0,
-			},
+			TimestampUnix:   timestamppb.New(value.TargetTimeUtc.Time),
+			YieldPercent:    (float32(value.P50Sip) / 30000.0) * 100.0,
+			YieldP10Percent: p10,
+			YieldP90Percent: p90,
 		}
 	}
 
