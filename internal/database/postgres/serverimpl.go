@@ -227,10 +227,6 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context,
 		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
 			LocationId: dbLocationIds[i].LocationID,
 			Name:       dbLocationIds[i].LocationName,
-			Latlng: &pb.LatLng{
-				Latitude:  dbLocationIds[i].Latitude,
-				Longitude: dbLocationIds[i].Longitude,
-			},
 		}
 	}
 

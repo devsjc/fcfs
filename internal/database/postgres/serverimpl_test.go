@@ -731,7 +731,7 @@ func TestGetLocationsWithin(t *testing.T) {
 
 	result, err := c.GetLocationsWithin(t.Context(), &pb.GetLocationsWithinRequest{LocationId: 1})
 	require.NoError(t, err)
-	expected := []*pb.GetLocationsWithinResponse_IdName{
+	expected := []*pb.GetLocationsWithinResponse_LocationData{
 		{LocationId: 1, Name: "GSP_OUTER_BOX"},
 		{LocationId: 2, Name: "SITE-0"},
 		{LocationId: 3, Name: "SITE-1"},
