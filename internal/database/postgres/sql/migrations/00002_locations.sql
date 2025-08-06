@@ -69,7 +69,8 @@ CREATE TABLE loc.locations (
     centroid GEOMETRY(POINT, 4326) GENERATED ALWAYS AS (ST_Centroid(geom)) STORED,
     geom_hash TEXT GENERATED ALWAYS AS (MD5(ST_AsBinary(geom))) STORED,
     PRIMARY KEY (location_id),
-    UNIQUE (location_name, geom_hash)
+    UNIQUE (location_name),
+    UNIQUE (geom_hash)
 );
 -- Required index for efficient spatial-based queries
 CREATE INDEX ON loc.locations USING GIST (geom);
