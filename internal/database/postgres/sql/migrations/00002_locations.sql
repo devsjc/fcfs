@@ -102,7 +102,7 @@ CREATE TABLE loc.sources (
     -- Capacity cap, (for instance during curtailment or repair work),
     -- encoded as a smallint percentage (sip) of the capacity; with 0 representing 0%
     -- AND 30000 representing 100% of the capacity. However, since things are mostly
-    -- not limited, NULL indicates no limit, and 30000 is an invalid value.
+    -- not limited, NULL indicates no limit, so 30000 is an invalid value.
     capacity_limit_sip SMALLINT DEFAULT NULL
         CHECK (
             capacity_limit_sip IS NULL

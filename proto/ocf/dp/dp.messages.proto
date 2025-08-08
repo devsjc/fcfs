@@ -5,7 +5,9 @@ syntax = "proto3";
 package ocf.dp;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 import "buf/validate/validate.proto";
+import "ocf/dp/dp.rules.proto";
 
 option go_package = "github.com/devsjc/fcfs/dp/internal/protogen/ocf/dp;dp";
 
@@ -75,8 +77,7 @@ message TimeWindow {
 
 message GetPredictedTimeseriesRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
 
@@ -108,8 +109,7 @@ message GetPredictedTimeseriesResponse {
 
 message GetPredictedTimeseriesDeltasRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
 
@@ -146,8 +146,7 @@ message GetPredictedTimeseriesDeltasResponse {
 
 message GetObservedTimeseriesRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   string observer_name = 2 [
     (buf.validate.field).string.min_len = 2,
@@ -180,13 +179,18 @@ message GetPredictedCrossSectionRequest {
     (buf.validate.field).repeated.max_items = 1000,
     (buf.validate.field).repeated.unique = true,
     (buf.validate.field).repeated.items = {
-      string: {min_len: 1, max_len: 100}
+      string: {[ocf.dp.valid_location_name]: true}
     }
   ];
   EnergySource energy_source = 2;
+  /* The time to fetch predicted yields for.
+   * If not specified, the current time will be used.
+   */
   google.protobuf.Timestamp timestamp_unix = 3;
   /* The model to fetch predicted yields from. */
-  Model model = 4;
+  Model model = 4 [
+    (buf.validate.field).required = true
+  ];
 }
 
 message GetPredictedCrossSectionResponse {
@@ -209,8 +213,7 @@ message GetPredictedCrossSectionResponse {
 
 message GetLatestPredictionsRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
   /* The time to search backwards from to find the 'latest' forecast.
@@ -276,7 +279,7 @@ message CreateForecastRequest {
       (buf.validate.field).float.gte = 0,
       (buf.validate.field).float.lte = 110
     ];
-    optional string metadata = 5;
+    optional google.protobuf.Struct metadata = 5;
   }
 
   message Forecast {
@@ -284,8 +287,7 @@ message CreateForecastRequest {
       (buf.validate.field).required = true
     ];
     string location_name = 2 [
-      (buf.validate.field).string.min_len = 2,
-      (buf.validate.field).string.max_len = 100
+      (buf.validate.field).string.(valid_location_name) = true
     ];
     EnergySource energy_source = 3;
     google.protobuf.Timestamp init_time_utc = 4 [
@@ -309,8 +311,7 @@ message CreateForecastResponse {
 
 message CreateSiteRequest {
   string name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
   LatLng latlng = 3 [
@@ -319,7 +320,7 @@ message CreateSiteRequest {
   uint64 capacity_watts = 4 [
     (buf.validate.field).required = true
   ];
-  optional string metadata = 5;
+  optional google.protobuf.Struct metadata = 5;
 }
 
 message CreateSiteResponse {
@@ -331,19 +332,16 @@ message CreateSiteResponse {
 
 message CreateGspRequest {
   string name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
   string geometry = 3 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 1000,
-    (buf.validate.field).string.pattern = "^(POINT|POLYGON|MULTIPOLYGON)\\([(),\\.\\ \\d]+\\)$"
+    (buf.validate.field).string.(valid_geometry) = true
   ];
   uint64 capacity_watts = 4 [
     (buf.validate.field).required = true
   ];
-  optional string metadata = 5;
+  optional google.protobuf.Struct metadata = 5;
 }
 
 message CreateGspResponse {
@@ -353,8 +351,7 @@ message CreateGspResponse {
 
 message GetLocationRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
 }
@@ -368,7 +365,7 @@ message GetLocationResponse {
    */
   LatLng latlng = 3;
   uint64 capacity_watts = 4;
-  string metadata = 5;
+  google.protobuf.Struct metadata = 5;
 }
 
 
@@ -378,7 +375,7 @@ message GetLocationsAsGeoJSONRequest {
     (buf.validate.field).repeated.max_items = 1000,
     (buf.validate.field).repeated.unique = true,
     (buf.validate.field).repeated.items = {
-      string: {min_len: 2, max_len: 100}
+      string: {[ocf.dp.valid_location_name]:  true}
     } 
   ];
   /* If true, the GeoJSON will not be simplified.
@@ -406,8 +403,7 @@ message CreateObservationsRequest {
   }
 
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
   string observer_name = 3 [
@@ -438,8 +434,7 @@ message CreateObserverResponse {
 
 message GetWeekAverageDeltasRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
   /* The characteristic time to detrmine averages for.
@@ -478,8 +473,7 @@ message GetWeekAverageDeltasResponse {
 
 message GetLocationsWithinRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
 }
 
@@ -494,8 +488,7 @@ message GetLocationsWithinResponse {
 
 message StreamForecastDataRequest {
   string location_name = 1 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).string.max_len = 100
+    (buf.validate.field).string.(valid_location_name) = true
   ];
   EnergySource energy_source = 2;
   TimeWindow time_window = 3 [
@@ -517,3 +510,4 @@ message StreamForecastDataResponse {
   float p50_percent = 6;
   optional float p90_percent = 7;
 }
+
