@@ -122,7 +122,7 @@ func (s *PostgresDataPlatformServerImpl) StreamForecastData(req *pb.StreamForeca
 	querier := db.New(tx)
 
 	srcParams := db.GetSourceParams{
-		LocationName:     req.LocationName,
+		LocationName:   req.LocationName,
 		SourceTypeName: req.EnergySource.String(),
 	}
 	dbSource, err := querier.GetSource(stream.Context(), srcParams)
@@ -227,8 +227,8 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context,
 	locations := make([]*pb.GetLocationsWithinResponse_LocationData, len(dbLocations))
 	for i := range dbLocations {
 		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
-			LocationId: dbLocations[i].LocationID,
-			LocationName:       dbLocations[i].LocationName,
+			LocationId:   dbLocations[i].LocationID,
+			LocationName: dbLocations[i].LocationName,
 		}
 	}
 
@@ -308,14 +308,14 @@ func (s *PostgresDataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Contex
 	deltas := make([]*pb.GetWeekAverageDeltasResponse_AverageDelta, len(dbDeltas))
 	for i, delta := range dbDeltas {
 		deltas[i] = &pb.GetWeekAverageDeltasResponse_AverageDelta{
-			DeltaPercent: (float32(delta.AvgDeltaSip) / 30000.0) * 100.0,
-			HorizonMins:  uint32(delta.HorizonMins),
-			EffectiveCapacityWatts: 3, //TODO
+			DeltaPercent:           (float32(delta.AvgDeltaSip) / 30000.0) * 100.0,
+			HorizonMins:            uint32(delta.HorizonMins),
+			EffectiveCapacityWatts: 3, // TODO
 		}
 	}
 	return &pb.GetWeekAverageDeltasResponse{
 		Deltas:        deltas,
-		InitTimeOfDay:      req.PivotTime.AsTime().Format("03:04"),
+		InitTimeOfDay: req.PivotTime.AsTime().Format("03:04"),
 	}, nil
 }
 
@@ -376,15 +376,15 @@ func (s *PostgresDataPlatformServerImpl) GetObservedTimeseries(ctx context.Conte
 	values := make([]*pb.GetObservedTimeseriesResponse_Value, len(dbObs))
 	for i, obs := range dbObs {
 		values[i] = &pb.GetObservedTimeseriesResponse_Value{
-			ValuePercent:  (float32(obs.ValueSip) / 30000.0) * 100.0,
-			TimestampUnix: &timestamppb.Timestamp{Seconds: obs.ObservationTimeUtc.Time.Unix()},
+			ValuePercent:           (float32(obs.ValueSip) / 30000.0) * 100.0,
+			TimestampUnix:          &timestamppb.Timestamp{Seconds: obs.ObservationTimeUtc.Time.Unix()},
 			EffectiveCapacityWatts: uint64(float64(obs.EffectiveCapacity) * math.Pow10(int(obs.CapacityUnitPrefixFactor))),
 		}
 	}
 	return &pb.GetObservedTimeseriesResponse{
-		LocationId:    dbSource.LocationID,
-		LocationName:  dbSource.LocationName,
-		Values:        values,
+		LocationId:   dbSource.LocationID,
+		LocationName: dbSource.LocationName,
+		Values:       values,
 	}, nil
 }
 
@@ -554,10 +554,10 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedCrossSection(ctx context.Co
 		})
 		if idx > -1 {
 			values = append(values, &pb.GetPredictedCrossSectionResponse_Value{
-				ValuePercent:  (float32(dbCrossSection[idx].P50Sip) / 30000.0) * 100.0,
+				ValuePercent:           (float32(dbCrossSection[idx].P50Sip) / 30000.0) * 100.0,
 				EffectiveCapacityWatts: uint64(value.Capacity) * uint64(math.Pow10(int(value.CapacityUnitPrefixFactor))),
-				LocationId:    value.LocationID,
-				LocationName:  value.LocationName,
+				LocationId:             value.LocationID,
+				LocationName:           value.LocationName,
 				Latlng: &pb.LatLng{
 					Latitude:  value.Latitude,
 					Longitude: value.Longitude,
@@ -671,8 +671,8 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx contex
 		})
 		if obsIdx > -1 {
 			values = append(values, &pb.GetPredictedTimeseriesDeltasResponse_Value{
-				DeltaPercent:  (float32(yield.P50Sip-dbObservations[obsIdx].ValueSip) / 30000.0) * 100,
-				TimestampUnix: timestamppb.New(yield.TargetTimeUtc.Time),
+				DeltaPercent:           (float32(yield.P50Sip-dbObservations[obsIdx].ValueSip) / 30000.0) * 100,
+				TimestampUnix:          timestamppb.New(yield.TargetTimeUtc.Time),
 				EffectiveCapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))), // TODO: Capacity
 			})
 		}
@@ -689,9 +689,9 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx contex
 	}
 
 	return &pb.GetPredictedTimeseriesDeltasResponse{
-		LocationId:    dbSource.LocationID,
-		LocationName:  dbSource.LocationName,
-		Values:        values,
+		LocationId:   dbSource.LocationID,
+		LocationName: dbSource.LocationName,
+		Values:       values,
 	}, tx.Commit(ctx)
 }
 
@@ -779,18 +779,18 @@ func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Contex
 		}
 
 		values[i] = &pb.GetLatestPredictionsResponse_Value{
-			TimestampUnix:   timestamppb.New(value.TargetTimeUtc.Time),
-			P50Percent:    (float32(value.P50Sip) / 30000.0) * 100.0,
-			P10Percent: p10,
-			P90Percent: p90,
+			TimestampUnix:          timestamppb.New(value.TargetTimeUtc.Time),
+			P50Percent:             (float32(value.P50Sip) / 30000.0) * 100.0,
+			P10Percent:             p10,
+			P90Percent:             p90,
 			EffectiveCapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))), // TODO: Capacity
 		}
 	}
 
 	return &pb.GetLatestPredictionsResponse{
-		LocationId:    dbSource.LocationID,
-		LocationName:  dbSource.LocationName,
-		Values:        values,
+		LocationId:   dbSource.LocationID,
+		LocationName: dbSource.LocationName,
+		Values:       values,
 	}, tx.Commit(ctx)
 }
 
@@ -831,8 +831,8 @@ func (s *PostgresDataPlatformServerImpl) GetLocation(ctx context.Context, req *p
 	}
 
 	return &pb.GetLocationResponse{
-		LocationId: dbSource.LocationID,
-		LocationName:  dbSource.LocationName,
+		LocationId:   dbSource.LocationID,
+		LocationName: dbSource.LocationName,
 		Latlng: &pb.LatLng{
 			Latitude:  dbSource.Latitude,
 			Longitude: dbSource.Longitude,
@@ -871,7 +871,7 @@ func (s *PostgresDataPlatformServerImpl) CreateForecast(ctx context.Context, req
 
 	// Create a new forecast
 	params2 := db.CreateForecastParams{
-		LocationID:		  dbSource.LocationID,
+		LocationID:       dbSource.LocationID,
 		SourceTypeID:     dbSource.SourceTypeID,
 		PredictorName:    req.Forecast.Model.ModelName,
 		PredictorVersion: req.Forecast.Model.ModelVersion,
@@ -1112,7 +1112,7 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Conte
 	}
 	params := db.GetLocationGeoJSONParams{
 		SimplificationLevel: simplificationLevel,
-		LocationNames:         req.LocationNames,
+		LocationNames:       req.LocationNames,
 	}
 	geojson, err := querier.GetLocationGeoJSON(ctx, params)
 	if err != nil {
@@ -1203,18 +1203,18 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseries(ctx context.Cont
 		}
 
 		values[i] = &pb.GetPredictedTimeseriesResponse_Value{
-			TimestampUnix:   timestamppb.New(value.TargetTimeUtc.Time),
-			P50ValuePercent:    (float32(value.P50Sip) / 30000.0) * 100.0,
-			P10ValuePercent: p10,
-			P90ValuePercent: p90,
+			TimestampUnix:          timestamppb.New(value.TargetTimeUtc.Time),
+			P50ValuePercent:        (float32(value.P50Sip) / 30000.0) * 100.0,
+			P10ValuePercent:        p10,
+			P90ValuePercent:        p90,
 			EffectiveCapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))), // TODO: Capacity
 		}
 	}
 
 	return &pb.GetPredictedTimeseriesResponse{
-		LocationId:    dbSource.LocationID,
-		LocationName:  dbSource.LocationName,
-		Values:        values,
+		LocationId:   dbSource.LocationID,
+		LocationName: dbSource.LocationName,
+		Values:       values,
 	}, tx.Commit(ctx)
 }
 

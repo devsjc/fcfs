@@ -398,7 +398,7 @@ func TestCreateSolarGSP(t *testing.T) {
 				// Try to read it back
 				resp2, err := c.GetLocation(
 					t.Context(), &pb.GetLocationRequest{
-						LocationName:   tt.gsp.Name,
+						LocationName: tt.gsp.Name,
 						EnergySource: tt.gsp.EnergySource,
 					},
 				)
@@ -431,13 +431,13 @@ func TestGetPredictedCrossSection(t *testing.T) {
 	})
 	locationNames := make([]string, 100)
 	for i := range locationNames {
-		locationNames[i] = fmt.Sprintf("TESTLOCATION%02d", int32(i) + 1)
+		locationNames[i] = fmt.Sprintf("TESTLOCATION%02d", int32(i)+1)
 	}
 
 	crossSectionResp, err := c.GetPredictedCrossSection(t.Context(), &pb.GetPredictedCrossSectionRequest{
 		EnergySource:  pb.EnergySource_SOLAR,
 		TimestampUnix: timestamppb.New(pivotTime),
-		LocationNames:   locationNames,
+		LocationNames: locationNames,
 		Model:         &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 	})
 	require.NoError(t, err)
@@ -546,7 +546,7 @@ func TestGetPredictedTimeseries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins", tt.horizonMins), func(t *testing.T) {
 			resp, err := c.GetPredictedTimeseries(t.Context(), &pb.GetPredictedTimeseriesRequest{
-				LocationName:   "TESTLOCATION01",
+				LocationName: "TESTLOCATION01",
 				HorizonMins:  uint32(tt.horizonMins),
 				Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 				EnergySource: pb.EnergySource_SOLAR,
@@ -599,7 +599,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Size %d", tt.expectedSize), func(t *testing.T) {
 			resp, err := c.GetObservedTimeseries(t.Context(), &pb.GetObservedTimeseriesRequest{
-				LocationName:   "TESTLOCATION01",
+				LocationName: "TESTLOCATION01",
 				EnergySource: pb.EnergySource_SOLAR,
 				TimeWindow: &pb.TimeWindow{
 					StartTimestampUnix: timestamppb.New(tt.startTime),
@@ -648,7 +648,7 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins (deltas)", tt.horizonMins), func(t *testing.T) {
 			deltaResp, err := c.GetPredictedTimeseriesDeltas(t.Context(), &pb.GetPredictedTimeseriesDeltasRequest{
-				LocationName:   "TESTLOCATION01",
+				LocationName: "TESTLOCATION01",
 				HorizonMins:  uint32(tt.horizonMins),
 				EnergySource: pb.EnergySource_SOLAR,
 				ObserverName: "test_observer",
@@ -687,7 +687,7 @@ func TestGetWeekAverageDeltas(t *testing.T) {
 	})
 
 	deltaResp, err := c.GetWeekAverageDeltas(t.Context(), &pb.GetWeekAverageDeltasRequest{
-		LocationName:   "TESTLOCATION01",
+		LocationName: "TESTLOCATION01",
 		EnergySource: pb.EnergySource_SOLAR,
 		Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 		ObserverName: "test_observer",
@@ -786,7 +786,7 @@ func TestCreateForecast(t *testing.T) {
 
 	req := &pb.CreateForecastRequest{
 		Forecast: &pb.CreateForecastRequest_Forecast{
-			LocationName:   siteResp.LocationName,
+			LocationName: siteResp.LocationName,
 			Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 			EnergySource: pb.EnergySource_SOLAR,
 			InitTimeUtc:  timestamppb.New(time.Now().UTC()),
@@ -836,7 +836,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 		b.Run(fmt.Sprintf("%d/GetPredictedTimeseries", numPgvs), func(b *testing.B) {
 			for b.Loop() {
 				resp, err := c.GetPredictedTimeseries(b.Context(), &pb.GetPredictedTimeseriesRequest{
-					LocationName:   "LOCATION-1",
+					LocationName: "LOCATION-1",
 					EnergySource: pb.EnergySource_SOLAR,
 					Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 				})
@@ -847,12 +847,12 @@ func BenchmarkPostgresClient(b *testing.B) {
 		b.Run(fmt.Sprintf("%d/GetPredictedCrossSection", numPgvs), func(b *testing.B) {
 			locationNames := make([]string, 373)
 			for i := range locationNames {
-				locationNames[i] = fmt.Sprintf("LOCATION-%d", int32(i) + 1)
+				locationNames[i] = fmt.Sprintf("LOCATION-%d", int32(i)+1)
 			}
 			for b.Loop() {
 				crossSectionResp, err := c.GetPredictedCrossSection(b.Context(), &pb.GetPredictedCrossSectionRequest{
 					EnergySource:  pb.EnergySource_SOLAR,
-					LocationNames:   locationNames,
+					LocationNames: locationNames,
 					Model:         &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 					TimestampUnix: timestamppb.New(pivotTime),
 				})
@@ -864,7 +864,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 		b.Run(fmt.Sprintf("%d/GetObservedTimeseries", numPgvs), func(b *testing.B) {
 			for b.Loop() {
 				obsResp, err := c.GetObservedTimeseries(b.Context(), &pb.GetObservedTimeseriesRequest{
-					LocationName:   "LOCATION-1",
+					LocationName: "LOCATION-1",
 					ObserverName: "test_observer",
 					EnergySource: pb.EnergySource_SOLAR,
 					TimeWindow: &pb.TimeWindow{
@@ -879,7 +879,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 		b.Run(fmt.Sprintf("%d/GetPredictedTimeseriesDeltas", numPgvs), func(b *testing.B) {
 			for b.Loop() {
 				deltasResp, err := c.GetPredictedTimeseriesDeltas(b.Context(), &pb.GetPredictedTimeseriesDeltasRequest{
-					LocationName:   "LOCATION-1",
+					LocationName: "LOCATION-1",
 					EnergySource: pb.EnergySource_SOLAR,
 					ObserverName: "test_observer",
 					Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
@@ -893,7 +893,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 				_, err := c.CreateForecast(b.Context(), &pb.CreateForecastRequest{
 					Forecast: &pb.CreateForecastRequest_Forecast{
 						Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
-						LocationName:   "LOCATION-1",
+						LocationName: "LOCATION-1",
 						EnergySource: pb.EnergySource_SOLAR,
 						InitTimeUtc: timestamppb.New(
 							time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).
