@@ -127,7 +127,7 @@ FROM loc.sources AS s
 INNER JOIN loc.locations AS l USING (location_id)
 INNER JOIN loc.source_types AS st USING (source_type_id)
 WHERE
-    s.location_name = ANY(sqlc.arg(location_names)::text [])
+    l.location_name = ANY(sqlc.arg(location_names)::text [])
     AND st.source_type_name = $1;
 
 -- name: CreateSource :one

@@ -261,9 +261,7 @@ message CreateModelResponse {
 
 message CreateForecastRequest {
   message PredictedGenerationValue {
-    uint32 horizon_mins = 1 [
-      (buf.validate.field).required = true
-    ];
+    uint32 horizon_mins = 1;
     float p50_pct = 2 [
       (buf.validate.field).required = true,
       (buf.validate.field).float.gte = 0,
@@ -336,7 +334,8 @@ message CreateGspRequest {
   ];
   EnergySource energy_source = 2;
   string geometry = 3 [
-    (buf.validate.field).string.(valid_geometry) = true
+    (buf.validate.field).string.(valid_geometry) = true,
+    (buf.validate.field).string.example = "POLYGON ((-0.127 51.507, -0.127 51.507, -0.127 51.507, -0.127 51.507))"
   ];
   uint64 capacity_watts = 4 [
     (buf.validate.field).required = true
@@ -346,6 +345,8 @@ message CreateGspRequest {
 
 message CreateGspResponse {
   int32 location_id = 1;
+  string location_name = 2;
+  uint64 capacity_watts = 3;
 }
 
 

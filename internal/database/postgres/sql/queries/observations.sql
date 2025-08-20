@@ -42,9 +42,10 @@ SELECT
     )::real AS effective_capacity,
     sh.capacity_unit_prefix_factor
 FROM obs.observed_generation_values AS og
-JOIN loc.sources_history AS sh USING (location_id)
+JOIN loc.sources AS sh USING (location_id, source_type_id)
 WHERE
     og.location_id = $1
     AND og.source_type_id = $2
     AND og.observer_id = $3
     AND og.observation_time_utc BETWEEN sqlc.arg(start_time_utc)::timestamp AND sqlc.arg(end_time_utc)::timestamp;
+

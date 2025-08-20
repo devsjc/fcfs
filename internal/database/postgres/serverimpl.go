@@ -14,7 +14,7 @@ import (
 	"math"
 	"slices"
 	"time"
-
+    "strings"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -122,14 +122,14 @@ func (s *PostgresDataPlatformServerImpl) StreamForecastData(req *pb.StreamForeca
 	querier := db.New(tx)
 
 	srcParams := db.GetSourceParams{
-		LocationName:   req.LocationName,
+		LocationName:   strings.ToUpper(req.LocationName),
 		SourceTypeName: req.EnergySource.String(),
 	}
 	dbSource, err := querier.GetSource(stream.Context(), srcParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSource(%+v)", srcParams)
 		return status.Errorf(
-			codes.NotFound, "No location found for ID %d with source type '%s'.",
+			codes.NotFound, "No location found for name %s with source type '%s'.",
 			req.LocationName, req.EnergySource,
 		)
 	}
@@ -214,7 +214,7 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context,
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
 
-	lwParams := db.GetLocationsWithinParams{LocationName: req.LocationName}
+	lwParams := db.GetLocationsWithinParams{LocationName: strings.ToUpper(req.LocationName)}
 	dbLocations, err := querier.GetLocationsWithin(ctx, lwParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetLocationIdsWithin(%+v)", lwParams)
@@ -228,7 +228,7 @@ func (s *PostgresDataPlatformServerImpl) GetLocationsWithin(ctx context.Context,
 	for i := range dbLocations {
 		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
 			LocationId:   dbLocations[i].LocationID,
-			LocationName: dbLocations[i].LocationName,
+			LocationName: strings.ToUpper(dbLocations[i].LocationName),
 		}
 	}
 
@@ -250,7 +250,7 @@ func (s *PostgresDataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Contex
 	querier := db.New(tx)
 
 	// Get the location and source
-	params := db.GetSourceParams{LocationName: req.LocationName, SourceTypeName: req.EnergySource.String()}
+	params := db.GetSourceParams{LocationName: strings.ToUpper(req.LocationName), SourceTypeName: req.EnergySource.String()}
 	dbSource, err := querier.GetSource(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSource(%+v)", params)
@@ -275,7 +275,6 @@ func (s *PostgresDataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Contex
 	}
 
 	// Get the observer
-	l.Info().Msgf("Queried observer '%s'", req.ObserverName)
 	obParams := db.GetObserverByNameParams{ObserverName: req.ObserverName}
 	dbObserver, err := querier.GetObserverByName(ctx, obParams)
 	if err != nil {
@@ -332,10 +331,13 @@ func (s *PostgresDataPlatformServerImpl) GetObservedTimeseries(ctx context.Conte
 	querier := db.New(tx)
 
 	// Get the location and source
-	params := db.GetSourceParams{LocationName: req.LocationName, SourceTypeName: req.EnergySource.String()}
-	dbSource, err := querier.GetSource(ctx, params)
+	gsParams := db.GetSourceParams{
+		LocationName: strings.ToUpper(req.LocationName),
+		SourceTypeName: req.EnergySource.String(),
+	}
+	dbSource, err := querier.GetSource(ctx, gsParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSource(%+v)", params)
+		l.Err(err).Msgf("querier.GetSource(%+v)", gsParams)
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for ID '%s' with source type '%s'.",
 			req.LocationName, req.EnergySource,
@@ -383,7 +385,7 @@ func (s *PostgresDataPlatformServerImpl) GetObservedTimeseries(ctx context.Conte
 	}
 	return &pb.GetObservedTimeseriesResponse{
 		LocationId:   dbSource.LocationID,
-		LocationName: dbSource.LocationName,
+		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, nil
 }
@@ -401,7 +403,7 @@ func (s *PostgresDataPlatformServerImpl) CreateObservations(ctx context.Context,
 	querier := db.New(tx)
 
 	// Get the location and source
-	params := db.GetSourceParams{LocationName: req.LocationName, SourceTypeName: req.EnergySource.String()}
+	params := db.GetSourceParams{LocationName: strings.ToUpper(req.LocationName), SourceTypeName: req.EnergySource.String()}
 	dbSource, err := querier.GetSource(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSource(%+v)", params)
@@ -512,7 +514,7 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedCrossSection(ctx context.Co
 		LocationNames:  req.LocationNames,
 	}
 	dbSources, err := querier.ListSources(ctx, params2)
-	if err != nil {
+	if err != nil || len(dbSources) == 0 {
 		l.Err(err).Msgf("querier.ListLocationsSources(%+v)", params2)
 		return nil, status.Errorf(
 			codes.NotFound,
@@ -557,7 +559,7 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedCrossSection(ctx context.Co
 				ValuePercent:           (float32(dbCrossSection[idx].P50Sip) / 30000.0) * 100.0,
 				EffectiveCapacityWatts: uint64(value.Capacity) * uint64(math.Pow10(int(value.CapacityUnitPrefixFactor))),
 				LocationId:             value.LocationID,
-				LocationName:           value.LocationName,
+				LocationName:           strings.ToUpper(value.LocationName),
 				Latlng: &pb.LatLng{
 					Latitude:  value.Latitude,
 					Longitude: value.Longitude,
@@ -585,7 +587,7 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx contex
 	querier := db.New(tx)
 
 	// Get the location and source
-	params := db.GetSourceParams{LocationName: req.LocationName, SourceTypeName: req.EnergySource.String()}
+	params := db.GetSourceParams{LocationName: strings.ToUpper(req.LocationName), SourceTypeName: req.EnergySource.String()}
 	dbSource, err := querier.GetSource(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSource(%+v)", params)
@@ -690,7 +692,7 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx contex
 
 	return &pb.GetPredictedTimeseriesDeltasResponse{
 		LocationId:   dbSource.LocationID,
-		LocationName: dbSource.LocationName,
+		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, tx.Commit(ctx)
 }
@@ -710,10 +712,13 @@ func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Contex
 	querier := db.New(tx)
 
 	// Get the location and source
-	params := db.GetSourceParams{LocationName: req.LocationName, SourceTypeName: req.EnergySource.String()}
-	dbSource, err := querier.GetSource(ctx, params)
+	gsParams := db.GetSourceParams{
+		LocationName: strings.ToUpper(req.LocationName),
+		SourceTypeName: req.EnergySource.String(),
+	}
+	dbSource, err := querier.GetSource(ctx, gsParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSource(%+v)", params)
+		l.Err(err).Msgf("querier.GetSource(%+v)", gsParams)
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for ID '%s' with source type '%s'.",
 			req.LocationName, req.EnergySource,
@@ -721,13 +726,13 @@ func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Contex
 	}
 
 	// Get the relevant predictor
-	params2 := db.GetPredictorElseLatestParams{
+	gpParams := db.GetPredictorElseLatestParams{
 		PredictorName:    req.Model.ModelName,
 		PredictorVersion: req.Model.ModelVersion,
 	}
-	dbPredictor, err := querier.GetPredictorElseLatest(ctx, params2)
+	dbPredictor, err := querier.GetPredictorElseLatest(ctx, gpParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetPredictorElseLatest(%+v)", params2)
+		l.Err(err).Msgf("querier.GetPredictorElseLatest(%+v)", gpParams)
 		return nil, status.Errorf(
 			codes.NotFound, "No model found for name '%s' and version '%s'.",
 			req.Model.ModelName, req.Model.ModelVersion,
@@ -789,7 +794,7 @@ func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Contex
 
 	return &pb.GetLatestPredictionsResponse{
 		LocationId:   dbSource.LocationID,
-		LocationName: dbSource.LocationName,
+		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, tx.Commit(ctx)
 }
@@ -807,7 +812,7 @@ func (s *PostgresDataPlatformServerImpl) GetLocation(ctx context.Context, req *p
 	querier := db.New(tx)
 
 	// Get the location and source
-	params := db.GetSourceParams{LocationName: req.LocationName, SourceTypeName: req.EnergySource.String()}
+	params := db.GetSourceParams{LocationName: strings.ToUpper(req.LocationName), SourceTypeName: req.EnergySource.String()}
 	dbSource, err := querier.GetSource(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSource(%+v)", params)
@@ -832,7 +837,7 @@ func (s *PostgresDataPlatformServerImpl) GetLocation(ctx context.Context, req *p
 
 	return &pb.GetLocationResponse{
 		LocationId:   dbSource.LocationID,
-		LocationName: dbSource.LocationName,
+		LocationName: strings.ToUpper(dbSource.LocationName),
 		Latlng: &pb.LatLng{
 			Latitude:  dbSource.Latitude,
 			Longitude: dbSource.Longitude,
@@ -859,7 +864,7 @@ func (s *PostgresDataPlatformServerImpl) CreateForecast(ctx context.Context, req
 	querier := db.New(tx)
 
 	// Get the location and source
-	params := db.GetSourceParams{LocationName: req.Forecast.LocationName, SourceTypeName: req.Forecast.EnergySource.String()}
+	params := db.GetSourceParams{LocationName: strings.ToUpper(req.Forecast.LocationName), SourceTypeName: req.Forecast.EnergySource.String()}
 	dbSource, err := querier.GetSource(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSource(%+v)", params)
@@ -973,7 +978,7 @@ func (s *PostgresDataPlatformServerImpl) CreateSite(ctx context.Context, req *pb
 	// Create a new location as a Site
 	params := db.CreateLocationParams{
 		LocationTypeName: "site",
-		LocationName:     req.Name,
+		LocationName:     strings.ToUpper(req.Name),
 		Geom:             fmt.Sprintf("POINT(%.8f %.8f)", req.Latlng.Longitude, req.Latlng.Latitude),
 	}
 	dbLocation, err := querier.CreateLocation(ctx, params)
@@ -992,10 +997,15 @@ func (s *PostgresDataPlatformServerImpl) CreateSite(ctx context.Context, req *pb
 		l.Err(err).Msgf("capacityKwToValueMultiplier(%d)", req.CapacityWatts)
 		return nil, status.Error(codes.InvalidArgument, "Invalid capacity. Ensure capacity is non-negative.")
 	}
-	metadata, err := req.Metadata.MarshalJSON()
-	if err != nil {
-		l.Err(err).Msgf("req.Metadata.MarshalJSON()")
-		return nil, status.Error(codes.InvalidArgument, "Invalid metadata. Ensure metadata is a valid JSON object.")
+	var metadata []byte
+	if len(req.Metadata.Fields) == 0 {
+	    metadata = nil
+	} else {
+		metadata, err = req.Metadata.MarshalJSON()
+		if err != nil {
+			l.Err(err).Msgf("req.Metadata.MarshalJSON()")
+			return nil, status.Error(codes.InvalidArgument, "Invalid metadata. Ensure metadata is a valid JSON object.")
+		}
 	}
 
 	params2 := db.CreateSourceParams{
@@ -1018,7 +1028,11 @@ func (s *PostgresDataPlatformServerImpl) CreateSite(ctx context.Context, req *pb
 		"Created source of type '%s' for location %d with capacity %dx10^%d W",
 		dbSourceType.SourceTypeName, dbLocation.LocationID, dbSource.Capacity, dbSource.CapacityUnitPrefixFactor,
 	)
-	return &pb.CreateSiteResponse{LocationId: dbLocation.LocationID}, tx.Commit(ctx)
+	return &pb.CreateSiteResponse{
+		LocationId:    dbLocation.LocationID,
+		LocationName:  strings.ToUpper(dbLocation.LocationName),
+		CapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))),
+	}, tx.Commit(ctx)
 }
 
 func (s *PostgresDataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.CreateGspRequest) (*pb.CreateGspResponse, error) {
@@ -1036,7 +1050,7 @@ func (s *PostgresDataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.
 	// Create a new location as a GSP
 	params := db.CreateLocationParams{
 		LocationTypeName: "gsp",
-		LocationName:     req.Name,
+		LocationName:     strings.ToUpper(req.Name),
 		Geom:             req.Geometry,
 	}
 	dbLocation, err := querier.CreateLocation(ctx, params)
@@ -1088,7 +1102,11 @@ func (s *PostgresDataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.
 		req.EnergySource, dbLocation.LocationID, dbSource.Capacity, dbSource.CapacityUnitPrefixFactor,
 	)
 
-	return &pb.CreateGspResponse{LocationId: dbLocation.LocationID}, tx.Commit(ctx)
+	return &pb.CreateGspResponse{
+		LocationId: dbLocation.LocationID,
+		LocationName: strings.ToUpper(dbLocation.LocationName),
+		CapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))),
+	}, tx.Commit(ctx)
 }
 
 func (s *PostgresDataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req *pb.GetLocationsAsGeoJSONRequest) (*pb.GetLocationsAsGeoJSONResponse, error) {
@@ -1137,7 +1155,7 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseries(ctx context.Cont
 	querier := db.New(tx)
 
 	// Get the location and source
-	glParams := db.GetSourceParams{LocationName: req.LocationName, SourceTypeName: req.EnergySource.String()}
+	glParams := db.GetSourceParams{LocationName: strings.ToUpper(req.LocationName), SourceTypeName: req.EnergySource.String()}
 	dbSource, err := querier.GetSource(ctx, glParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSource(%+v)", glParams)
@@ -1213,7 +1231,7 @@ func (s *PostgresDataPlatformServerImpl) GetPredictedTimeseries(ctx context.Cont
 
 	return &pb.GetPredictedTimeseriesResponse{
 		LocationId:   dbSource.LocationID,
-		LocationName: dbSource.LocationName,
+		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, tx.Commit(ctx)
 }

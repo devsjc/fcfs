@@ -88,6 +88,7 @@ CREATE INDEX ON loc.locations (location_type_id);
 CREATE TABLE loc.sources (
     source_type_id SMALLINT NOT NULL
         REFERENCES loc.source_types(source_type_id)
+        ON UPDATE CASCADE
         ON DELETE RESTRICT,
     -- Capacity in factors of powers of 10 Watts
     capacity SMALLINT NOT NULL
@@ -112,6 +113,7 @@ CREATE TABLE loc.sources (
     source_version INTEGER DEFAULT(1) NOT NULL,
     location_id INTEGER NOT NULL
         REFERENCES loc.locations(location_id)
+        ON UPDATE CASCADE
         ON DELETE CASCADE,
     -- Metadata about the source, e.g. tilt, orientation, etc.
     metadata JSONB DEFAULT NULL

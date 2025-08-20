@@ -220,7 +220,7 @@ func TestCreateSolarSite(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultReq := &pb.CreateSiteRequest{
-		Name: "GREENWICH OBSERVATORY",
+		Name: "GREENWICH_OBSERVATORY",
 		Latlng: &pb.LatLng{
 			Latitude:  51.4769,
 			Longitude: -0.0005,
@@ -243,8 +243,8 @@ func TestCreateSolarSite(t *testing.T) {
 		{
 			name: "Should create site with large capacity",
 			req: &pb.CreateSiteRequest{
-				Name:          "LARGE CAPACITY SITE",
-				Latlng:        defaultReq.Latlng,
+				Name:          "LARGE_CAPACITY_SITE",
+				Latlng:        &pb.LatLng{Latitude: 51.5, Longitude: -0.1},
 				CapacityWatts: 100000000000, // 100 GW
 				Metadata:      defaultReq.Metadata,
 				EnergySource:  defaultReq.EnergySource,
@@ -254,7 +254,7 @@ func TestCreateSolarSite(t *testing.T) {
 		{
 			name: "Shouldn't create site with invalid metadata",
 			req: &pb.CreateSiteRequest{
-				Name:          "INVALID METADATA SITE",
+				Name:          "INVALID_METADATA_SITE",
 				Latlng:        defaultReq.Latlng,
 				CapacityWatts: defaultReq.CapacityWatts,
 				Metadata:      nil, // Empty metadata
@@ -295,7 +295,7 @@ func TestCreateSolarSite(t *testing.T) {
 				require.Equal(t, tt.req.Latlng.Latitude, resp2.Latlng.Latitude)
 				require.Equal(t, tt.req.Latlng.Longitude, resp2.Latlng.Longitude)
 				require.Equal(t, tt.req.CapacityWatts, resp2.CapacityWatts)
-				require.Equal(t, tt.req.Metadata, resp2.Metadata)
+				require.Equal(t, tt.req.Metadata.AsMap(), resp2.Metadata.AsMap())
 			}
 		})
 	}
@@ -334,9 +334,9 @@ func TestCreateSolarGSP(t *testing.T) {
 		{
 			name: "Should create GSP with large capacity",
 			gsp: &pb.CreateGspRequest{
-				Name:          "LARGE CAPACITY GSP",
+				Name:          "LARGE_CAPACITY_GSP",
 				Metadata:      defaultGsp.Metadata,
-				Geometry:      defaultGsp.Geometry,
+				Geometry:      "POLYGON((10.0 51.5, 11.0 51.5, 11.0 52.0, 10.0 52.0, 10.0 51.5))",
 				CapacityWatts: 1000000000000, // 1000 GW
 				EnergySource:  defaultGsp.EnergySource,
 			},
@@ -356,7 +356,7 @@ func TestCreateSolarGSP(t *testing.T) {
 		{
 			name: "Shouldn't create a GSP with invalid geometry 2 (3D geometry)",
 			gsp: &pb.CreateGspRequest{
-				Name:          "3D GEOMETRY GSP",
+				Name:          "3D_GEOMETRY_GSP",
 				Metadata:      defaultGsp.Metadata,
 				Geometry:      "POLYGON((0.0 51.5 0.0, 1.0 51.5 0.0, 1.0 52.0 0.0, 0.0 52.0 0.0, 0.0 51.5 0.0))",
 				CapacityWatts: defaultGsp.CapacityWatts,
@@ -367,7 +367,7 @@ func TestCreateSolarGSP(t *testing.T) {
 		{
 			name: "Shouldn't create GSP with empty geometry",
 			gsp: &pb.CreateGspRequest{
-				Name:          "EMPTY GEOMETRY GSP",
+				Name:          "EMPTY_GEOMETRY_GSP",
 				Metadata:      defaultGsp.Metadata,
 				Geometry:      "",
 				CapacityWatts: defaultGsp.CapacityWatts,
@@ -404,7 +404,7 @@ func TestCreateSolarGSP(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Equal(t, tt.gsp.Name, resp2.LocationName)
-				require.Equal(t, tt.gsp.Metadata, resp2.Metadata)
+				require.Equal(t, tt.gsp.Metadata.AsMap(), resp2.Metadata.AsMap())
 				require.Equal(t, tt.gsp.CapacityWatts, resp2.CapacityWatts)
 			}
 		})
@@ -431,7 +431,7 @@ func TestGetPredictedCrossSection(t *testing.T) {
 	})
 	locationNames := make([]string, 100)
 	for i := range locationNames {
-		locationNames[i] = fmt.Sprintf("TESTLOCATION%02d", int32(i)+1)
+		locationNames[i] = fmt.Sprintf("TESTLOCATION%d", int32(i))
 	}
 
 	crossSectionResp, err := c.GetPredictedCrossSection(t.Context(), &pb.GetPredictedCrossSectionRequest{
@@ -458,8 +458,8 @@ func TestGetLocationsAsGeoJSON(t *testing.T) {
 				Longitude: -0.1 + float32(i)*0.01,
 			},
 			CapacityWatts: uint64(1000000 + i*100),
-			Metadata:      nil,
 			EnergySource:  pb.EnergySource_SOLAR,
+			Metadata:      &structpb.Struct{},
 		})
 		require.NoError(t, err)
 		siteNames[i] = resp.LocationName
@@ -546,7 +546,7 @@ func TestGetPredictedTimeseries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins", tt.horizonMins), func(t *testing.T) {
 			resp, err := c.GetPredictedTimeseries(t.Context(), &pb.GetPredictedTimeseriesRequest{
-				LocationName: "TESTLOCATION01",
+				LocationName: "TESTLOCATION0",
 				HorizonMins:  uint32(tt.horizonMins),
 				Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 				EnergySource: pb.EnergySource_SOLAR,
@@ -599,7 +599,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Size %d", tt.expectedSize), func(t *testing.T) {
 			resp, err := c.GetObservedTimeseries(t.Context(), &pb.GetObservedTimeseriesRequest{
-				LocationName: "TESTLOCATION01",
+				LocationName: "TESTLOCATION0",
 				EnergySource: pb.EnergySource_SOLAR,
 				TimeWindow: &pb.TimeWindow{
 					StartTimestampUnix: timestamppb.New(tt.startTime),
@@ -648,7 +648,7 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins (deltas)", tt.horizonMins), func(t *testing.T) {
 			deltaResp, err := c.GetPredictedTimeseriesDeltas(t.Context(), &pb.GetPredictedTimeseriesDeltasRequest{
-				LocationName: "TESTLOCATION01",
+				LocationName: "TESTLOCATION0",
 				HorizonMins:  uint32(tt.horizonMins),
 				EnergySource: pb.EnergySource_SOLAR,
 				ObserverName: "test_observer",
@@ -687,7 +687,7 @@ func TestGetWeekAverageDeltas(t *testing.T) {
 	})
 
 	deltaResp, err := c.GetWeekAverageDeltas(t.Context(), &pb.GetWeekAverageDeltasRequest{
-		LocationName: "TESTLOCATION01",
+		LocationName: "TESTLOCATION0",
 		EnergySource: pb.EnergySource_SOLAR,
 		Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 		ObserverName: "test_observer",
@@ -726,12 +726,12 @@ func TestGetLocationsWithin(t *testing.T) {
 		{0, 170},
 	}
 	for i, ll := range lls {
-		_, err := c.CreateSite(t.Context(), &pb.CreateSiteRequest{
-			Name:          fmt.Sprintf("SITE-%d", i),
+		_, err = c.CreateSite(t.Context(), &pb.CreateSiteRequest{
+			Name:          fmt.Sprintf("SITE_%d", i),
 			EnergySource:  pb.EnergySource_SOLAR,
 			Latlng:        &pb.LatLng{Latitude: ll.lat, Longitude: ll.lon},
 			CapacityWatts: 50,
-			Metadata:      nil,
+			Metadata:      metadata,
 		})
 		require.NoError(t, err)
 	}
@@ -740,9 +740,9 @@ func TestGetLocationsWithin(t *testing.T) {
 	require.NoError(t, err)
 	expected := []*pb.GetLocationsWithinResponse_LocationData{
 		{LocationId: 1, LocationName: "GSP_OUTER_BOX"},
-		{LocationId: 2, LocationName: "SITE-0"},
-		{LocationId: 3, LocationName: "SITE-1"},
-		{LocationId: 4, LocationName: "SITE-2"},
+		{LocationId: 2, LocationName: "SITE_0"},
+		{LocationId: 3, LocationName: "SITE_1"},
+		{LocationId: 4, LocationName: "SITE_2"},
 	}
 	for _, g := range result.Locations {
 		t.Log("Location:", g.LocationName, "ID:", g.LocationId)
@@ -757,7 +757,7 @@ func TestCreateForecast(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a predictor
-	_, err := c.CreateModel(t.Context(), &pb.CreateModelRequest{
+	_, err = c.CreateModel(t.Context(), &pb.CreateModelRequest{
 		Name:    "test_model_1",
 		Version: "v1",
 	})
@@ -765,10 +765,10 @@ func TestCreateForecast(t *testing.T) {
 
 	// Create a site to attach the forecast to
 	siteResp, err := c.CreateSite(t.Context(), &pb.CreateSiteRequest{
-		Name:          "TEST SITE",
+		Name:          "TEST_SITE",
 		Latlng:        &pb.LatLng{Latitude: 51.5, Longitude: -0.1},
 		CapacityWatts: 1000000,
-		Metadata:      nil,
+		Metadata:      metadata,
 		EnergySource:  pb.EnergySource_SOLAR,
 	})
 	require.NoError(t, err)
