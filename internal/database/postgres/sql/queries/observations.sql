@@ -48,4 +48,3 @@ WHERE
     AND og.source_type_id = $2
     AND og.observer_id = $3
     AND og.observation_time_utc BETWEEN sqlc.arg(start_time_utc)::timestamp AND sqlc.arg(end_time_utc)::timestamp;
-

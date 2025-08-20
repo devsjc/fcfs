@@ -13,8 +13,9 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strings"
 	"time"
-    "strings"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -332,7 +333,7 @@ func (s *PostgresDataPlatformServerImpl) GetObservedTimeseries(ctx context.Conte
 
 	// Get the location and source
 	gsParams := db.GetSourceParams{
-		LocationName: strings.ToUpper(req.LocationName),
+		LocationName:   strings.ToUpper(req.LocationName),
 		SourceTypeName: req.EnergySource.String(),
 	}
 	dbSource, err := querier.GetSource(ctx, gsParams)
@@ -713,7 +714,7 @@ func (s *PostgresDataPlatformServerImpl) GetLatestPredictions(ctx context.Contex
 
 	// Get the location and source
 	gsParams := db.GetSourceParams{
-		LocationName: strings.ToUpper(req.LocationName),
+		LocationName:   strings.ToUpper(req.LocationName),
 		SourceTypeName: req.EnergySource.String(),
 	}
 	dbSource, err := querier.GetSource(ctx, gsParams)
@@ -999,7 +1000,7 @@ func (s *PostgresDataPlatformServerImpl) CreateSite(ctx context.Context, req *pb
 	}
 	var metadata []byte
 	if len(req.Metadata.Fields) == 0 {
-	    metadata = nil
+		metadata = nil
 	} else {
 		metadata, err = req.Metadata.MarshalJSON()
 		if err != nil {
@@ -1103,8 +1104,8 @@ func (s *PostgresDataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.
 	)
 
 	return &pb.CreateGspResponse{
-		LocationId: dbLocation.LocationID,
-		LocationName: strings.ToUpper(dbLocation.LocationName),
+		LocationId:    dbLocation.LocationID,
+		LocationName:  strings.ToUpper(dbLocation.LocationName),
 		CapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))),
 	}, tx.Commit(ctx)
 }
