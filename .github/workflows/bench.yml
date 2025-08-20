@@ -11,6 +11,9 @@ on:
     branches: ['main']
     paths-ignore: ['README.md', 'examples/**', '/github/workflows/test.yml', '/github/workflows/build.yml']
 
+env:
+  PROTOC_VERSION: '3.15.8'
+
 jobs:
   bench:
     runs-on: ubuntu-latest
@@ -30,8 +33,19 @@ jobs:
         id: go-vars
         run: echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
 
+      - name: Restore cached protoc instance
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: $HOME/.local/bin/protoc
+          key: ${{ runner.os }}-protoc-${{ env.PROTOC_VERSION }}
+
       - name: Set up Protoc compiler
-        uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b # v3.0.0
+        if:
+          steps.cache-protoc.outputs.cache-hit != 'true'
+        run: |
+          curl -OL https://github.com/google/protobuf/releases/download/v${{ env.PROTOC_VERSION }/protoc-${{ env.PROTOC_VERSION }}-linux-x86_64.zip
+          unzip protoc-${{ env.PROTOC_VERSION }}-linux-x86_64.zip -d $HOME/.local
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Restore cached go tools
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
