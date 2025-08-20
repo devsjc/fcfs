@@ -94,7 +94,7 @@ jobs:
 
       - name: Compare benchmarks
         id: bench-diff
-        if: github.event_name == 'pull_request' && steps.cache-base-bench.outputs.cache-hit != 'true'
+        if: github.event_name == 'pull_request' && steps.cache-base-bench.outputs.cache-hit == 'true'
         run: |
           go tool benchstat ${{ steps.base-benchfile.outputs.name }} ${{ steps.head-benchfile.outputs.name }} >> bench-diff.txt
           cat bench-diff.txt
@@ -111,7 +111,7 @@ jobs:
           echo $"</details>\n" >> bench-comment.md
 
       - name: Write benchmark diff to markdown file
-        if: github.event_name == 'pull_request' && steps.cache-base-bench.outputs.cache-hit != 'true'
+        if: github.event_name == 'pull_request' && steps.cache-base-bench.outputs.cache-hit == 'true'
         run:
           echo $"<details><summary>Benchmark vs base branch</summary>\n" >> bench-comment.md
           echo $"```" >> bench-comment.md
