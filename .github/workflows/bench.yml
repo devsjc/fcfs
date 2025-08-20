@@ -2,6 +2,7 @@
 # * Runs on new semantic tags, pushes to main, and pull requests to main.
 
 name: Benchmark
+
 on:
   push:
     tags: ['v*']
@@ -43,7 +44,7 @@ jobs:
         if:
           steps.cache-protoc.outputs.cache-hit != 'true'
         run: |
-          curl -OL https://github.com/google/protobuf/releases/download/v${{ env.PROTOC_VERSION }/protoc-${{ env.PROTOC_VERSION }}-linux-x86_64.zip
+          curl -OL https://github.com/google/protobuf/releases/download/v${{ env.PROTOC_VERSION }}/protoc-${{ env.PROTOC_VERSION }}-linux-x86_64.zip
           unzip protoc-${{ env.PROTOC_VERSION }}-linux-x86_64.zip -d $HOME/.local
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
