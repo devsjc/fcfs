@@ -7,10 +7,10 @@ on:
   push:
     tags: ['v*']
     branches: ['main']
-    paths-ignore: ['README.md', 'examples/**', '/github/workflows/test.yml', '/github/workflows/build.yml']
+    paths-ignore: ['README.md', 'examples/**', '.github/workflows/test.yml', '.github/workflows/build.yml']
   pull_request:
     branches: ['main']
-    paths-ignore: ['README.md', 'examples/**', '/github/workflows/test.yml', '/github/workflows/build.yml']
+    paths-ignore: ['README.md', 'examples/**', '.github/workflows/test.yml', '.github/workflows/build.yml']
 
 env:
   PROTOC_VERSION: '3.15.8'
@@ -103,21 +103,28 @@ jobs:
         env:
           FILENAME: ${{ steps.head-benchfile.outputs.name }}
         run: |
-          echo -e "### Benchmark Results\n" > bench-comment.md
-          echo -e "<details><summary>Benchmark results</summary>\n" >> bench-comment.md
-          echo -e "```" >> bench-comment.md
-          cat $FILENAME >> bench-comment.md
-          echo -e "```\n" >> bench-comment.md
-          echo -e "</details>\n" >> bench-comment.md
+          {
+            echo "### Benchmark Results"
+            echo ""
+            echo "<details><summary>Benchmark results</summary>"
+            echo ""
+            echo '```'
+            cat "$FILENAME"
+            echo '```'
+            echo "</details>"
+          } > bench-comment.md
 
       - name: Write benchmark diff to markdown file
         if: github.event_name == 'pull_request' && steps.cache-base-bench.outputs.cache-hit == 'true'
         run: |
-          echo -e "<details><summary>Benchmark vs base branch</summary>\n" >> bench-comment.md
-          echo -e "```" >> bench-comment.md
-          cat bench-diff.txt >> bench-comment.md
-          echo -e "```\n" >> bench-comment.md
-          echo -e "</details>\n" >> bench-comment.md
+          {
+            echo ""
+            echo "<details><summary>Benchmark vs base branch</summary>\n"
+            echo "```"
+            cat bench-diff.txt
+            echo "```\n"
+            echo "</details>\n"
+          } >> bench-comment.md
 
       - name: Upload benchmark results
         if: github.event_name == 'pull_request'
