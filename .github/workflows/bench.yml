@@ -102,22 +102,22 @@ jobs:
       - name: Write results to markdown file
         env:
           FILENAME: ${{ steps.head-benchfile.outputs.name }}
-        run:
-          echo "### Benchmark Results\n" > bench-comment.md
-          echo "<details><summary>Benchmark results</summary>\n" >> bench-comment.md
-          echo "```" >> bench-comment.md
+        run: |
+          echo $"### Benchmark Results\n" > bench-comment.md
+          echo $"<details><summary>Benchmark results</summary>\n" >> bench-comment.md
+          echo $"```" >> bench-comment.md
           cat $FILENAME >> bench-comment.md
-          echo "```\n" >> bench-comment.md
-          echo "</details>\n" >> bench-comment.md
+          echo $"```\n" >> bench-comment.md
+          echo $"</details>\n" >> bench-comment.md
 
       - name: Write benchmark diff to markdown file
         if: github.event_name == 'pull_request' && steps.cache-base-bench.outputs.cache-hit == 'true'
-        run:
-          echo "<details><summary>Benchmark vs base branch</summary>\n" >> bench-comment.md
-          echo "```" >> bench-comment.md
+        run: |
+          echo $"<details><summary>Benchmark vs base branch</summary>\n" >> bench-comment.md
+          echo $"```" >> bench-comment.md
           cat bench-diff.txt >> bench-comment.md
-          echo "```\n" >> bench-comment.md
-          echo "</details>\n" >> bench-comment.md
+          echo $"```\n" >> bench-comment.md
+          echo $"</details>\n" >> bench-comment.md
 
       - name: Upload benchmark results
         if: github.event_name == 'pull_request'
