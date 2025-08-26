@@ -129,7 +129,7 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 		return status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	srcParams := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUnix.AsTime(), Valid: true},
 	}
@@ -145,7 +145,7 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 	forecasts := make([]db.ListForecastsRow, 0)
 	for _, model := range req.Models {
 		fcParams := db.ListForecastsParams{
-			LocationUuid:       dbSource.LocationUuid,
+			LocationUuid:     dbSource.LocationUuid,
 			SourceTypeID:     dbSource.SourceTypeID,
 			PredictorName:    model.ModelName,
 			PredictorVersion: model.ModelVersion,
@@ -192,7 +192,7 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 
 			err = stream.Send(&pb.StreamForecastDataResponse{
 				InitTimestamp: timestamppb.New(forecast.InitTimeUtc.Time),
-				LocationUuid:    forecast.LocationUuid.String(),
+				LocationUuid:  forecast.LocationUuid.String(),
 				ModelFullname: fmt.Sprintf("%s:%s", forecast.PredictorName, forecast.PredictorVersion),
 				HorizonMins:   uint32(dbPreds[i].HorizonMins),
 				P50Percent:    (float32(dbPreds[i].P50Sip) / 30000.0) * 100.0,
@@ -240,7 +240,7 @@ func (s *DataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb
 	locations := make([]*pb.GetLocationsWithinResponse_LocationData, len(dbLocations))
 	for i := range dbLocations {
 		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
-			LocationUuid:   dbLocations[i].LocationUuid.String(),
+			LocationUuid: dbLocations[i].LocationUuid.String(),
 			LocationName: strings.ToUpper(dbLocations[i].LocationName),
 		}
 	}
@@ -269,7 +269,7 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	params := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.PivotTime.AsTime(), Valid: true},
 	}
@@ -314,7 +314,7 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		PredictorID:    dbPredictor.PredictorID,
 		ObserverID:     dbObserver.ObserverID,
 		PivotTimestamp: pgtype.Timestamp{Time: req.PivotTime.AsTime(), Valid: true},
-		LocationUuids:    []uuid.UUID{locationUuid},
+		LocationUuids:  []uuid.UUID{locationUuid},
 	}
 	dbDeltas, err := querier.GetWeekAverageDeltasForLocations(ctx, avgParams)
 	if err != nil {
@@ -359,7 +359,7 @@ func (s *DataPlatformServerImpl) GetObservedTimeseries(ctx context.Context, req 
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	gsParams := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUnix.AsTime(), Valid: true},
 	}
@@ -391,7 +391,7 @@ func (s *DataPlatformServerImpl) GetObservedTimeseries(ctx context.Context, req 
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid time window: %v", err)
 	}
 	goParams := db.GetObservationsBetweenParams{
-		LocationUuid:  locationUuid,
+		LocationUuid: locationUuid,
 		SourceTypeID: dbSource.SourceTypeID,
 		ObserverID:   dbObserver.ObserverID,
 		StartTimeUtc: start,
@@ -412,7 +412,7 @@ func (s *DataPlatformServerImpl) GetObservedTimeseries(ctx context.Context, req 
 		}
 	}
 	return &pb.GetObservedTimeseriesResponse{
-		LocationUuid:    dbSource.LocationUuid.String(),
+		LocationUuid: dbSource.LocationUuid.String(),
 		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, nil
@@ -437,7 +437,7 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	params := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.Values[0].TimestampUnix.AsTime(), Valid: true},
 	}
@@ -467,7 +467,7 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 	for i, v := range req.Values {
 		coParams[i] = db.CreateObservationsParams{
 			LocationUuid: locationUuid,
-			ObserverID: dbObserver.ObserverID,
+			ObserverID:   dbObserver.ObserverID,
 			ObservationTimestampUtc: pgtype.Timestamp{
 				Time:  v.TimestampUnix.AsTime(),
 				Valid: true,
@@ -579,11 +579,11 @@ func (s *DataPlatformServerImpl) GetPredictedCrossSection(ctx context.Context, r
 	}
 
 	params3 := db.ListPredictionsAtTimeForLocationsParams{
-		LocationUuids:  ids,
-		SourceTypeID: dbSources[0].SourceTypeID,
-		PredictorID:  dbPredictor.PredictorID,
-		Time:         pgtype.Timestamp{Time: req.TimestampUnix.AsTime(), Valid: true},
-		HorizonMins:  0,
+		LocationUuids: ids,
+		SourceTypeID:  dbSources[0].SourceTypeID,
+		PredictorID:   dbPredictor.PredictorID,
+		Time:          pgtype.Timestamp{Time: req.TimestampUnix.AsTime(), Valid: true},
+		HorizonMins:   0,
 	}
 	dbCrossSection, err := querier.ListPredictionsAtTimeForLocations(ctx, params3)
 	if err != nil {
@@ -604,7 +604,7 @@ func (s *DataPlatformServerImpl) GetPredictedCrossSection(ctx context.Context, r
 			values = append(values, &pb.GetPredictedCrossSectionResponse_Value{
 				ValuePercent:           (float32(dbCrossSection[idx].P50Sip) / 30000.0) * 100.0,
 				EffectiveCapacityWatts: uint64(value.Capacity) * uint64(math.Pow10(int(value.CapacityUnitPrefixFactor))),
-				LocationUuid: 	   value.LocationUuid.String(),
+				LocationUuid:           value.LocationUuid.String(),
 				LocationName:           strings.ToUpper(value.LocationName),
 				Latlng: &pb.LatLng{
 					Latitude:  value.Latitude,
@@ -639,7 +639,7 @@ func (s *DataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx context.Contex
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	params := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUnix.AsTime(), Valid: true},
 	}
@@ -673,7 +673,7 @@ func (s *DataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx context.Contex
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid time window: %v", err)
 	}
 	lpParams := db.ListPredictionsForLocationParams{
-		LocationUuid:     dbSource.LocationUuid,
+		LocationUuid:   dbSource.LocationUuid,
 		SourceTypeID:   dbSource.SourceTypeID,
 		PredictorID:    dbPredictor.PredictorID,
 		HorizonMins:    int32(req.HorizonMins),
@@ -746,7 +746,7 @@ func (s *DataPlatformServerImpl) GetPredictedTimeseriesDeltas(ctx context.Contex
 	}
 
 	return &pb.GetPredictedTimeseriesDeltasResponse{
-		LocationUuid:   dbSource.LocationUuid.String(),
+		LocationUuid: dbSource.LocationUuid.String(),
 		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, tx.Commit(ctx)
@@ -773,7 +773,7 @@ func (s *DataPlatformServerImpl) GetLatestPredictions(ctx context.Context, req *
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	gsParams := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: currentTime, Valid: true},
 	}
@@ -854,7 +854,7 @@ func (s *DataPlatformServerImpl) GetLatestPredictions(ctx context.Context, req *
 	}
 
 	return &pb.GetLatestPredictionsResponse{
-		LocationUuid:   dbSource.LocationUuid.String(),
+		LocationUuid: dbSource.LocationUuid.String(),
 		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, tx.Commit(ctx)
@@ -879,7 +879,7 @@ func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	params := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
 	}
@@ -906,7 +906,7 @@ func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 	}
 
 	return &pb.GetLocationResponse{
-		LocationUuid:  dbSource.LocationUuid.String(),
+		LocationUuid: dbSource.LocationUuid.String(),
 		LocationName: strings.ToUpper(dbSource.LocationName),
 		Latlng: &pb.LatLng{
 			Latitude:  dbSource.Latitude,
@@ -940,7 +940,7 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	gsParams := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.Forecast.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.Forecast.InitTimeUtc.AsTime(), Valid: true},
 	}
@@ -955,7 +955,7 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 
 	// Create a new forecast
 	params2 := db.CreateForecastParams{
-		LocationUuid:       locationUuid,
+		LocationUuid:     locationUuid,
 		SourceTypeID:     dbSource.SourceTypeID,
 		PredictorName:    req.Forecast.Model.ModelName,
 		PredictorVersion: req.Forecast.Model.ModelVersion,
@@ -983,9 +983,9 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		}
 
 		paramsList[i] = db.CreatePredictedValuesParams{
-			HorizonMins: int16(value.HorizonMins),
-			P50Sip:      int16((value.P50Pct / 100.0) * 30000.0),
-			ForecastUuid:  dbForecast.ForecastUuid,
+			HorizonMins:  int16(value.HorizonMins),
+			P50Sip:       int16((value.P50Pct / 100.0) * 30000.0),
+			ForecastUuid: dbForecast.ForecastUuid,
 			TargetTimeUtc: pgtype.Timestamp{
 				Time: req.Forecast.InitTimeUtc.AsTime().Add(
 					time.Duration(value.HorizonMins) * time.Minute,
@@ -1088,7 +1088,7 @@ func (s *DataPlatformServerImpl) CreateSite(ctx context.Context, req *pb.CreateS
 	}
 
 	params2 := db.CreateSourceEntryParams{
-		LocationUuid: 		   dbLocation.LocationUuid,
+		LocationUuid:             dbLocation.LocationUuid,
 		SourceTypeID:             dbSourceType.SourceTypeID,
 		Capacity:                 cp,
 		CapacityUnitPrefixFactor: ex,
@@ -1181,7 +1181,7 @@ func (s *DataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.CreateGs
 	)
 
 	return &pb.CreateGspResponse{
-		LocationUuid:    dbLocation.LocationUuid.String(),
+		LocationUuid:  dbLocation.LocationUuid.String(),
 		LocationName:  strings.ToUpper(dbLocation.LocationName),
 		CapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))),
 	}, tx.Commit(ctx)
@@ -1239,7 +1239,7 @@ func (s *DataPlatformServerImpl) GetPredictedTimeseries(ctx context.Context, req
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
 	gsParams := db.GetSourceAtTimestampParams{
-		LocationUuid: locationUuid,
+		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUnix.AsTime(), Valid: true},
 	}
@@ -1269,7 +1269,7 @@ func (s *DataPlatformServerImpl) GetPredictedTimeseries(ctx context.Context, req
 	// Get the predictions for the given location source
 	start, end, err := timeWindowToPgWindow(req.TimeWindow)
 	lpParams := db.ListPredictionsForLocationParams{
-		LocationUuid:     dbSource.LocationUuid,
+		LocationUuid:   dbSource.LocationUuid,
 		PredictorID:    dbPredictor.PredictorID,
 		SourceTypeID:   dbSource.SourceTypeID,
 		HorizonMins:    int32(req.HorizonMins),
@@ -1317,7 +1317,7 @@ func (s *DataPlatformServerImpl) GetPredictedTimeseries(ctx context.Context, req
 	}
 
 	return &pb.GetPredictedTimeseriesResponse{
-		LocationUuid:   dbSource.LocationUuid.String(),
+		LocationUuid: dbSource.LocationUuid.String(),
 		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, tx.Commit(ctx)
