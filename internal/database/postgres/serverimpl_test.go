@@ -98,7 +98,8 @@ func createPostgresContainer(tb testing.TB) string {
 func seed(tb testing.TB, pgConnString string, params seedDBParams) (output struct {
 	NumPgvs       int
 	LocationUuids []string
-}) {
+},
+) {
 	seedfiles, _ := filepath.Glob(filepath.Join(".", "testdata", "seed*.sql"))
 	conn, err := pgx.Connect(tb.Context(), pgConnString)
 	require.NoError(tb, err)
