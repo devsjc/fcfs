@@ -14,8 +14,10 @@ import (
 
 	"buf.build/go/protovalidate"
 	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
+	"github.com/google/uuid"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rs/zerolog"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -93,7 +95,7 @@ func createPostgresContainer(tb testing.TB) string {
 	return pgConnString
 }
 
-func seed(tb testing.TB, pgConnString string, params seedDBParams) (numPgvs int) {
+func seed(tb testing.TB, pgConnString string, params seedDBParams) (output struct{NumPgvs int; LocationUuids []string}) {
 	seedfiles, _ := filepath.Glob(filepath.Join(".", "testdata", "seed*.sql"))
 	conn, err := pgx.Connect(tb.Context(), pgConnString)
 	require.NoError(tb, err)
@@ -104,6 +106,7 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (numPgvs int)
 		require.NoError(tb, err)
 		_, err = conn.Exec(tb.Context(), string(sql))
 		require.NoError(tb, err)
+		var result struct{NumPgvs int; LocationUuids []pgtype.UUID}
 		err = conn.QueryRow(
 			tb.Context(),
 			fmt.Sprintf(
@@ -115,11 +118,17 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (numPgvs int)
 				params.ForecastLengthHours*60, params.NumForecastsPerLocation,
 				params.PivotTime.UTC().Format(time.RFC3339),
 			),
-		).Scan(&numPgvs)
+		).Scan(&result)
 		require.NoError(tb, err)
-		tb.Logf("Seeded %d predicted generation values", numPgvs)
+		tb.Logf("Seeded %d predicted generation values for %d locations", output.NumPgvs, len(output.LocationUuids))
+		stringUuids := make([]string, len(result.LocationUuids))
+		for i, u := range result.LocationUuids {
+			stringUuids[i] = u.String()
+		}
+		output.NumPgvs = result.NumPgvs
+		output.LocationUuids = stringUuids
 	}
-	return numPgvs
+	return output
 }
 
 // Create a GRPC client for running tests with
@@ -286,7 +295,7 @@ func TestCreateSolarSite(t *testing.T) {
 				resp2, err := c.GetLocation(
 					t.Context(),
 					&pb.GetLocationRequest{
-						LocationName: resp.LocationName,
+						LocationUuid: resp.LocationUuid,
 						EnergySource: defaultReq.EnergySource,
 					},
 				)
@@ -302,7 +311,7 @@ func TestCreateSolarSite(t *testing.T) {
 	t.Run("Shouldn't get non-existent site", func(t *testing.T) {
 		_, err := c.GetLocation(
 			t.Context(),
-			&pb.GetLocationRequest{LocationName: "Im-not-real-dont-get-me"},
+			&pb.GetLocationRequest{LocationUuid: uuid.New().String()},
 		)
 		require.Error(t, err)
 	})
@@ -390,7 +399,7 @@ func TestCreateSolarGSP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := c.CreateGsp(t.Context(), tt.gsp)
+			resp, err := c.CreateGsp(t.Context(), tt.gsp)
 			if tt.shouldError {
 				require.Error(t, err)
 			} else {
@@ -398,7 +407,7 @@ func TestCreateSolarGSP(t *testing.T) {
 				// Try to read it back
 				resp2, err := c.GetLocation(
 					t.Context(), &pb.GetLocationRequest{
-						LocationName: tt.gsp.Name,
+						LocationUuid: resp.LocationUuid,
 						EnergySource: tt.gsp.EnergySource,
 					},
 				)
@@ -411,7 +420,7 @@ func TestCreateSolarGSP(t *testing.T) {
 	}
 
 	t.Run("Shouldn't get non-existent GSP", func(t *testing.T) {
-		_, err := c.GetLocation(t.Context(), &pb.GetLocationRequest{LocationName: "spooky-ghost-gsp"})
+		_, err := c.GetLocation(t.Context(), &pb.GetLocationRequest{LocationUuid: uuid.New().String()})
 		require.Error(t, err)
 	})
 }
@@ -421,7 +430,7 @@ func TestGetPredictedCrossSection(t *testing.T) {
 	pgConnString := createPostgresContainer(t)
 	c := setupClient(t, pgConnString)
 	// Create 100 locations with 4 forecasts each
-	_ = seed(t, pgConnString, seedDBParams{
+	output := seed(t, pgConnString, seedDBParams{
 		NumLocations:            100,
 		NumForecastsPerLocation: 1,
 		PgvResolutionMins:       30,
@@ -429,28 +438,24 @@ func TestGetPredictedCrossSection(t *testing.T) {
 		ForecastLengthHours:     1,
 		PivotTime:               pivotTime,
 	})
-	locationNames := make([]string, 100)
-	for i := range locationNames {
-		locationNames[i] = fmt.Sprintf("TESTLOCATION%d", int32(i))
-	}
 
 	crossSectionResp, err := c.GetPredictedCrossSection(t.Context(), &pb.GetPredictedCrossSectionRequest{
 		EnergySource:  pb.EnergySource_SOLAR,
 		TimestampUnix: timestamppb.New(pivotTime),
-		LocationNames: locationNames,
+		LocationUuids: output.LocationUuids,
 		Model:         &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, crossSectionResp)
-	require.Len(t, crossSectionResp.Values, len(locationNames))
+	require.Len(t, crossSectionResp.Values, len(output.LocationUuids))
 }
 
 func TestGetLocationsAsGeoJSON(t *testing.T) {
 	c := setupClient(t, createPostgresContainer(t))
 
 	// Create some locations
-	siteNames := make([]string, 3)
-	for i := range siteNames {
+	siteUuids := make([]string, 3)
+	for i := range siteUuids {
 		resp, err := c.CreateSite(t.Context(), &pb.CreateSiteRequest{
 			Name: fmt.Sprintf("TESTSITE%02d", i),
 			Latlng: &pb.LatLng{
@@ -462,17 +467,17 @@ func TestGetLocationsAsGeoJSON(t *testing.T) {
 			Metadata:      &structpb.Struct{},
 		})
 		require.NoError(t, err)
-		siteNames[i] = resp.LocationName
+		siteUuids[i] = resp.LocationUuid
 	}
 
 	geojson, err := c.GetLocationsAsGeoJSON(t.Context(), &pb.GetLocationsAsGeoJSONRequest{
-		LocationNames: siteNames,
+		LocationUuids: siteUuids,
 	})
 	require.NoError(t, err)
 	var result map[string]any
 	json.Unmarshal([]byte(geojson.Geojson), &result)
 	features := result["features"].([]any)
-	require.Equal(t, len(siteNames), len(features))
+	require.Equal(t, len(siteUuids), len(features))
 }
 
 func TestGetPredictedTimeseries(t *testing.T) {
@@ -482,7 +487,7 @@ func TestGetPredictedTimeseries(t *testing.T) {
 
 	// Create four forecasts, each half an hour apart, up to the latestForecastTime
 	// Give each forecast one hour's worth of predicted generation values, occurring every 5 minutes
-	_ = seed(t, pgConnString, seedDBParams{
+	output := seed(t, pgConnString, seedDBParams{
 		NumLocations:            1,
 		NumModels:               1,
 		NumForecastsPerLocation: 4,
@@ -546,7 +551,7 @@ func TestGetPredictedTimeseries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins", tt.horizonMins), func(t *testing.T) {
 			resp, err := c.GetPredictedTimeseries(t.Context(), &pb.GetPredictedTimeseriesRequest{
-				LocationName: "TESTLOCATION0",
+				LocationUuid: output.LocationUuids[0],
 				HorizonMins:  uint32(tt.horizonMins),
 				Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 				EnergySource: pb.EnergySource_SOLAR,
@@ -574,7 +579,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 	pivotTime := time.Now().Truncate(time.Minute)
 	pgConnString := createPostgresContainer(t)
 	c := setupClient(t, pgConnString)
-	_ = seed(t, pgConnString, seedDBParams{
+	output := seed(t, pgConnString, seedDBParams{
 		NumLocations:            1,
 		NumModels:               1,
 		NumForecastsPerLocation: 48,
@@ -599,7 +604,7 @@ func TestGetObservedTimeseries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Size %d", tt.expectedSize), func(t *testing.T) {
 			resp, err := c.GetObservedTimeseries(t.Context(), &pb.GetObservedTimeseriesRequest{
-				LocationName: "TESTLOCATION0",
+				LocationUuid: output.LocationUuids[0],
 				EnergySource: pb.EnergySource_SOLAR,
 				TimeWindow: &pb.TimeWindow{
 					StartTimestampUnix: timestamppb.New(tt.startTime),
@@ -617,7 +622,7 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 	pivotTime := time.Date(2025, 7, 5, 12, 0, 0, 0, time.UTC)
 	pgConnString := createPostgresContainer(t)
 	c := setupClient(t, pgConnString)
-	_ = seed(t, pgConnString, seedDBParams{
+	output := seed(t, pgConnString, seedDBParams{
 		NumLocations:            1,
 		NumModels:               1,
 		NumForecastsPerLocation: 4,
@@ -648,7 +653,7 @@ func TestGetPredictedTimeseriesDeltas(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Horizon %d mins (deltas)", tt.horizonMins), func(t *testing.T) {
 			deltaResp, err := c.GetPredictedTimeseriesDeltas(t.Context(), &pb.GetPredictedTimeseriesDeltasRequest{
-				LocationName: "TESTLOCATION0",
+				LocationUuid: output.LocationUuids[0],
 				HorizonMins:  uint32(tt.horizonMins),
 				EnergySource: pb.EnergySource_SOLAR,
 				ObserverName: "test_observer",
@@ -676,7 +681,7 @@ func TestGetWeekAverageDeltas(t *testing.T) {
 	pivotTime := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	pgConnString := createPostgresContainer(t)
 	c := setupClient(t, pgConnString)
-	_ = seed(t, pgConnString, seedDBParams{
+	output := seed(t, pgConnString, seedDBParams{
 		NumLocations:            1,
 		NumModels:               1,
 		NumForecastsPerLocation: 500,
@@ -687,7 +692,7 @@ func TestGetWeekAverageDeltas(t *testing.T) {
 	})
 
 	deltaResp, err := c.GetWeekAverageDeltas(t.Context(), &pb.GetWeekAverageDeltasRequest{
-		LocationName: "TESTLOCATION0",
+		LocationUuid: output.LocationUuids[0],
 		EnergySource: pb.EnergySource_SOLAR,
 		Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 		ObserverName: "test_observer",
@@ -705,7 +710,7 @@ func TestGetLocationsWithin(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a GSP with a bounding box between 0 and 5
-	_, err = c.CreateGsp(t.Context(), &pb.CreateGspRequest{
+	resp, err := c.CreateGsp(t.Context(), &pb.CreateGspRequest{
 		Name:          "GSP_OUTER_BOX",
 		EnergySource:  pb.EnergySource_SOLAR,
 		Geometry:      "POLYGON((0 0, 0 5, 5 5, 5 0, 0 0))",
@@ -725,8 +730,9 @@ func TestGetLocationsWithin(t *testing.T) {
 		{1, 5},
 		{0, 170},
 	}
+	inner_uuids := make([]string, len(lls))
 	for i, ll := range lls {
-		_, err = c.CreateSite(t.Context(), &pb.CreateSiteRequest{
+		sResp, err := c.CreateSite(t.Context(), &pb.CreateSiteRequest{
 			Name:          fmt.Sprintf("SITE_%d", i),
 			EnergySource:  pb.EnergySource_SOLAR,
 			Latlng:        &pb.LatLng{Latitude: ll.lat, Longitude: ll.lon},
@@ -734,18 +740,21 @@ func TestGetLocationsWithin(t *testing.T) {
 			Metadata:      metadata,
 		})
 		require.NoError(t, err)
+		inner_uuids[i] = sResp.LocationUuid
 	}
 
-	result, err := c.GetLocationsWithin(t.Context(), &pb.GetLocationsWithinRequest{LocationName: "GSP_OUTER_BOX"})
+	result, err := c.GetLocationsWithin(t.Context(), &pb.GetLocationsWithinRequest{
+		LocationUuid: resp.LocationUuid,
+	})
 	require.NoError(t, err)
 	expected := []*pb.GetLocationsWithinResponse_LocationData{
-		{LocationId: 1, LocationName: "GSP_OUTER_BOX"},
-		{LocationId: 2, LocationName: "SITE_0"},
-		{LocationId: 3, LocationName: "SITE_1"},
-		{LocationId: 4, LocationName: "SITE_2"},
+		{LocationUuid: resp.LocationUuid, LocationName: "GSP_OUTER_BOX"},
+		{LocationUuid: inner_uuids[0], LocationName: "SITE_0"},
+		{LocationUuid: inner_uuids[1], LocationName: "SITE_1"},
+		{LocationUuid: inner_uuids[2], LocationName: "SITE_2"},
 	}
 	for _, g := range result.Locations {
-		t.Log("Location:", g.LocationName, "ID:", g.LocationId)
+		t.Log("Location:", g.LocationName, "ID:", g.LocationUuid)
 	}
 	require.Equal(t, expected, result.Locations)
 }
@@ -786,7 +795,7 @@ func TestCreateForecast(t *testing.T) {
 
 	req := &pb.CreateForecastRequest{
 		Forecast: &pb.CreateForecastRequest_Forecast{
-			LocationName: siteResp.LocationName,
+			LocationUuid: siteResp.LocationUuid,
 			Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 			EnergySource: pb.EnergySource_SOLAR,
 			InitTimeUtc:  timestamppb.New(time.Now().UTC()),
@@ -819,7 +828,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 	for _, tt := range tests {
 		pgConnString := createPostgresContainer(b)
 		c := setupClient(b, pgConnString)
-		numPgvs := seed(b, pgConnString, tt)
+		output := seed(b, pgConnString, tt)
 
 		// Create some test yields
 		yields := make([]*pb.CreateForecastRequest_PredictedGenerationValue, tt.NumPgvsPerForecast())
@@ -833,10 +842,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 			}
 		}
 
-		b.Run(fmt.Sprintf("%d/GetPredictedTimeseries", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/GetPredictedTimeseries", output.NumPgvs), func(b *testing.B) {
 			for b.Loop() {
 				resp, err := c.GetPredictedTimeseries(b.Context(), &pb.GetPredictedTimeseriesRequest{
-					LocationName: "TESTLOCATION1",
+					LocationUuid: output.LocationUuids[0],
 					EnergySource: pb.EnergySource_SOLAR,
 					Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 				})
@@ -844,7 +853,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 				require.GreaterOrEqual(b, len(resp.Values), 1)
 			}
 		})
-		b.Run(fmt.Sprintf("%d/GetPredictedCrossSection", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/GetPredictedCrossSection", output.NumPgvs), func(b *testing.B) {
 			locationNames := make([]string, 373)
 			for i := range locationNames {
 				locationNames[i] = fmt.Sprintf("TESTLOCATION%d", int32(i))
@@ -852,7 +861,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 			for b.Loop() {
 				crossSectionResp, err := c.GetPredictedCrossSection(b.Context(), &pb.GetPredictedCrossSectionRequest{
 					EnergySource:  pb.EnergySource_SOLAR,
-					LocationNames: locationNames,
+					LocationUuids: output.LocationUuids,
 					Model:         &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
 					TimestampUnix: timestamppb.New(pivotTime),
 				})
@@ -861,10 +870,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 				require.GreaterOrEqual(b, len(crossSectionResp.Values), 1)
 			}
 		})
-		b.Run(fmt.Sprintf("%d/GetObservedTimeseries", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/GetObservedTimeseries", output.NumPgvs), func(b *testing.B) {
 			for b.Loop() {
 				obsResp, err := c.GetObservedTimeseries(b.Context(), &pb.GetObservedTimeseriesRequest{
-					LocationName: "TESTLOCATION1",
+					LocationUuid: output.LocationUuids[0],
 					ObserverName: "test_observer",
 					EnergySource: pb.EnergySource_SOLAR,
 					TimeWindow: &pb.TimeWindow{
@@ -876,10 +885,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 				require.GreaterOrEqual(b, len(obsResp.Values), 36*60/tt.PgvResolutionMins)
 			}
 		})
-		b.Run(fmt.Sprintf("%d/GetPredictedTimeseriesDeltas", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/GetPredictedTimeseriesDeltas", output.NumPgvs), func(b *testing.B) {
 			for b.Loop() {
 				deltasResp, err := c.GetPredictedTimeseriesDeltas(b.Context(), &pb.GetPredictedTimeseriesDeltasRequest{
-					LocationName: "TESTLOCATION1",
+					LocationUuid: output.LocationUuids[0],
 					EnergySource: pb.EnergySource_SOLAR,
 					ObserverName: "test_observer",
 					Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
@@ -888,12 +897,12 @@ func BenchmarkPostgresClient(b *testing.B) {
 				require.GreaterOrEqual(b, len(deltasResp.Values), 1)
 			}
 		})
-		b.Run(fmt.Sprintf("%d/CreateForecast", numPgvs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d/CreateForecast", output.NumPgvs), func(b *testing.B) {
 			for b.Loop() {
 				_, err := c.CreateForecast(b.Context(), &pb.CreateForecastRequest{
 					Forecast: &pb.CreateForecastRequest_Forecast{
 						Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
-						LocationName: "TESTLOCATION1",
+						LocationUuid: output.LocationUuids[0],
 						EnergySource: pb.EnergySource_SOLAR,
 						InitTimeUtc: timestamppb.New(
 							time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).

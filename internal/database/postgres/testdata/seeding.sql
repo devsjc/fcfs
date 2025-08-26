@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION seed_db(
     num_models INTEGER DEFAULT 1,
     pivot_time TIMESTAMP DEFAULT DATE_TRUNC('hour', NOW())
 )
-RETURNS INTEGER AS $$
+RETURNS TABLE (num_values INTEGER, location_uuids UUID[]) AS $$
 DECLARE
     loc_id INTEGER;
     src_id INTEGER;
@@ -111,7 +111,10 @@ BEGIN
     END LOOP;
     RAISE NOTICE 'Inserted % predicted generation values', (SELECT COUNT(*) FROM pred.predicted_generation_values);
 
-    RETURN(SELECT COUNT(*) from pred.predicted_generation_values);
+    RETURN (
+        SELECT COUNT(*) from pred.predicted_generation_values,
+        ARRAY(SELECT location_uuid FROM loc.locations)
+    );
 END;
 $$ LANGUAGE plpgsql;
 

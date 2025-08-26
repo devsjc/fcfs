@@ -37,9 +37,11 @@ INSERT INTO iam.roles (role_name) VALUES ('OWNER'), ('VIEWER');
 CREATE TABLE iam.location_policies (
     role_id SMALLINT NOT NULL
         REFERENCES iam.roles(role_id)
+        ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    location_id INTEGER NOT NULL
-        REFERENCES loc.locations(location_id)
+    location_uuid UUID NOT NULL
+        REFERENCES loc.locations(location_uuid)
+        ON UPDATE CASCADE
         ON DELETE CASCADE,
     -- TODO: Determine with frontend what auth actually gets passed through
     user_token TEXT NOT NULL
