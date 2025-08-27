@@ -46,7 +46,7 @@ CREATE TABLE iam.location_policies (
     -- TODO: Determine with frontend what auth actually gets passed through
     user_token TEXT NOT NULL
         CHECK ( LENGTH(user_token) > 0 AND LENGTH(user_token) <= 64 ),
-    PRIMARY KEY (user_token, location_id, role_id)
+    PRIMARY KEY (user_token, location_uuid, role_id)
 );
 
 -- +goose Down

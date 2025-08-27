@@ -893,10 +893,14 @@ func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 	}
 
 	var metadataMap map[string]any
-	err = json.Unmarshal(dbSource.MetadataJsonb, &metadataMap)
-	if err != nil {
-		l.Err(err).Msgf("json.Unmarshal(%s)", dbSource.MetadataJsonb)
-		return nil, status.Errorf(codes.Internal, "Failed to parse metadata for location '%s'", req.LocationUuid)
+	if dbSource.MetadataJsonb == nil {
+		metadataMap = map[string]any{}
+	} else {
+		err = json.Unmarshal(dbSource.MetadataJsonb, &metadataMap)
+		if err != nil {
+			l.Err(err).Msgf("json.Unmarshal(%s)", dbSource.MetadataJsonb)
+			return nil, status.Errorf(codes.Internal, "Failed to parse metadata for location '%s'", req.LocationUuid)
+		}
 	}
 
 	metadata, err := structpb.NewStruct(metadataMap)
@@ -948,17 +952,19 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", gsParams)
 		return nil, status.Errorf(
-			codes.NotFound, "No location found for name '%s' with source type '%s'.",
+			codes.NotFound, "No location found for id '%s' with source type '%s'.",
 			req.Forecast.LocationUuid, req.Forecast.EnergySource,
 		)
 	}
+	resolution_mins := req.PredictedGenerationValues[1].HorizonMins - req.PredictedGenerationValues[0].HorizonMins // TODO: Check they are all the same
 
 	// Create a new forecast
 	params2 := db.CreateForecastParams{
-		LocationUuid:     locationUuid,
-		SourceTypeID:     dbSource.SourceTypeID,
-		PredictorName:    req.Forecast.Model.ModelName,
-		PredictorVersion: req.Forecast.Model.ModelVersion,
+		LocationUuid:        locationUuid,
+		SourceTypeID:        dbSource.SourceTypeID,
+		PredictorName:       req.Forecast.Model.ModelName,
+		PredictorVersion:    req.Forecast.Model.ModelVersion,
+		ValueResolutionMins: int16(resolution_mins),
 		InitTimeUtc: pgtype.Timestamp{
 			Time:  req.Forecast.InitTimeUtc.AsTime(),
 			Valid: true,
@@ -1076,28 +1082,24 @@ func (s *DataPlatformServerImpl) CreateSite(ctx context.Context, req *pb.CreateS
 		l.Err(err).Msgf("capacityKwToValueMultiplier(%d)", req.CapacityWatts)
 		return nil, status.Error(codes.InvalidArgument, "Invalid capacity. Ensure capacity is non-negative.")
 	}
-	var metadata []byte
-	if len(req.Metadata.Fields) == 0 {
-		metadata = nil
-	} else {
-		metadata, err = req.Metadata.MarshalJSON()
-		if err != nil {
-			l.Err(err).Msgf("req.Metadata.MarshalJSON()")
-			return nil, status.Error(codes.InvalidArgument, "Invalid metadata. Ensure metadata is a valid JSON object.")
-		}
+	metadata, err := req.Metadata.MarshalJSON()
+	if err != nil {
+		l.Err(err).Msgf("req.Metadata.MarshalJSON()")
+		return nil, status.Error(codes.InvalidArgument, "Invalid metadata. Ensure metadata is a valid JSON object.")
 	}
 
-	params2 := db.CreateSourceEntryParams{
+	csParams := db.CreateSourceEntryParams{
 		LocationUuid:             dbLocation.LocationUuid,
 		SourceTypeID:             dbSourceType.SourceTypeID,
 		Capacity:                 cp,
 		CapacityUnitPrefixFactor: ex,
 		CapacityLimitSip:         nil, // TODO: Put on request
 		Metadata:                 metadata,
+		ValidFromUtc:             pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
 	}
-	dbSource, err := querier.CreateSourceEntry(ctx, params2)
+	dbSource, err := querier.CreateSourceEntry(ctx, csParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.CreateSource(%+v)", params2)
+		l.Err(err).Msgf("querier.CreateSource(%+v)", csParams)
 		return nil, status.Error(
 			codes.InvalidArgument,
 			"Invalid site. Ensure metadata is NULL or a non-empty JSON object, and capacity is non-negative.",
@@ -1107,6 +1109,12 @@ func (s *DataPlatformServerImpl) CreateSite(ctx context.Context, req *pb.CreateS
 		"Created source of type '%s' for location '%s' with capacity %dx10^%d W",
 		dbSourceType.SourceTypeName, dbLocation.LocationUuid, dbSource.Capacity, dbSource.CapacityUnitPrefixFactor,
 	)
+	err = querier.UpdateSourcesMaterializedView(ctx)
+	if err != nil {
+		l.Err(err).Msg("querier.UpdateSourcesMaterializedView()")
+		return nil, status.Error(codes.Internal, "Failed to update sources materialized view")
+	}
+
 	return &pb.CreateSiteResponse{
 		LocationUuid:  dbLocation.LocationUuid.String(),
 		LocationName:  strings.ToUpper(dbLocation.LocationName),
@@ -1160,14 +1168,15 @@ func (s *DataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.CreateGs
 		l.Err(err).Msgf("capacityMwToValueMultiplier(%d)", req.CapacityWatts)
 		return nil, status.Error(codes.InvalidArgument, "Invalid capacity. Ensure capacity is non-negative.")
 	}
-	params2 := db.CreateSourceEntryParams{
+	csParams := db.CreateSourceEntryParams{
 		LocationUuid:             dbLocation.LocationUuid,
 		SourceTypeID:             dbSourceType.SourceTypeID,
 		Capacity:                 cp,
 		CapacityUnitPrefixFactor: ex,
 		Metadata:                 metadata,
+		ValidFromUtc:             pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
 	}
-	dbSource, err := querier.CreateSourceEntry(ctx, params2)
+	dbSource, err := querier.CreateSourceEntry(ctx, csParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreateSource(%+v)", params)
 		return nil, status.Error(
@@ -1179,6 +1188,11 @@ func (s *DataPlatformServerImpl) CreateGsp(ctx context.Context, req *pb.CreateGs
 		"Created source of type '%s' for location '%s' with capacity %dx10^%d W",
 		req.EnergySource, dbLocation.LocationUuid, dbSource.Capacity, dbSource.CapacityUnitPrefixFactor,
 	)
+	err = querier.UpdateSourcesMaterializedView(ctx)
+	if err != nil {
+		l.Err(err).Msg("querier.UpdateSourcesMaterializedView()")
+		return nil, status.Error(codes.Internal, "Failed to update sources materialized view")
+	}
 
 	return &pb.CreateGspResponse{
 		LocationUuid:  dbLocation.LocationUuid.String(),
@@ -1206,9 +1220,17 @@ func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req 
 	} else {
 		simplificationLevel = 0.5
 	}
+	locationUuids := make([]uuid.UUID, len(req.LocationUuids))
+	for i, id := range req.LocationUuids {
+		locationUuids[i], err = uuid.Parse(id)
+		if err != nil {
+			l.Err(err).Msgf("uuid.Parse(%s)", id)
+			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
+		}
+	}
 	params := db.GetLocationGeoJSONParams{
 		SimplificationLevel: simplificationLevel,
-		LocationNames:       req.LocationUuids,
+		LocationUuids:       locationUuids,
 	}
 	geojson, err := querier.GetLocationGeoJSON(ctx, params)
 	if err != nil {

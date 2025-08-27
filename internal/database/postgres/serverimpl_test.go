@@ -268,15 +268,15 @@ func TestCreateSolarSite(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "Shouldn't create site with invalid metadata",
+			name: "Should create site with empty metadata",
 			req: &pb.CreateSiteRequest{
 				Name:          "INVALID_METADATA_SITE",
 				Latlng:        defaultReq.Latlng,
 				CapacityWatts: defaultReq.CapacityWatts,
-				Metadata:      nil, // Empty metadata
+				Metadata:      nil,
 				EnergySource:  defaultReq.EnergySource,
 			},
-			shouldError: true,
+			shouldError: false,
 		},
 		{
 			name: "Shouldn't create site with invalid name",
@@ -303,7 +303,7 @@ func TestCreateSolarSite(t *testing.T) {
 					t.Context(),
 					&pb.GetLocationRequest{
 						LocationUuid: resp.LocationUuid,
-						EnergySource: defaultReq.EnergySource,
+						EnergySource: tt.req.EnergySource,
 					},
 				)
 				require.NoError(t, err)
@@ -821,7 +821,7 @@ func TestCreateForecast(t *testing.T) {
 // Instead it determines how long each RPC takes to complete against a database of a given size.
 func BenchmarkPostgresClient(b *testing.B) {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	pivotTime := time.Now().UTC().Truncate(time.Hour)
+	pivotTime := time.Date(2010, 1, 1, 1, 0, 0, 0, time.UTC)
 	metadata, err := structpb.NewStruct(map[string]any{"source": "test"})
 	require.NoError(b, err)
 
@@ -855,6 +855,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 					LocationUuid: output.LocationUuids[0],
 					EnergySource: pb.EnergySource_SOLAR,
 					Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
+					TimeWindow: &pb.TimeWindow{
+						StartTimestampUnix: timestamppb.New(pivotTime.Add(-time.Hour * 48)),
+						EndTimestampUnix:   timestamppb.New(pivotTime.Add(time.Hour * 36)),
+					},
 				})
 				require.NoError(b, err)
 				require.GreaterOrEqual(b, len(resp.Values), 1)
@@ -899,6 +903,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 					EnergySource: pb.EnergySource_SOLAR,
 					ObserverName: "test_observer",
 					Model:        &pb.Model{ModelName: "test_model_1", ModelVersion: "v1"},
+					TimeWindow: &pb.TimeWindow{
+						StartTimestampUnix: timestamppb.New(pivotTime.Add(-time.Hour * 48)),
+						EndTimestampUnix:   timestamppb.New(pivotTime.Add(time.Hour * 36)),
+					},
 				})
 				require.NoError(b, err)
 				require.GreaterOrEqual(b, len(deltasResp.Values), 1)
@@ -912,8 +920,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 						LocationUuid: output.LocationUuids[0],
 						EnergySource: pb.EnergySource_SOLAR,
 						InitTimeUtc: timestamppb.New(
-							time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).
-								Add(time.Duration(rand.Int64N(2000000)) * time.Minute),
+							pivotTime.Add(time.Duration(rand.Int64N(2000000)) * time.Minute),
 						),
 					},
 					PredictedGenerationValues: yields,

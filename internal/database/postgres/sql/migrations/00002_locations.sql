@@ -51,7 +51,7 @@ INSERT INTO loc.location_types (location_type_name) VALUES ('SITE'), ('GSP'), ('
 
 -- Table to store spatial data for locations
 CREATE TABLE loc.locations (
-    location_uuid UUID GENERATED ALWAYS AS (uuidv7()) STORED NOT NULL,
+    location_uuid UUID DEFAULT uuidv7() NOT NULL,
     location_name TEXT NOT NULL
         CHECK ( LENGTH(location_name) > 0 AND location_name = UPPER(location_name) ),
     geom GEOMETRY(GEOMETRY, 4326) NOT NULL
@@ -139,8 +139,8 @@ SELECT
     metadata
 FROM loc.sources_history;
 -- Prevent overlapping records. Required for concurrent refreshes.
-CREATE UNIQUE INDEX ON loc.sources_mat (location_uuid, source_type_id, sys_period);
-CREATE INDEX ON loc.sources_mat USING GIST (sys_period);
+CREATE UNIQUE INDEX ON loc.sources_mv (location_uuid, source_type_id, sys_period);
+CREATE INDEX ON loc.sources_mv USING GIST (sys_period);
 
 -- +goose Down
 DROP SCHEMA loc CASCADE;

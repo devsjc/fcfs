@@ -64,9 +64,9 @@ CREATE TABLE pred.forecasts (
         REFERENCES loc.locations(location_uuid)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
-    forecast_uuid UUID GENERATED ALWAYS AS (uuidv7()) STORED NOT NULL,
+    forecast_uuid UUID DEFAULT uuidv7() NOT NULL,
     PRIMARY KEY (forecast_uuid),
-    UNIQUE (location_uuid, source_type_id, forecaster_id, init_time_utc)
+    UNIQUE (location_uuid, source_type_id, predictor_id, init_time_utc)
 );
 
 /*

@@ -34,7 +34,7 @@ WHERE p.predictor_name = $1
 
 -- name: CreateForecast :one
 INSERT INTO pred.forecasts (
-    location_uuid, source_type_id, predictor_id, init_time_utc
+    location_uuid, source_type_id, predictor_id, init_time_utc, value_resolution_mins
 ) VALUES (
     $1,
     $2,
@@ -42,7 +42,8 @@ INSERT INTO pred.forecasts (
         SELECT predictor_id FROM pred.predictors
         WHERE predictor_name = $3 AND predictor_version = $4
     ),
-    $5
+    $5,
+    $6
 ) RETURNING forecast_uuid, init_time_utc, source_type_id, location_uuid, predictor_id;
 
 -- name: CreateForecasts :batchone
@@ -268,7 +269,7 @@ deltas AS (
     LEFT JOIN obs.observed_generation_values AS og USING (location_uuid, source_type_id)
     WHERE
         og.observer_id = $3
-        AND og.observation_time_utc = rv.target_time_utc
+        AND og.observation_timestamp_utc = rv.target_time_utc
 )
 SELECT
     d.location_uuid,

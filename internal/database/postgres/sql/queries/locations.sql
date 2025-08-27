@@ -40,7 +40,7 @@ FROM (
         ST_SIMPLIFYPRESERVETOPOLOGY(l.geom, sqlc.arg(simplification_level)::real) AS geom_simple
     FROM loc.locations AS l
     JOIN loc.location_types AS lt USING (location_type_id)
-    WHERE l.location_name = ANY(sqlc.arg(location_names)::text [])
+    WHERE l.location_uuid = ANY(sqlc.arg(location_uuids)::uuid [])
 ) AS sl;
 
 -- name: GetLocationsWithin :many
@@ -98,7 +98,7 @@ FROM loc.sources_mv AS s
 INNER JOIN loc.locations AS l USING (location_uuid)
 INNER JOIN loc.source_types AS st USING (source_type_id)
 WHERE
-    l.location_uuids = ANY(sqlc.arg(location_uuids)::uuid [])
+    l.location_uuid = ANY(sqlc.arg(location_uuids)::uuid [])
     AND st.source_type_name = $1
     AND s.sys_period @> sqlc.arg(at_timestamp_utc)::timestamp;
 
@@ -118,7 +118,7 @@ INSERT INTO loc.sources_history (
     $4,
     $5,
     $6,
-    $7
+    CASE WHEN sqlc.arg(metadata)::jsonb = '{}'::jsonb THEN NULL ELSE sqlc.arg(metadata)::jsonb END
 RETURNING location_uuid, capacity, capacity_unit_prefix_factor;
 
 -- name: UpdateSourcesMaterializedView :exec

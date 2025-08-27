@@ -82,11 +82,9 @@ message GetPredictedTimeseriesRequest {
   EnergySource energy_source = 2;
 
   uint32 horizon_mins = 3;
-  /* The time window to fetch predicted yields for.
-   * If not specified, the default is 48 hours before the current time
-   * to 36 hours after the current time.
-   */
-  TimeWindow time_window = 4;
+  TimeWindow time_window = 4 [
+    (buf.validate.field).required = true
+  ];
   Model model = 5 [
     (buf.validate.field).required = true
   ];
@@ -121,11 +119,9 @@ message GetPredictedTimeseriesDeltasRequest {
     (buf.validate.field).string.min_len = 2,
     (buf.validate.field).string.max_len = 100
   ];
-  /* The time window to fetch predicted deltas for.
-   * If not specified, the default is 48 hours before the current time
-   * to 36 hours after the current time.
-   */
-  TimeWindow time_window = 6;
+  TimeWindow time_window = 6 [
+    (buf.validate.field).required = true
+  ];
 }
 
 message GetPredictedTimeseriesDeltasResponse {
@@ -157,7 +153,9 @@ message GetObservedTimeseriesRequest {
    * If not specified, the default is 48 hours before the current time
    * to 36 hours after the current time.
    */
-  TimeWindow time_window = 4;
+  TimeWindow time_window = 4 [
+    (buf.validate.field).required = true
+  ];
 }
 
 message GetObservedTimeseriesResponse {
