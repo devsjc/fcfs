@@ -865,9 +865,8 @@ func BenchmarkPostgresClient(b *testing.B) {
 			}
 		})
 		b.Run(fmt.Sprintf("%d/GetPredictedCrossSection", output.NumPgvs), func(b *testing.B) {
-			locationNames := make([]string, 373)
-			for i := range locationNames {
-				locationNames[i] = fmt.Sprintf("TESTLOCATION%d", int32(i))
+			if len(output.LocationUuids) > 100 {
+				output.LocationUuids = output.LocationUuids[0:100]
 			}
 			for b.Loop() {
 				crossSectionResp, err := c.GetPredictedCrossSection(b.Context(), &pb.GetPredictedCrossSectionRequest{
