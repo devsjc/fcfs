@@ -105,22 +105,133 @@ func timeWindowToPgWindow(window *pb.TimeWindow) (start pgtype.Timestamp, end pg
 	return start, end, err
 }
 
-// --- Server Implementation ---------------------------------------------------------------------
+// --- Server Implementation ----------------------------------------------------------------------
 
 type DataPlatformServerImpl struct {
 	pool *pgxpool.Pool
 }
 
+// NewPostgresDataPlatformServerImpl creates a new instance of the PostgresDataPlatformServer
+// connecting to - and migrating - the postgres database at the provided connection URL.
+func NewPostgresDataPlatformServerImpl(connString string) *DataPlatformServerImpl {
+	pool, err := pgxpool.New(
+		context.Background(), connString,
+	)
+	if err != nil {
+		log.Fatal().Msg("Unable to connect to database. Ensure DATABASE_URL is set correctly")
+	}
+
+	log.Debug().Msg("Running migrations")
+	goose.SetBaseFS(embedMigrations)
+	goose.SetLogger(goose.NopLogger())
+	_ = goose.SetDialect("postgres")
+	db := stdlib.OpenDBFromPool(pool)
+	err = goose.Up(db, "sql/migrations")
+	if err != nil {
+		log.Fatal().Msgf("Unable to apply migrations: %v", err)
+	}
+	err = db.Close()
+	if err != nil {
+		log.Fatal().Msgf("Unable to close database connection: %v", err)
+	}
+
+	return &DataPlatformServerImpl{pool: pool}
+}
+
+// --- Server Method Implementations --------------------------------------------------------------
 // GetLatestForecasts implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetLatestForecasts(context.Context, *pb.GetLatestForecastsRequest) (*pb.GetLatestForecastsResponse, error) {
 	panic("unimplemented")
 }
 
-// UpdateForecaster implements dp.DataPlatformServiceServer.
-func (s *DataPlatformServerImpl) UpdateForecaster(context.Context, *pb.UpdateForecasterRequest) (*pb.UpdateForecasterResponse, error) {
-	panic("unimplemented")
+// CreateForecaster implements dp.DataPlatformServiceServer.
+func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.CreateForecasterRequest) (*pb.CreateForecasterResponse, error) {
+	l := log.With().Str("method", "CreateForecaster").Logger()
+
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	// Check if the predictor already exists and error out if so
+	gpParams := db.GetPredictorElseLatestParams{
+		PredictorName:    req.Name,
+		PredictorVersion: req.Version,
+	}
+	dbPredictor, err := querier.GetPredictorElseLatest(ctx, gpParams)
+	if err == nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"Forecaster with name '%s' already exists (at version '%s'). Use the update method to add a new version, or create a non-exisitng forecaster.",
+			dbPredictor.PredictorName, dbPredictor.PredictorVersion,
+		)
+	}
+
+	// Create a new predictor
+	params := db.CreatePredictorParams{PredictorName: req.Name, PredictorVersion: req.Version}
+	forecasterID, err := querier.CreatePredictor(ctx, params)
+	if err != nil {
+		l.Err(err).Msgf("querier.CreatePredictor(%+v)", params)
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"Invalid forecaster. Ensure name and version are not empty and are lowercase",
+		)
+	}
+	l.Debug().Msgf("Created forecaster with ID %d", forecasterID)
+
+	return &pb.CreateForecasterResponse{
+		Forecaster: &pb.Forecaster{ForecasterName: req.Name, ForecasterVersion: req.Version},
+	}, tx.Commit(ctx)
 }
 
+// UpdateForecaster implements dp.DataPlatformServiceServer.
+func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.UpdateForecasterRequest) (*pb.UpdateForecasterResponse, error) {
+	l := log.With().Str("method", "UpdateForecaster").Logger()
+
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
+	}
+	defer tx.Rollback(ctx)
+	querier := db.New(tx)
+
+	// Check if the predictor already exists and error out if not
+	gpParams := db.GetPredictorElseLatestParams{
+		PredictorName: req.Name,
+	}
+	dbPredictor, err := querier.GetPredictorElseLatest(ctx, gpParams)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"No forecaster with name '%s' found. Use the create method to add it.",
+			req.Name,
+		)
+	}
+
+	// Update the predictor
+	params := db.CreatePredictorParams{PredictorName: dbPredictor.PredictorName, PredictorVersion: req.NewVersion}
+	forecasterID, err := querier.CreatePredictor(ctx, params)
+	if err != nil {
+		l.Err(err).Msgf("querier.CreatePredictor(%+v)", params)
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"Invalid forecaster. Ensure name and version are not empty and are lowercase",
+		)
+	}
+	l.Debug().Msgf("Created forecaster with ID %d", forecasterID)
+
+	return &pb.UpdateForecasterResponse{
+		Forecaster: &pb.Forecaster{ForecasterName: req.Name, ForecasterVersion: req.NewVersion},
+	}, tx.Commit(ctx)
+}
+
+// StreamForecastData implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRequest, stream grpc.ServerStreamingServer[pb.StreamForecastDataResponse]) error {
 	l := log.With().Str("method", "StreamForecastData").Logger()
 
@@ -187,17 +298,14 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 
 		for i := range dbPreds {
 			var p90 *float32
-			if dbPreds[i].P90Sip == nil {
-				p90 = nil
-			} else {
-				*p90 = (float32(*dbPreds[i].P90Sip) / 30000.0) * 100.0
+			if dbPreds[i].P90Sip != nil {
+				p90val := (float32(*dbPreds[i].P90Sip) / 30000.0) * 100.0
+				p90 = &p90val
 			}
-
 			var p10 *float32
-			if dbPreds[i].P10Sip == nil {
-				p10 = nil
-			} else {
-				*p10 = (float32(*dbPreds[i].P10Sip) / 30000.0) * 100.0
+			if dbPreds[i].P10Sip != nil {
+				p10val := (float32(*dbPreds[i].P10Sip) / 30000.0) * 100.0
+				p10 = &p10val
 			}
 
 			err = stream.Send(&pb.StreamForecastDataResponse{
@@ -212,14 +320,13 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 			if err != nil {
 				return err
 			}
-
 		}
-
 	}
 
 	return nil
 }
 
+// GetLocationsWithin implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb.GetLocationsWithinRequest) (*pb.GetLocationsWithinResponse, error) {
 	l := log.With().Str("method", "GetLocationsWithin").Logger()
 
@@ -260,6 +367,7 @@ func (s *DataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb
 	}, tx.Commit(ctx)
 }
 
+// GetWeekAverageDeltas implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *pb.GetWeekAverageDeltasRequest) (*pb.GetWeekAverageDeltasResponse, error) {
 	l := log.With().Str("method", "GetWeekAverageDeltas").Logger()
 
@@ -350,6 +458,7 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 	}, nil
 }
 
+// GetObservationsAsTimeseries implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context, req *pb.GetObservationsAsTimeseriesRequest) (*pb.GetObservationsAsTimeseriesResponse, error) {
 	l := log.With().Str("method", "GetObservationsAsTimeseries").Logger()
 
@@ -428,6 +537,7 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 	}, nil
 }
 
+// CreateObservations implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb.CreateObservationsRequest) (*pb.CreateObservationsResponse, error) {
 	l := log.With().Str("method", "CreateObservations").Logger()
 
@@ -503,6 +613,7 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 	return &pb.CreateObservationsResponse{}, tx.Commit(ctx)
 }
 
+// CreateObserver implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.CreateObserverRequest) (*pb.CreateObserverResponse, error) {
 	l := log.With().Str("method", "CreateObserver").Logger()
 	// Establish a transaction with the database
@@ -525,6 +636,7 @@ func (s *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.Cre
 	return &pb.CreateObserverResponse{ObserverId: dbObserverId}, tx.Commit(ctx)
 }
 
+// GetForecastAtTimestamp implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req *pb.GetForecastAtTimestampRequest) (*pb.GetForecastAtTimestampResponse, error) {
 	l := log.With().Str("method", "GetForecastAtTimestamp").Logger()
 
@@ -630,6 +742,7 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 	}, nil
 }
 
+// GetLocation implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLocationRequest) (*pb.GetLocationResponse, error) {
 	l := log.With().Str("method", "GetLocation").Logger()
 
@@ -691,6 +804,7 @@ func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 	}, tx.Commit(ctx)
 }
 
+// CreateForecast implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.CreateForecastRequest) (*pb.CreateForecastResponse, error) {
 	l := log.With().Str("method", "CreateForecast").Logger()
 
@@ -781,35 +895,6 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 	}
 
 	return &pb.CreateForecastResponse{}, tx.Commit(ctx)
-}
-
-func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.CreateForecasterRequest) (*pb.CreateForecasterResponse, error) {
-	l := log.With().Str("method", "CreateForecaster").Logger()
-
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
-	}
-	defer tx.Rollback(ctx)
-	querier := db.New(tx)
-
-	// Create a new predictor
-	params := db.CreatePredictorParams{PredictorName: req.Name, PredictorVersion: req.Version}
-	forecasterID, err := querier.CreatePredictor(ctx, params)
-	if err != nil {
-		l.Err(err).Msgf("querier.CreatePredictor(%+v)", params)
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			"Invalid forecaster. Ensure name and version are not empty and are lowercase",
-		)
-	}
-	l.Debug().Msgf("Created forecaster with ID %d", forecasterID)
-
-	return &pb.CreateForecasterResponse{
-		Forecaster: &pb.Forecaster{ForecasterName: req.Name, ForecasterVersion: req.Version},
-	}, tx.Commit(ctx)
 }
 
 func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.CreateLocationRequest) (*pb.CreateLocationResponse, error) {
@@ -1031,31 +1116,5 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 	}, tx.Commit(ctx)
 }
 
-// NewPostgresDataPlatformServerImpl creates a new instance of the PostgresDataPlatformServer
-// connecting to - and migrating - the postgres database at the provided connection URL.
-func NewPostgresDataPlatformServerImpl(connString string) *DataPlatformServerImpl {
-	pool, err := pgxpool.New(
-		context.Background(), connString,
-	)
-	if err != nil {
-		log.Fatal().Msg("Unable to connect to database. Ensure DATABASE_URL is set correctly")
-	}
-
-	log.Debug().Msg("Running migrations")
-	goose.SetBaseFS(embedMigrations)
-	goose.SetLogger(goose.NopLogger())
-	_ = goose.SetDialect("postgres")
-	db := stdlib.OpenDBFromPool(pool)
-	err = goose.Up(db, "sql/migrations")
-	if err != nil {
-		log.Fatal().Msgf("Unable to apply migrations: %v", err)
-	}
-	err = db.Close()
-	if err != nil {
-		log.Fatal().Msgf("Unable to close database connection: %v", err)
-	}
-
-	return &DataPlatformServerImpl{pool: pool}
-}
-
+// Compile-time check to ensure the interface is implemented fully
 var _ pb.DataPlatformServiceServer = (*DataPlatformServerImpl)(nil)

@@ -384,6 +384,74 @@ func TestCreateLocation(t *testing.T) {
 	})
 }
 
+func TestCreateUpdateForecaster(t *testing.T) {
+	c := setupClient(t, createPostgresContainer(t))
+
+	tests := []struct {
+		name      string
+		createReq *pb.CreateForecasterRequest
+		updateReq *pb.UpdateForecasterRequest
+	}{
+		{
+			name: "Should create forecaster",
+			createReq: &pb.CreateForecasterRequest{
+				Name:    "test_model_1",
+				Version: "v1",
+			},
+		},
+		{
+			name: "Should update existing forecaster",
+			updateReq: &pb.UpdateForecasterRequest{
+				Name:       "test_model_1",
+				NewVersion: "v2",
+			},
+		},
+		{
+			name: "Shouldn't update with non-unique version",
+			updateReq: &pb.UpdateForecasterRequest{
+				Name:       "test_model_1",
+				NewVersion: "v2",
+			},
+		},
+		{
+			name: "Shouldn't update non-existant forecaster",
+			updateReq: &pb.UpdateForecasterRequest{
+				Name:       "non_existent_model",
+				NewVersion: "v1",
+			},
+		},
+		{
+			name: "Shouldn't create existing forecaster",
+			createReq: &pb.CreateForecasterRequest{
+				Name:    "test_model_1",
+				Version: "v2",
+			},
+		},
+		{
+			name: "Shouldn't create forecaster with invalid name",
+			createReq: &pb.CreateForecasterRequest{
+				Name:    "DROP TABLE USERS;",
+				Version: "v1",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		var err error
+		if tt.createReq != nil {
+			_, err = c.CreateForecaster(t.Context(), tt.createReq)
+		}
+		if tt.updateReq != nil {
+			_, err = c.UpdateForecaster(t.Context(), tt.updateReq)
+		}
+		if strings.Split(tt.name, " ")[0] == "Shouldn't" {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+	}
+}
+
 func TestGetForecastAtTimestamp(t *testing.T) {
 	pivotTime := time.Date(2025, 1, 5, 12, 0, 0, 0, time.UTC)
 	pgConnString := createPostgresContainer(t)
