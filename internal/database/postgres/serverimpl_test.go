@@ -236,8 +236,8 @@ func TestCreateLocation(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name        string
-		req         *pb.CreateLocationRequest
+		name string
+		req  *pb.CreateLocationRequest
 	}{
 		{
 			name: "Should create solar location",
