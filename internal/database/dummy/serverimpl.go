@@ -18,6 +18,7 @@ import (
 
 	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -62,7 +63,7 @@ type SolarData struct {
 	declinationRadians               float64
 	zenithRadians                    float64
 	azimuthRadians                   float64
-	extraterrestrialIrradianceNormal float64
+	extraterrestrialIrradianceMax    float64
 	extraterrestrialIrradiance       float64
 	sunriseTimeTst                   time.Time
 	sunsetTimeTst                    time.Time
@@ -73,9 +74,13 @@ type SolarData struct {
 	daylengthHours                   float64
 }
 
-// determineIrradience calculates various solar parameters for the given time and location,
+func (sd SolarData) normalizedIrradiance() float64 {
+	return sd.extraterrestrialIrradiance / sd.extraterrestrialIrradianceMax
+}
+
+// determineIrradiance calculates various solar parameters for the given time and location,
 // according to the geometries of the earth-sun system at the given input time.
-func determineIrradience(t time.Time, p lnglat) SolarData {
+func determineIrradiance(t time.Time, p lnglat) SolarData {
 	sd := SolarData{timeUtc: t}
 	yearDay := float64(t.YearDay()) + float64(t.Hour())/24.0 + float64(t.Minute())/1440.0
 
@@ -170,12 +175,14 @@ func determineIrradience(t time.Time, p lnglat) SolarData {
 	// at the top of the atmosphere for a given True Solar Time.
 	//
 	// It is calculated via the solar constant E_TSI - the annual average solar irradiance
-	// at the top of the atmosphere. This is modulated according to the eccentricity of the earth's orbit
-	// on the given day and the solar zenithal angle at the given time. [2](section 3.2).
+	// at the top of the atmosphere. This is then modulated according to the eccentricity of the
+	// earth's orbit on the given day to determine E_0N; which itself is subsequently modulated
+	// to take into account the solar zenithal angle at the given time to determine the irradiance.
+	// [2](section 3.2).
 	ε := 0.03344 * math.Cos(sd.angleDayRadians-0.049)
 	E_TSI := 1361.0
 	E_0N := E_TSI * (1 + ε)
-	sd.extraterrestrialIrradianceNormal = E_0N
+	sd.extraterrestrialIrradianceMax = E_0N
 	sd.extraterrestrialIrradiance = max(E_0N*math.Cos(sd.zenithRadians), 0.0)
 
 	return sd
@@ -245,18 +252,18 @@ func (d *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.Cre
 
 // GetForecastAsTimeseries implements dp.DataPlatformServiceServer.
 func (d *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, req *pb.GetForecastAsTimeseriesRequest) (*pb.GetForecastAsTimeseriesResponse, error) {
-	values := make([]*pb.GetForecastAsTimeseriesResponse_Value, 96)
-	windowStart, windowEnd := getWindow()
-	for i := range values {
-		t := windowStart.Add(time.Duration(i) * 30 * time.Minute)
-		sd := determineIrradience(t, randomUkLngLat())
-		values[i] := &pb.GetForecastAsTimeseriesResponse_Value{
+	var values []*pb.GetForecastAsTimeseriesResponse_Value
+	t := req.TimeWindow.StartTimestampUtc.AsTime()
+	for req.TimeWindow.EndTimestampUtc.AsTime().Sub(t) > 0 {
+		sd := determineIrradiance(t, randomUkLngLat())
+		values = append(values, &pb.GetForecastAsTimeseriesResponse_Value{
 			TimestampUtc:           timestamppb.New(t),
-			P50ValuePercent:        float32(sd.extraterrestrialIrradianceNormal) * 100,
-			P10ValuePercent:        float32(sd.extraterrestrialIrradianceNormal) * 95,
-			P90ValuePercent:        float32(sd.extraterrestrialIrradianceNormal) * 105,
+			P50ValuePercent:        float32(sd.normalizedIrradiance()) * 100,
+			P10ValuePercent:        float32(sd.normalizedIrradiance()) * 95,
+			P90ValuePercent:        float32(sd.normalizedIrradiance()) * 105,
 			EffectiveCapacityWatts: 150e6,
-		}
+		})
+		t = t.Add(30 * time.Minute)
 	}
 
 	return &pb.GetForecastAsTimeseriesResponse{
@@ -270,10 +277,13 @@ func (d *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 func (d *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req *pb.GetForecastAtTimestampRequest) (*pb.GetForecastAtTimestampResponse, error) {
 	values := make([]*pb.GetForecastAtTimestampResponse_Value, len(req.LocationUuids))
 	for i := range values {
-		sd := determineIrradience(req.TimestampUtc.AsTime(), randomUkLngLat())
+		ll := randomUkLngLat()
+		sd := determineIrradiance(req.TimestampUtc.AsTime(), ll)
 		values[i] = &pb.GetForecastAtTimestampResponse_Value{
 			LocationUuid:           req.LocationUuids[i],
-			ValuePercent:           float32(sd.extraterrestrialIrradianceNormal) * 100,
+			LocationName:           fmt.Sprintf("DummyLocation%d", i),
+			Latlng:                 &pb.LatLng{Latitude: float32(ll.latDegs), Longitude: float32(ll.lonDegs)},
+			ValuePercent:           float32(sd.normalizedIrradiance()) * 100,
 			EffectiveCapacityWatts: 150e6,
 		}
 	}
@@ -302,7 +312,7 @@ func (d *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 		Latlng:        &pb.LatLng{Latitude: float32(ll.latDegs), Longitude: float32(ll.lonDegs)},
 		CapacityWatts: 1280e3,
 		Metadata:      &structpb.Struct{},
-		GeometryWkb:   geometryWkb,
+GeometryWkb:   geometryWkb,
 	}, nil
 }
 
@@ -317,7 +327,7 @@ func (d *DataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb
 	for i := range locations {
 		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
 			LocationUuid: uuid.New().String(),
-			LocationName: fmt.Sprintf("DummyLocation%s", i),
+			LocationName: fmt.Sprintf("DummyLocation%d", i),
 		}
 	}
 
@@ -332,10 +342,10 @@ func (d *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 	location := lnglat{lonDegs: rand.Float64()*360 - 180, latDegs: rand.Float64()*180 - 90}
 	for i := range values {
 		t := req.TimeWindow.StartTimestampUtc.AsTime().Add(time.Duration(i) * 30 * time.Minute)
-		sd := determineIrradience(t, location)
+		sd := determineIrradiance(t, location)
 		values[i] = &pb.GetObservationsAsTimeseriesResponse_Value{
 			TimestampUtc:           timestamppb.New(t),
-			ValuePercent:           float32(sd.extraterrestrialIrradianceNormal) * 100,
+			ValuePercent:           float32(sd.normalizedIrradiance()) * 100,
 			EffectiveCapacityWatts: 150e6,
 		}
 	}
@@ -366,7 +376,44 @@ func (d *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 
 // StreamForecastData implements dp.DataPlatformServiceServer.
 func (d *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRequest, stream grpc.ServerStreamingServer[pb.StreamForecastDataResponse]) error {
-	panic("unimplemented")
+	var initializationTimestamps []time.Time
+	t := req.TimeWindow.StartTimestampUtc.AsTime()
+	for t.Sub(req.TimeWindow.EndTimestampUtc.AsTime()) < 0 {
+		initializationTimestamps = append(initializationTimestamps, t)
+		t = t.Add(1 * time.Hour)
+	}
+	horizons := make([]int, 96)
+	for i := range(horizons) {
+		horizons[i] = 30 * i
+	}
+
+	for _, it := range(initializationTimestamps) {
+		for _, fc := range(req.Forecasters) {
+			for _, h := range(horizons) {
+				tt := it.Add(time.Duration(h) * time.Minute)
+				sd := determineIrradiance(tt, randomUkLngLat())
+				var p90 *float32
+				var p10 *float32
+				p90val := float32(sd.normalizedIrradiance()) * 105
+				p10val := float32(sd.normalizedIrradiance()) * 95
+				p90 = &p90val
+				p10 = &p10val
+				err := stream.Send(&pb.StreamForecastDataResponse{
+					InitTimestamp:      timestamppb.New(it),
+					LocationUuid:       req.LocationUuid,
+					ForecasterFullname: fmt.Sprintf("%s:%s", fc.ForecasterName, fc.ForecasterVersion),
+					HorizonMins:        uint32(h),
+					P50Percent:         float32(sd.normalizedIrradiance()) * 100,
+					P10Percent:         p10,
+					P90Percent:         p90,
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // UpdateForecaster implements dp.DataPlatformServiceServer.
