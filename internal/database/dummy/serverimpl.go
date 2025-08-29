@@ -18,7 +18,6 @@ import (
 
 	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
