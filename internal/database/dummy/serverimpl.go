@@ -60,18 +60,18 @@ type SolarData struct {
 	// and positive in the afternoon.
 	hourAngleRadians float64
 	// declinationRadians is the solar declination angle in radians.
-	declinationRadians               float64
-	zenithRadians                    float64
-	azimuthRadians                   float64
-	extraterrestrialIrradianceMax    float64
-	extraterrestrialIrradiance       float64
-	sunriseTimeTst                   time.Time
-	sunsetTimeTst                    time.Time
-	sunriseTimeMst                   time.Time
-	sunsetTimeMst                    time.Time
-	sunriseTimeUtc                   time.Time
-	sunsetTimeUtc                    time.Time
-	daylengthHours                   float64
+	declinationRadians            float64
+	zenithRadians                 float64
+	azimuthRadians                float64
+	extraterrestrialIrradianceMax float64
+	extraterrestrialIrradiance    float64
+	sunriseTimeTst                time.Time
+	sunsetTimeTst                 time.Time
+	sunriseTimeMst                time.Time
+	sunsetTimeMst                 time.Time
+	sunriseTimeUtc                time.Time
+	sunsetTimeUtc                 time.Time
+	daylengthHours                float64
 }
 
 func (sd SolarData) normalizedIrradiance() float64 {
@@ -312,7 +312,7 @@ func (d *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 		Latlng:        &pb.LatLng{Latitude: float32(ll.latDegs), Longitude: float32(ll.lonDegs)},
 		CapacityWatts: 1280e3,
 		Metadata:      &structpb.Struct{},
-GeometryWkb:   geometryWkb,
+		GeometryWkb:   geometryWkb,
 	}, nil
 }
 
@@ -383,13 +383,13 @@ func (d *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 		t = t.Add(1 * time.Hour)
 	}
 	horizons := make([]int, 96)
-	for i := range(horizons) {
+	for i := range horizons {
 		horizons[i] = 30 * i
 	}
 
-	for _, it := range(initializationTimestamps) {
-		for _, fc := range(req.Forecasters) {
-			for _, h := range(horizons) {
+	for _, it := range initializationTimestamps {
+		for _, fc := range req.Forecasters {
+			for _, h := range horizons {
 				tt := it.Add(time.Duration(h) * time.Minute)
 				sd := determineIrradiance(tt, randomUkLngLat())
 				var p90 *float32

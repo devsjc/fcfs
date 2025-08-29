@@ -19,8 +19,8 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	dbpg "github.com/devsjc/fcfs/dp/internal/database/postgres"
 	dbdy "github.com/devsjc/fcfs/dp/internal/database/dummy"
+	dbpg "github.com/devsjc/fcfs/dp/internal/database/postgres"
 	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
 )
 
@@ -44,7 +44,6 @@ func main() {
 	} else {
 		log.Fatal().Str("url", databaseUrl).Msg("Unsupported DATABASE_URL format")
 	}
-
 
 	// Create the GRPC server
 	// * Add an interceptor for request validation
