@@ -48,7 +48,7 @@ func TestDetermineIrradience(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sd := determineIrradience(tt.date, tt.lngLat)
+			sd := determineIrradiance(tt.date, tt.lngLat)
 			require.Equal(t, tt.expected.sunriseTimeTst, sd.sunriseTimeTst)
 			require.Equal(t, tt.expected.sunsetTimeTst, sd.sunsetTimeTst)
 			require.Equal(t, tt.expected.daylengthHours, sd.daylengthHours)
