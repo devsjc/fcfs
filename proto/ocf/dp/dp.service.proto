@@ -26,11 +26,11 @@ service DataPlatformService {
   rpc GetObservationsAsTimeseries(GetObservationsAsTimeseriesRequest) returns (GetObservationsAsTimeseriesResponse) {}
   /* GetLocationsWithin fetches all the locations contained within a given location.
    */
-  rpc GetLocationsWithin(GetLocationsWithinRequest) returns (GetLocationsWithinResponse) {}
 
   // --- Crud ---------------------------------------------------------------------
 
   rpc GetLocation(GetLocationRequest) returns (GetLocationResponse) {}
+  rpc ListLocations(ListLocationsRequest) returns (ListLocationsResponse) {}
   rpc CreateLocation(CreateLocationRequest) returns (CreateLocationResponse) {}
 
   rpc CreateForecaster(CreateForecasterRequest) returns (CreateForecasterResponse) {}
@@ -41,6 +41,8 @@ service DataPlatformService {
 
   rpc CreateObserver(CreateObserverRequest) returns (CreateObserverResponse) {}
   rpc CreateObservations(CreateObservationsRequest) returns (CreateObservationsResponse) {}
+
+  rpc AddLocationPolicy(AddLocationPolicyRequest) returns (AddLocationPolicyResponse) {}
 
   // --- Analysis ----------------------------------------------------------------
 

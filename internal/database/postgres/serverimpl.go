@@ -327,7 +327,7 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 }
 
 // GetLocationsWithin implements dp.DataPlatformServiceServer.
-func (s *DataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb.GetLocationsWithinRequest) (*pb.GetLocationsWithinResponse, error) {
+func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.ListLocationsRequest) (*pb.ListLocationsResponse, error) {
 	l := log.With().Str("method", "GetLocationsWithin").Logger()
 
 	// Establish a transaction with the database
@@ -339,27 +339,32 @@ func (s *DataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb
 	defer tx.Rollback(ctx)
 	querier := db.New(tx)
 
-	locationUuid, err := uuid.Parse(req.LocationUuid)
-	if err != nil {
-		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
-		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
-	}
-	lwParams := db.GetLocationsWithinParams{LocationUuid: locationUuid}
-	dbLocations, err := querier.GetLocationsWithin(ctx, lwParams)
-	if err != nil {
-		l.Err(err).Msgf("querier.GetLocationIdsWithin(%+v)", lwParams)
-		return nil, status.Errorf(
-			codes.NotFound,
-			"No locations found within the specified location '%s'", req.LocationUuid,
-		)
-	}
-
-	locations := make([]*pb.GetLocationsWithinResponse_LocationData, len(dbLocations))
-	for i := range dbLocations {
-		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
-			LocationUuid: dbLocations[i].LocationUuid.String(),
-			LocationName: strings.ToUpper(dbLocations[i].LocationName),
+	if req.EnclosingLocationUuid != nil {
+		// Only get the locations that are contained within a specific outer location
+		locationUuid, err := uuid.Parse(*req.EnclosingLocationUuid)
+		if err != nil {
+			l.Err(err).Msgf("uuid.Parse(%s)", *req.EnclosingLocationUuid)
+			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 		}
+		lwParams := db.GetLocationsWithinParams{LocationUuid: locationUuid}
+		dbLocations, err := querier.GetLocationsWithin(ctx, lwParams)
+		if err != nil {
+			l.Err(err).Msgf("querier.GetLocationIdsWithin(%+v)", lwParams)
+			return nil, status.Errorf(
+				codes.NotFound,
+				"No locations found within the specified location '%s'", *req.EnclosingLocationUuid,
+			)
+		}
+
+		locations := make([]*pb.ListLocationsResponse_LocationData, len(dbLocations))
+		for i := range dbLocations {
+			locations[i] = &pb.ListLocationsResponse_LocationData{
+				LocationUuid: dbLocations[i].LocationUuid.String(),
+				LocationName: strings.ToUpper(dbLocations[i].LocationName),
+			}
+		}
+	} else {
+		// List all the locations
 	}
 
 	return &pb.GetLocationsWithinResponse{

@@ -421,19 +421,20 @@ message GetWeekAverageDeltasResponse {
   ];
 }
 
-message GetLocationsWithinRequest {
-  string location_uuid = 1 [
+message ListLocationsRequest {
+  EnergySource energy_source = 1;
+  optional string enclosing_location_uuid = 2 [
     (buf.validate.field).string.uuid = true
   ];
 }
 
-message GetLocationsWithinResponse {
+message ListLocationsResponse {
   message LocationData {
     string location_uuid = 1;
     string location_name = 2;
   }
 
-  repeated GetLocationsWithinResponse.LocationData locations = 1;
+  repeated ListLocationsResponse.LocationData locations = 1;
 }
 
 message StreamForecastDataRequest {
@@ -461,3 +462,17 @@ message StreamForecastDataResponse {
   optional float p90_percent = 7;
 }
 
+message AddLocationPolicyRequest {
+  string location_uuid = 1 [
+    (buf.validate.field).string.uuid = true
+  ];
+  string role_name = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 64
+  ];
+  string service_account = 3 [
+    (buf.validate.field).string.email = true
+  ];
+}
+
+message AddLocationPolicyResponse {}
