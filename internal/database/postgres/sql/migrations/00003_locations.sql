@@ -142,6 +142,34 @@ FROM loc.sources_history;
 CREATE UNIQUE INDEX ON loc.sources_mv (location_uuid, source_type_id, sys_period);
 CREATE INDEX ON loc.sources_mv USING GIST (sys_period);
 
+/*- Triggers --------------------------------------------------------------------------------*/
+
+-- Trigger to ensure new locations are owned by the writing service account
+CREATE OR REPLACE FUNCTION loc.set_location_owner()
+RETURNS TRIGGER AS $$
+DECLARE
+    current_sa UUID;
+BEGIN
+    current_sa := current_setting('app.current_service_account')::UUID;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'app.current_service_account must be set to create a location';
+    END IF;
+    INSERT INTO iam.location_policies (location_uuid, role_id, service_account)
+    VALUES (
+        NEW.location_uuid,
+        (SELECT role_id FROM iam.roles WHERE role_name = 'OWNER'), 
+        current_setting('app.current_service_account')::UUID
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER set_location_owner
+AFTER INSERT ON loc.locations
+FOR EACH ROW EXECUTE FUNCTION loc.set_location_owner();
+
+
 -- +goose Down
+DROP TRIGGER IF EXISTS set_location_owner ON loc.locations;
 DROP SCHEMA loc CASCADE;
 

@@ -23,6 +23,7 @@ INSERT INTO loc.locations AS l (
 /* GetLocationGeoJSON returns a GeoJSON FeatureCollection for the given locations.
  * The simplification level can be adjusted via the `simplification_level` argument.
  */
+-- TODO: IAM
 SELECT
     JSON_BUILD_OBJECT(
         'type', 'FeatureCollection',
@@ -39,9 +40,23 @@ FROM (
         lt.location_type_name,
         ST_SIMPLIFYPRESERVETOPOLOGY(l.geom, sqlc.arg(simplification_level)::real) AS geom_simple
     FROM loc.locations AS l
-    JOIN loc.location_types AS lt USING (location_type_id)
+    INNER JOIN loc.location_types AS lt USING (location_type_id)
     WHERE l.location_uuid = ANY(sqlc.arg(location_uuids)::uuid [])
 ) AS sl;
+
+-- name: GetLocations :many
+/* GetLocations returns all locations that the current service account has access to.
+ */
+SELECT
+    l.location_uuid,
+    l.location_name,
+    ST_Y(l.centroid)::real AS latitude,
+    ST_X(l.centroid)::real AS longitude
+FROM loc.locations AS l
+INNER JOIN iam.location_policies AS lp USING (location_uuid)
+WHERE lp.service_account = CURRENT_SETTING('app.current_service_account')::text
+    AND lp.role_id IN (1, 2)
+ORDER BY l.location_name;
 
 -- name: GetLocationsWithin :many
 /* GetLocationIdsWithin returns all locations that are within the geometry of the given location.
@@ -52,12 +67,15 @@ SELECT
     ST_Y(l.centroid)::real AS latitude,
     ST_X(l.centroid)::real AS longitude
 FROM loc.locations AS l
+INNER JOIN iam.location_policies AS lp USING (location_uuid)
 INNER JOIN
     loc.locations AS l_outer ON ST_WITHIN(
         l.geom,
         l_outer.geom
     )
-WHERE l_outer.location_uuid = $1;
+WHERE lp.service_account = CURRENT_SETTING('app.current_service_account')::text
+    AND lp.role_id IN (1, 2)
+    AND l_outer.location_uuid = $1;
 
 /*- Queries for the sources table -------------------------------------*/
 
@@ -72,16 +90,19 @@ SELECT
     l.location_name,
     ST_X(l.centroid)::real AS longitude,
     ST_Y(l.centroid)::real AS latitude
-FROM loc.sources_mv AS s
+FROM iam.location_policies AS lp
+INNER JOIN loc.sources_mv AS s USING (location_uuid)
 INNER JOIN loc.locations AS l USING (location_uuid)
 INNER JOIN loc.source_types AS st USING (source_type_id)
 WHERE
-    l.location_uuid = $1
+    lp.service_account = CURRENT_SETTING('app.current_service_account')::text
+    AND lp.role_id IN (1, 2)
+    AND lp.location_uuid = $1
     AND st.source_type_name = $2
     AND s.sys_period @> sqlc.arg(at_timestamp_utc)::timestamp;
 
 -- name: ListSourcesAtTimestamp :many
-/* ListSources returns all sources for a given location name and source type.
+/* ListSourcesAtTimestamp returns all sources for a given set of location uuids and source type.
  * If just querying for one source, it will be faster to use GetSource.
  */
 SELECT
@@ -94,11 +115,14 @@ SELECT
     l.location_name,
     ST_X(l.centroid)::real AS longitude,
     ST_Y(l.centroid)::real AS latitude
-FROM loc.sources_mv AS s
+FROM iam.location_policies AS lp
+INNER JOIN loc.sources_mv AS s USING (location_uuid)
 INNER JOIN loc.locations AS l USING (location_uuid)
 INNER JOIN loc.source_types AS st USING (source_type_id)
 WHERE
-    l.location_uuid = ANY(sqlc.arg(location_uuids)::uuid [])
+    lp.source_account = CURRENT_SETTING('app.current_service_account')::text
+    AND lp.role_id IN (1, 2)
+    AND lp.location_uuid = ANY(sqlc.arg(location_uuids)::uuid [])
     AND st.source_type_name = $1
     AND s.sys_period @> sqlc.arg(at_timestamp_utc)::timestamp;
 
@@ -112,13 +136,17 @@ INSERT INTO loc.sources_history (
     valid_from_utc,
     metadata
 ) SELECT
-    $1,
+    lp.location_uuid,
     $2,
     $3,
     $4,
     $5,
     $6,
     CASE WHEN sqlc.arg(metadata)::jsonb = '{}'::jsonb THEN NULL ELSE sqlc.arg(metadata)::jsonb END
+FROM iam.location_policies lp
+WHERE lp.service_account = CURRENT_SETTING('app.current_service_account')::text
+    AND lp.role_id = 1 -- Have to be owner to create a source
+    AND lp.location_uuid = $1
 RETURNING location_uuid, capacity, capacity_unit_prefix_factor;
 
 -- name: UpdateSourcesMaterializedView :exec
@@ -133,15 +161,18 @@ INSERT INTO loc.sources_history (
     capacity_limit_sip,
     valid_from_utc,
     metadata
-) VALUES (
-    $1,
+) SELECT
+    lp.location_uuid,
     $2,
     0,
     0,
     NULL,
     CURRENT_TIMESTAMP,
     NULL
-);
+FROM iam.location_policies lp
+WHERE lp.service_account = CURRENT_SETTING('app.current_service_account')::text
+    AND lp.role_id = 1 -- Have to be owner to decommission a source
+    AND lp.location_uuid = $1;
 
 -- name: GetSourceHistoryTimeseries :many
 /* GetSourceHistoryTimeseries shows all the historical records for a given location and source type. */
@@ -151,5 +182,9 @@ SELECT
     sh.capacity_limit_sip,
     sh.valid_from_utc
 FROM loc.sources_history AS sh
-WHERE sh.location_uuid = $1 AND sh.source_type_id = $2
+INNER JOIN iam.location_policies lp USING (location_uuid)
+WHERE lp.service_account = CURRENT_SETTING('app.current_service_account')::text
+    AND lp.role_id IN (1, 2) -- Have to be owner or viewer to see source history
+    AND lp.location_uuid = $1
+    AND sh.source_type_id = $2
 ORDER BY valid_from_utc DESC;

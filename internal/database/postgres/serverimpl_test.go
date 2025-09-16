@@ -711,11 +711,13 @@ func TestGetLocationsWithin(t *testing.T) {
 		inner_uuids[i] = sResp.LocationUuid
 	}
 
-	result, err := c.GetLocationsWithin(t.Context(), &pb.GetLocationsWithinRequest{
-		LocationUuid: resp.LocationUuid,
+	result, err := c.ListLocations(t.Context(), &pb.ListLocationsRequest{
+		EnergySource:          pb.EnergySource_SOLAR,
+		EnclosingLocationUuid: &resp.LocationUuid,
+		UserRole:              "",
 	})
 	require.NoError(t, err)
-	expected := []*pb.GetLocationsWithinResponse_LocationData{
+	expected := []*pb.ListLocationsResponse_LocationData{
 		{LocationUuid: resp.LocationUuid, LocationName: "GSP_OUTER_BOX"},
 		{LocationUuid: inner_uuids[0], LocationName: "SITE_0"},
 		{LocationUuid: inner_uuids[1], LocationName: "SITE_1"},

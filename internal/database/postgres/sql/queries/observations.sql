@@ -41,10 +41,13 @@ SELECT
         sh.capacity_limit_sip::real * sh.capacity / 30000.0, sh.capacity::real
     )::real AS effective_capacity,
     sh.capacity_unit_prefix_factor
-FROM obs.observed_generation_values AS og
-JOIN loc.sources_mv AS sh USING (location_uuid, source_type_id)
+FROM iam.location_policies AS lp
+INNER JOIN loc.sources_mv AS sh USING (location_uuid, source_type_id)
+INNER JOIN obs.observed_generation_values AS og USING (location_uuid)
 WHERE
-    og.location_uuid = $1
+    lp.service_account = CURRENT_SETTING('app.current_service_account')
+    AND lp.role_id IN (1, 2)
+    AND lp.location_uuid = $1
     AND og.source_type_id = $2
     AND og.observer_id = $3
     AND og.observation_timestamp_utc BETWEEN sqlc.arg(start_time_utc)::timestamp AND sqlc.arg(end_time_utc)::timestamp

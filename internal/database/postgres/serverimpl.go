@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -138,9 +139,30 @@ func NewPostgresDataPlatformServerImpl(connString string) *DataPlatformServerImp
 	return &DataPlatformServerImpl{pool: pool}
 }
 
+func (s *DataPlatformServerImpl) setupTransaction(ctx context.Context, userRole string) (pgx.Tx, db.Querier, error) {
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("q.pool.Begin(): %w", err)
+	}
+	querier := db.New(tx)
+
+	// Set the current user role, if desired
+	if len(userRole) > 0 {
+		ssaParams := db.SetServiceAccountForTransactionParams{Column1: userRole}
+		err = querier.SetServiceAccountForTransaction(ctx, ssaParams)
+		if err != nil {
+			return tx, nil, fmt.Errorf("querier.SetServiceAccountForTransaction(%+v): %w", ssaParams, err)
+		}
+	}
+
+	return tx, querier, nil
+}
+
 // --- Server Method Implementations --------------------------------------------------------------
 // GetLatestForecasts implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetLatestForecasts(context.Context, *pb.GetLatestForecastsRequest) (*pb.GetLatestForecastsResponse, error) {
+	_ = log.With().Str("method", "GetLatestForecasts").Logger()
 	panic("unimplemented")
 }
 
@@ -148,14 +170,12 @@ func (s *DataPlatformServerImpl) GetLatestForecasts(context.Context, *pb.GetLate
 func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.CreateForecasterRequest) (*pb.CreateForecasterResponse, error) {
 	l := log.With().Str("method", "CreateForecaster").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, "")
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
+		l.Err(err).Msg("setupTransaction()")
 		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Check if the predictor already exists and error out if so
 	gpParams := db.GetPredictorElseLatestParams{
@@ -192,14 +212,12 @@ func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.C
 func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.UpdateForecasterRequest) (*pb.UpdateForecasterResponse, error) {
 	l := log.With().Str("method", "UpdateForecaster").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, "")
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
+		l.Err(err).Msg("setupTransaction()")
 		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Check if the predictor already exists and error out if not
 	gpParams := db.GetPredictorElseLatestParams{
@@ -235,14 +253,12 @@ func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.U
 func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRequest, stream grpc.ServerStreamingServer[pb.StreamForecastDataResponse]) error {
 	l := log.With().Str("method", "StreamForecastData").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(stream.Context())
+	tx, querier, err := s.setupTransaction(stream.Context(), "")
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(stream.Context())
-	querier := db.New(tx)
 
 	locationUuid, err := uuid.Parse(req.LocationUuid)
 	if err != nil {
@@ -328,16 +344,24 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 
 // GetLocationsWithin implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.ListLocationsRequest) (*pb.ListLocationsResponse, error) {
-	l := log.With().Str("method", "GetLocationsWithin").Logger()
+	l := log.With().Str("method", "ListLocations").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
+
+	// Set the current user role
+	ssaParams := db.SetServiceAccountForTransactionParams{Column1: req.UserRole}
+	err = querier.SetServiceAccountForTransaction(ctx, ssaParams)
+	if err != nil {
+		l.Err(err).Msgf("querier.SetServiceAccountForTransaction(%+v)", ssaParams)
+		return nil, status.Error(codes.Unauthenticated, "Must be authenticated to access forecast data.")
+	}
+
+	var locations []*pb.ListLocationsResponse_LocationData
 
 	if req.EnclosingLocationUuid != nil {
 		// Only get the locations that are contained within a specific outer location
@@ -356,18 +380,28 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 			)
 		}
 
-		locations := make([]*pb.ListLocationsResponse_LocationData, len(dbLocations))
 		for i := range dbLocations {
-			locations[i] = &pb.ListLocationsResponse_LocationData{
+			locations = append(locations, &pb.ListLocationsResponse_LocationData{
 				LocationUuid: dbLocations[i].LocationUuid.String(),
 				LocationName: strings.ToUpper(dbLocations[i].LocationName),
-			}
+			})
 		}
 	} else {
 		// List all the locations
+		dbLocations, err := querier.GetLocations(ctx)
+		if err != nil {
+			l.Err(err).Msg("querier.GetLocations()")
+			return nil, status.Errorf(codes.Internal, "No locations found")
+		}
+		for i := range dbLocations {
+			locations = append(locations, &pb.ListLocationsResponse_LocationData{
+				LocationUuid: dbLocations[i].LocationUuid.String(),
+				LocationName: strings.ToUpper(dbLocations[i].LocationName),
+			})
+		}
 	}
 
-	return &pb.GetLocationsWithinResponse{
+	return &pb.ListLocationsResponse{
 		Locations: locations,
 	}, tx.Commit(ctx)
 }
@@ -376,14 +410,12 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *pb.GetWeekAverageDeltasRequest) (*pb.GetWeekAverageDeltasResponse, error) {
 	l := log.With().Str("method", "GetWeekAverageDeltas").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, "")
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the location and source
 	locationUuid, err := uuid.Parse(req.LocationUuid)
@@ -467,14 +499,12 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context, req *pb.GetObservationsAsTimeseriesRequest) (*pb.GetObservationsAsTimeseriesResponse, error) {
 	l := log.With().Str("method", "GetObservationsAsTimeseries").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the location and source
 	locationUuid, err := uuid.Parse(req.LocationUuid)
@@ -546,14 +576,12 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb.CreateObservationsRequest) (*pb.CreateObservationsResponse, error) {
 	l := log.With().Str("method", "CreateObservations").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the location and source
 	locationUuid, err := uuid.Parse(req.LocationUuid)
@@ -621,15 +649,13 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 // CreateObserver implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.CreateObserverRequest) (*pb.CreateObserverResponse, error) {
 	l := log.With().Str("method", "CreateObserver").Logger()
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+
+	tx, querier, err := s.setupTransaction(ctx, "")
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-
-	querier := db.New(tx)
 
 	obParams := db.CreateObserverParams{ObserverName: req.Name}
 	dbObserverId, err := querier.CreateObserver(ctx, obParams)
@@ -645,14 +671,12 @@ func (s *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.Cre
 func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req *pb.GetForecastAtTimestampRequest) (*pb.GetForecastAtTimestampResponse, error) {
 	l := log.With().Str("method", "GetForecastAtTimestamp").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the relevant predictor
 	params := db.GetPredictorElseLatestParams{
@@ -751,14 +775,12 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLocationRequest) (*pb.GetLocationResponse, error) {
 	l := log.With().Str("method", "GetLocation").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
 	if err != nil {
-		l.Err(err).Msg("failed to begin transaction")
+		l.Err(err).Msg("setupTransaction()")
 		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the location and source
 	locationUuid, err := uuid.Parse(req.LocationUuid)
@@ -817,14 +839,12 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		return nil, status.Error(codes.InvalidArgument, "No forecast values provided")
 	}
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, "")
 	if err != nil {
-		l.Err(err).Msg("failed to begin transaction")
+		l.Err(err).Msg("setupTransaction()")
 		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the location and source
 	locationUuid, err := uuid.Parse(req.Forecast.LocationUuid)
@@ -905,14 +925,12 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.CreateLocationRequest) (*pb.CreateLocationResponse, error) {
 	l := log.With().Str("method", "CreateLocation").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
+		l.Err(err).Msg("setupTransaction()")
 		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Create a new location
 	params := db.CreateLocationParams{
@@ -980,14 +998,12 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req *pb.GetLocationsAsGeoJSONRequest) (*pb.GetLocationsAsGeoJSONResponse, error) {
 	l := log.With().Str("method", "GetLocationsAsGeoJSON").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, "") // TODO: ROLE
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
+		l.Err(err).Msg("setupTransaction()")
 		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the locations as GeoJSON
 	var simplificationLevel float32
@@ -1021,14 +1037,12 @@ func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req 
 func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, req *pb.GetForecastAsTimeseriesRequest) (*pb.GetForecastAsTimeseriesResponse, error) {
 	l := log.With().Str("method", "GetForecastAsTimeseries").Logger()
 
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
+	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
 	if err != nil {
-		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Errorf(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
 	}
 	defer tx.Rollback(ctx)
-	querier := db.New(tx)
 
 	// Get the location and source
 	locationUuid, err := uuid.Parse(req.LocationUuid)
@@ -1119,6 +1133,42 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 		LocationName: strings.ToUpper(dbSource.LocationName),
 		Values:       values,
 	}, tx.Commit(ctx)
+}
+
+// AddLocationPolicy implements dp.DataPlatformServiceServer.
+func (s *DataPlatformServerImpl) AddLocationPolicy(ctx context.Context, req *pb.AddLocationPolicyRequest) (*pb.AddLocationPolicyResponse, error) {
+	l := log.With().Str("method", "AddLocationPolicy").Logger()
+
+	tx, querier, err := s.setupTransaction(ctx, "")
+	if err != nil {
+		l.Err(err).Msg("setupTransaction()")
+		return nil, status.Error(codes.Internal, "Encountered database connection error")
+	}
+	defer tx.Rollback(ctx)
+
+	// Parse the location UUID
+	locationUuids := make([]uuid.UUID, len(req.LocationUuids))
+	for i, u := range req.LocationUuids {
+		locationUuid, err := uuid.Parse(u)
+		if err != nil {
+			l.Err(err).Msgf("uuid.Parse(%s)", u)
+			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
+		}
+		locationUuids[i] = locationUuid
+	}
+
+	pParams := db.CreateLocationPolicesParams{
+		RoleName:       req.Scope,
+		ServiceAccount: req.UserRole,
+		LocationUuids:  locationUuids,
+	}
+	err = querier.CreateLocationPolices(ctx, pParams)
+	if err != nil {
+		l.Err(err).Msgf("querier.CreateLocationPolices(%+v)", pParams)
+		return nil, status.Error(codes.Internal, "Failed to create location policy")
+	}
+
+	return &pb.AddLocationPolicyResponse{}, tx.Commit(ctx)
 }
 
 // Compile-time check to ensure the interface is implemented fully
