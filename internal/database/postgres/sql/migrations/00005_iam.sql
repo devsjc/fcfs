@@ -7,7 +7,7 @@
  * roles and policies for user tokens and resources in the database.
  *
  * Roles are stored in a lookup table, and are used to determine the allowable
- * actions a user can take on a resource. These roles are then applied to users and 
+ * actions a user can take on a resource. These roles are then applied to users and
  * resources via policies. These policies are simply matchings between service accounts,
  * resource ids, and roles.
  */
@@ -33,7 +33,12 @@ INSERT INTO iam.roles (role_name) VALUES ('OWNER'), ('VIEWER');
 
 /*- Tables ----------------------------------------------------------------------------------*/
 
--- Pivot table to define location policies (match service accounts with locations and roles)
+/* 
+ * Pivot table to define location policies.
+ * These policies match service accounts to roles for specific locations. A service account is a
+ * representation of the user or organisation that is accessing the resource.
+ * A service account can only have one role for per location (can't be an OWNER *and* a VIEWER).
+ */
 CREATE TABLE iam.location_policies (
     role_id SMALLINT NOT NULL
         REFERENCES iam.roles(role_id)
@@ -43,40 +48,41 @@ CREATE TABLE iam.location_policies (
         REFERENCES loc.locations(location_uuid)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
-    -- A token representing a service account (user/organization)
     service_account TEXT NOT NULL,
     CONSTRAINT service_account_format_check CHECK ( LENGTH(service_account) > 0 ),
     PRIMARY KEY (service_account, role_id, location_uuid),
-    -- Can't have more than one role for a given service account and location
     UNIQUE (service_account, location_uuid)
 );
 
 /*- Functions -------------------------------------------------------------------------------*/
 
--- Function to check if a location policy exists for the current service account
-CREATE OR REPLACE FUNCTION iam.location_policy_exists(
-    policy_location_uuid UUID,
-    policy_role_name TEXT
-) RETURNS BOOLEAN AS $$
+-- +goose StatementBegin
+-- Trigger to ensure new locations are owned by the writing service account
+CREATE OR REPLACE FUNCTION loc.set_location_owner()
+RETURNS TRIGGER AS $$
 DECLARE
-    current_service_account TEXT;
+    current_sa UUID;
 BEGIN
-    current_service_account := current_setting('app.current_service_account')::TEXT;
+    BEGIN
+        current_sa := current_setting('app.current_service_account')::UUID;
     EXCEPTION WHEN OTHERS THEN
-        RAISE EXCEPTION 'app.current_service_account is not set';
+        RAISE EXCEPTION 'app.current_service_account must be set to create a location';
     END;
-RETURN EXISTS (
-        SELECT 1 FROM iam.location_policies AS lp
-        WHERE
-            lp.location_uuid = policy_location_uuid
-            AND lp.service_account = current_service_account
-            AND lp.role_id = (
-                SELECT role_id FROM iam.roles WHERE role_name = UPPER(policy_role_name)
-            )
+    INSERT INTO iam.location_policies (location_uuid, role_id, service_account)
+    VALUES (
+        NEW.location_uuid,
+        (SELECT role_id FROM iam.roles WHERE role_name = 'OWNER'), 
+        current_sa
     );
+    RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
+CREATE OR REPLACE TRIGGER set_location_owner
+AFTER INSERT ON loc.locations
+FOR EACH ROW EXECUTE FUNCTION loc.set_location_owner();
 
 -- +goose Down
+DROP TRIGGER IF EXISTS set_location_owner ON loc.locations;
 DROP SCHEMA iam CASCADE;
