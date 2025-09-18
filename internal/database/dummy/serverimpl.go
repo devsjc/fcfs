@@ -54,7 +54,7 @@ type SolarData struct {
 	// angleDayRadians is the angle formed by the sun/earth line
 	// on the given day of the year, and on the 1st of January of the same year.
 	angleDayRadians float64
-	// hourAngleRadians is the angluar arc definiting the position of the sun in it's
+	// hourAngleRadians is the angular arc definiting the position of the sun in it's
 	// apparent path across the sky. It is zero at solar noon, negative in the morning,
 	// and positive in the afternoon.
 	hourAngleRadians float64
@@ -127,6 +127,7 @@ func determineIrradiance(t time.Time, p lnglat) SolarData {
 		(math.Sin(p.latRads()) * math.Sin(sd.declinationRadians)) +
 			(math.Cos(p.latRads()) * math.Cos(sd.declinationRadians) * math.Cos(sd.hourAngleRadians)),
 	)
+
 	theta_prime := (math.Sin(sd.declinationRadians)*math.Cos(p.latRads()) -
 		math.Cos(sd.declinationRadians)*math.Sin(p.latRads())*math.Cos(sd.hourAngleRadians)) / math.Sin(sd.zenithRadians)
 	if math.Sin(sd.hourAngleRadians) <= 0 { // Morning
@@ -140,6 +141,7 @@ func determineIrradiance(t time.Time, p lnglat) SolarData {
 	// These are calculated based on finding the hour angle at sunset,
 	// when the solar declination is 0 and the solar zenithal angle is pi/2.
 	var sunsetHourAngle float64
+
 	switch {
 	case p.latRads() == math.Pi/2 && sd.declinationRadians > 0:
 		sunsetHourAngle = math.Pi
@@ -158,6 +160,7 @@ func determineIrradiance(t time.Time, p lnglat) SolarData {
 		// it should be acos, but the book has cos printed.
 		sunsetHourAngle = math.Acos(-1 * math.Tan(p.latRads()) * math.Tan(sd.declinationRadians))
 	}
+
 	sunriseHour := 12.0 * (1.0 - (sunsetHourAngle / math.Pi))
 	sunsetHour := 12.0 * (1.0 + (sunsetHourAngle / math.Pi))
 	sd.sunriseTimeTst = sd.timeTst.Truncate(24 * time.Hour).Add(time.Duration(sunriseHour * float64(time.Hour)))
@@ -252,6 +255,7 @@ func (d *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.Cre
 // GetForecastAsTimeseries implements dp.DataPlatformServiceServer.
 func (d *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, req *pb.GetForecastAsTimeseriesRequest) (*pb.GetForecastAsTimeseriesResponse, error) {
 	var values []*pb.GetForecastAsTimeseriesResponse_Value
+
 	t := req.TimeWindow.StartTimestampUtc.AsTime()
 	for req.TimeWindow.EndTimestampUtc.AsTime().Sub(t) > 0 {
 		sd := determineIrradiance(t, randomUkLngLat())
@@ -286,6 +290,7 @@ func (d *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 			EffectiveCapacityWatts: 150e6,
 		}
 	}
+
 	return &pb.GetForecastAtTimestampResponse{
 		TimestampUtc: req.TimestampUtc,
 		Values:       values,
@@ -303,6 +308,7 @@ func (d *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 	if req.IncludeGeometry {
 		geometryWkb = []byte("POLYGON((30 10, 40 40, 20 40, 10 20, 30 10))")
 	}
+
 	ll := randomUkLngLat()
 
 	return &pb.GetLocationResponse{
@@ -339,6 +345,7 @@ func (d *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 func (d *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context, req *pb.GetObservationsAsTimeseriesRequest) (*pb.GetObservationsAsTimeseriesResponse, error) {
 	values := make([]*pb.GetObservationsAsTimeseriesResponse_Value, 96)
 	location := lnglat{lonDegs: rand.Float64()*360 - 180, latDegs: rand.Float64()*180 - 90}
+
 	for i := range values {
 		t := req.TimeWindow.StartTimestampUtc.AsTime().Add(time.Duration(i) * 30 * time.Minute)
 		sd := determineIrradiance(t, location)
@@ -376,11 +383,13 @@ func (d *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 // StreamForecastData implements dp.DataPlatformServiceServer.
 func (d *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRequest, stream grpc.ServerStreamingServer[pb.StreamForecastDataResponse]) error {
 	var initializationTimestamps []time.Time
+
 	t := req.TimeWindow.StartTimestampUtc.AsTime()
 	for t.Sub(req.TimeWindow.EndTimestampUtc.AsTime()) < 0 {
 		initializationTimestamps = append(initializationTimestamps, t)
 		t = t.Add(1 * time.Hour)
 	}
+
 	horizons := make([]int, 96)
 	for i := range horizons {
 		horizons[i] = 30 * i
@@ -391,12 +400,17 @@ func (d *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 			for _, h := range horizons {
 				tt := it.Add(time.Duration(h) * time.Minute)
 				sd := determineIrradiance(tt, randomUkLngLat())
-				var p90 *float32
-				var p10 *float32
+
+				var (
+					p90 *float32
+					p10 *float32
+				)
+
 				p90val := float32(sd.normalizedIrradiance()) * 105
 				p10val := float32(sd.normalizedIrradiance()) * 95
 				p90 = &p90val
 				p10 = &p10val
+
 				err := stream.Send(&pb.StreamForecastDataResponse{
 					InitTimestamp:      timestamppb.New(it),
 					LocationUuid:       req.LocationUuid,
@@ -412,6 +426,7 @@ func (d *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -429,5 +444,5 @@ func (d *DataPlatformServerImpl) AddLocationPolicy(context.Context, *pb.AddLocat
 	return &pb.AddLocationPolicyResponse{}, nil
 }
 
-// Compile-time check to ensure the interface is implemented fully
+// Compile-time check to ensure the interface is implemented fully.
 var _ pb.DataPlatformServiceServer = (*DataPlatformServerImpl)(nil)

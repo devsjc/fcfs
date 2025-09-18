@@ -1,7 +1,7 @@
 package dummy
 
 import (
-	// "os"
+	// "os".
 	"testing"
 	"time"
 
@@ -10,7 +10,7 @@ import (
 	// "gonum.org/v1/plot/plotter"
 	// "gonum.org/v1/plot/vg"
 	// "gonum.org/v1/plot/vg/draw"
-	// "gonum.org/v1/plot/vg/vgimg"
+	// "gonum.org/v1/plot/vg/vgimg".
 )
 
 func TestDetermineIrradience(t *testing.T) {

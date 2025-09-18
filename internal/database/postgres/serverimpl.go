@@ -46,12 +46,14 @@ func capacityToValueMultiplier(capacityWatts uint64) (int16, int16, error) {
 	if capacityWatts < 0 {
 		return 0, 0, fmt.Errorf("input capacity %d cannot be negative", capacityWatts)
 	}
+
 	if capacityWatts == 0 {
 		return 0, 0, nil
 	}
 
 	currentValue := capacityWatts
 	exponent := int16(0)
+
 	const maxExponent = 18 // Limit to ExaWatts - current generation is ~20PW for the whole world!
 
 	// Keep scaling up as long as the value exceeds the int16 limit
@@ -86,7 +88,9 @@ func capacityToValueMultiplier(capacityWatts uint64) (int16, int16, error) {
 			currentValue, math.MaxInt16, exponent,
 		)
 	}
+
 	resultValue := int16(currentValue)
+
 	return resultValue, exponent, nil
 }
 
@@ -100,8 +104,9 @@ func timeWindowToPgWindow(window *pb.TimeWindow) (start pgtype.Timestamp, end pg
 		start = pgtype.Timestamp{Time: window.StartTimestampUtc.AsTime(), Valid: true}
 		end = pgtype.Timestamp{Time: window.EndTimestampUtc.AsTime(), Valid: true}
 	} else {
-		err = fmt.Errorf("Invalid time window: both start and end timestamps must be provided or neither")
+		err = errors.New("Invalid time window: both start and end timestamps must be provided or neither")
 	}
+
 	return start, end, err
 }
 
@@ -126,10 +131,12 @@ func NewPostgresDataPlatformServerImpl(connString string) *DataPlatformServerImp
 	goose.SetLogger(goose.NopLogger())
 	_ = goose.SetDialect("postgres")
 	db := stdlib.OpenDBFromPool(pool)
+
 	err = goose.Up(db, "sql/migrations")
 	if err != nil {
 		log.Fatal().Msgf("Unable to apply migrations: %v", err)
 	}
+
 	err = db.Close()
 	if err != nil {
 		log.Fatal().Msgf("Unable to close database connection: %v", err)
@@ -142,6 +149,7 @@ func NewPostgresDataPlatformServerImpl(connString string) *DataPlatformServerImp
 // GetLatestForecasts implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetLatestForecasts(context.Context, *pb.GetLatestForecastsRequest) (*pb.GetLatestForecastsResponse, error) {
 	_ = log.With().Str("method", "GetLatestForecasts").Logger()
+
 	panic("unimplemented")
 }
 
@@ -155,6 +163,7 @@ func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.C
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -163,25 +172,29 @@ func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.C
 		PredictorName:    req.Name,
 		PredictorVersion: req.Version,
 	}
+
 	dbPredictor, err := querier.GetPredictorElseLatest(ctx, gpParams)
 	if err == nil {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
-			"Forecaster with name '%s' already exists (at version '%s'). Use the update method to add a new version, or create a non-exisitng forecaster.",
+			"Forecaster with name '%s' already exists (at version '%s'). Use the update method to add a new version, or create a non-existing forecaster.",
 			dbPredictor.PredictorName, dbPredictor.PredictorVersion,
 		)
 	}
 
 	// Create a new predictor
 	params := db.CreatePredictorParams{PredictorName: req.Name, PredictorVersion: req.Version}
+
 	forecasterID, err := querier.CreatePredictor(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreatePredictor(%+v)", params)
+
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"Invalid forecaster. Ensure name and version are not empty and are lowercase",
 		)
 	}
+
 	l.Debug().Msgf("Created forecaster with ID %d", forecasterID)
 
 	return &pb.CreateForecasterResponse{
@@ -199,6 +212,7 @@ func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.U
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -206,6 +220,7 @@ func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.U
 	gpParams := db.GetPredictorElseLatestParams{
 		PredictorName: req.Name,
 	}
+
 	dbPredictor, err := querier.GetPredictorElseLatest(ctx, gpParams)
 	if err != nil {
 		return nil, status.Errorf(
@@ -217,14 +232,17 @@ func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.U
 
 	// Update the forecaster
 	params := db.CreatePredictorParams{PredictorName: dbPredictor.PredictorName, PredictorVersion: req.NewVersion}
+
 	forecasterID, err := querier.CreatePredictor(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreatePredictor(%+v)", params)
+
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"Invalid forecaster. Ensure name and version are not empty and are lowercase",
 		)
 	}
+
 	l.Debug().Msgf("Created forecaster with ID %d", forecasterID)
 
 	return &pb.UpdateForecasterResponse{
@@ -240,8 +258,9 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 	tx, err := s.pool.Begin(stream.Context())
 	if err != nil {
 		l.Err(err).Msg("q.pool.Begin()")
-		return status.Error(codes.Internal, "Error communicating with backend"	)
+		return status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(stream.Context())
 
@@ -256,9 +275,11 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUtc.AsTime(), Valid: true},
 	}
+
 	dbSource, err := querier.GetLocationSourceAtTimestamp(stream.Context(), srcParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetLocationSourceAtTimestamp(%+v)", srcParams)
+
 		return status.Errorf(
 			codes.NotFound, "No location found for uuid %s with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -275,23 +296,28 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 			StartTimestamp:   pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUtc.AsTime(), Valid: true},
 			EndTimestamp:     pgtype.Timestamp{Time: req.TimeWindow.EndTimestampUtc.AsTime(), Valid: true},
 		}
+
 		dbForecasts, err := querier.ListForecasts(stream.Context(), fcParams)
 		if err != nil {
 			l.Err(err).Msgf("querier.ListForecasts(%+v)", fcParams)
+
 			return status.Errorf(
 				codes.NotFound, "No forecasts found for location '%s' and forecaster %s:%s between %s and %s.",
 				req.LocationUuid, forecaster.ForecasterName, forecaster.ForecasterVersion,
 				req.TimeWindow.StartTimestampUtc.AsTime(), req.TimeWindow.EndTimestampUtc.AsTime(),
 			)
 		}
+
 		forecasts = append(forecasts, dbForecasts...)
 	}
 
 	for _, forecast := range forecasts {
 		psParams := db.ListPredictionsForForecastParams{ForecastUuid: forecast.ForecastUuid}
+
 		dbPreds, err := querier.ListPredictionsForForecast(stream.Context(), psParams)
 		if err != nil {
 			l.Err(err).Msgf("querier.ListPredictionsForForecast(%+v)", psParams)
+
 			return status.Errorf(
 				codes.NotFound, "No predicted generation values found for forecast with init time %s",
 				forecast.InitTimeUtc.Time,
@@ -304,6 +330,7 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 				p90val := (float32(*dbPreds[i].P90Sip) / 30000.0) * 100.0
 				p90 = &p90val
 			}
+
 			var p10 *float32
 			if dbPreds[i].P10Sip != nil {
 				p10val := (float32(*dbPreds[i].P10Sip) / 30000.0) * 100.0
@@ -336,8 +363,9 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		l.Err(err).Msg("q.pool.Begin()")
-		return nil, status.Error(codes.Internal, "Error communicating with backend"	)
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -350,13 +378,16 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 			l.Err(err).Msgf("uuid.Parse(%s)", *req.EnclosingLocationUuid)
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 		}
+
 		lwParams := db.GetUserLocationsWithinParams{
-			LocationUuid: locationUuid,
-			ServiceAccount: req.UserRole,	
+			LocationUuid:   locationUuid,
+			ServiceAccount: req.UserRole,
 		}
+
 		dbLocations, err := querier.GetUserLocationsWithin(ctx, lwParams)
 		if err != nil {
 			l.Err(err).Msgf("querier.GetUserLocationsWithin(%+v)", lwParams)
+
 			return nil, status.Errorf(
 				codes.NotFound,
 				"No locations found within the specified location '%s'", *req.EnclosingLocationUuid,
@@ -374,11 +405,13 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 		glParams := db.GetUserLocationsParams{
 			ServiceAccount: req.UserRole,
 		}
+
 		dbLocations, err := querier.GetUserLocations(ctx, glParams)
 		if err != nil {
 			l.Err(err).Msgf("querier.GetUserLocations(%+v)", glParams)
 			return nil, status.Errorf(codes.NotFound, "No locations found")
 		}
+
 		for i := range dbLocations {
 			locations = append(locations, &pb.ListLocationsResponse_LocationData{
 				LocationUuid: dbLocations[i].LocationUuid.String(),
@@ -402,6 +435,7 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -411,14 +445,17 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
+
 	gstParams := db.GetLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.PivotTime.AsTime(), Valid: true},
 	}
+
 	dbSource, err := querier.GetLocationSourceAtTimestamp(ctx, gstParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetLocationSourceAtTimestamp(%+v)", gstParams)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No location source found for name '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -430,9 +467,11 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		PredictorName:    req.Forecaster.ForecasterName,
 		PredictorVersion: req.Forecaster.ForecasterVersion,
 	}
+
 	dbPredictor, err := querier.GetPredictorElseLatest(ctx, pctParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetPredictorElseLatest(%+v)", pctParams)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No forecaster found for name '%s' and version '%s'.",
 			req.Forecaster.ForecasterName, req.Forecaster.ForecasterVersion,
@@ -441,9 +480,11 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 
 	// Get the observer
 	obParams := db.GetObserverByNameParams{ObserverName: req.ObserverName}
+
 	dbObserver, err := querier.GetObserverByName(ctx, obParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetObserverByName(%+v)", obParams)
+
 		return nil, status.Errorf(
 			codes.NotFound,
 			"No observer of name '%s' found. Choose an existing observer or create a new one.",
@@ -459,9 +500,11 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		PivotTimestamp: pgtype.Timestamp{Time: req.PivotTime.AsTime(), Valid: true},
 		LocationUuids:  []uuid.UUID{locationUuid},
 	}
+
 	dbDeltas, err := querier.GetWeekAverageDeltasForLocations(ctx, avgParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetWeekAverageDeltasForLocations(%+v)", avgParams)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No deltas found for location '%s' with source type '%s' and observer ID %d",
 			req.LocationUuid, req.EnergySource, dbObserver.ObserverID,
@@ -477,6 +520,7 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 			EffectiveCapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))), // TODO: Do this over time
 		}
 	}
+
 	return &pb.GetWeekAverageDeltasResponse{
 		Deltas:        deltas,
 		InitTimeOfDay: req.PivotTime.AsTime().Format("03:04"),
@@ -493,6 +537,7 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -502,15 +547,18 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
+
 	gsParams := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUtc.AsTime(), Valid: true},
 		ServiceAccount: req.UserRole,
 	}
+
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, gsParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", gsParams)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for ID '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -519,9 +567,11 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 
 	// Get the observer
 	obParams := db.GetObserverByNameParams{ObserverName: req.ObserverName}
+
 	dbObserver, err := querier.GetObserverByName(ctx, obParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetObserverByName(%+v)", obParams)
+
 		return nil, status.Errorf(
 			codes.NotFound,
 			"No observer of name '%s' found. Choose an existing observer or create a new one.",
@@ -535,6 +585,7 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 		l.Err(err).Msgf("timeWindowToPgWindow(%+v)", req.TimeWindow)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid time window: %v", err)
 	}
+
 	goParams := db.GetObservationsBetweenParams{
 		LocationUuid: locationUuid,
 		SourceTypeID: dbSource.SourceTypeID,
@@ -542,6 +593,7 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 		StartTimeUtc: start,
 		EndTimeUtc:   end,
 	}
+
 	dbObs, err := querier.GetObservationsBetween(ctx, goParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetObservationsBetween(%+v)", goParams)
@@ -556,6 +608,7 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 			EffectiveCapacityWatts: uint64(float64(obs.EffectiveCapacity) * math.Pow10(int(obs.CapacityUnitPrefixFactor))),
 		}
 	}
+
 	return &pb.GetObservationsAsTimeseriesResponse{
 		LocationUuid: dbSource.LocationUuid.String(),
 		LocationName: strings.ToUpper(dbSource.LocationName),
@@ -573,6 +626,7 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -582,15 +636,18 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
+
 	params := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.Values[0].TimestampUtc.AsTime(), Valid: true},
 		ServiceAccount: req.UserRole,
 	}
+
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", params)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for name '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -599,9 +656,11 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 
 	// Get the observer ID
 	obParams := db.GetObserverByNameParams{ObserverName: req.ObserverName}
+
 	dbObserver, err := querier.GetObserverByName(ctx, obParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetObserverByName(%+v)", obParams)
+
 		return nil, status.Errorf(
 			codes.NotFound,
 			"No observer of name '%s', found. Choose an existing observer or create a new one.",
@@ -623,6 +682,7 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 			ValueSip:     int16((v.ValuePercent / 100.0) * 30000.0),
 		}
 	}
+
 	count, err := querier.CreateObservations(ctx, coParams)
 	if err != nil {
 		return nil, status.Error(
@@ -650,10 +710,12 @@ func (s *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.Cre
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	obParams := db.CreateObserverParams{ObserverName: req.Name}
+
 	dbObserverId, err := querier.CreateObserver(ctx, obParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreateObserver(%+v)", obParams)
@@ -672,6 +734,7 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -680,14 +743,17 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 		PredictorName:    req.Forecaster.ForecasterName,
 		PredictorVersion: req.Forecaster.ForecasterVersion,
 	}
+
 	dbPredictor, err := querier.GetPredictorElseLatest(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetPredictorElseLatest(%+v)", params)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No forecaster found for name '%s' and version '%s'.",
 			req.Forecaster.ForecasterName, req.Forecaster.ForecasterVersion,
 		)
 	}
+
 	l.Debug().Msgf(
 		"Using predictor '%s:%s' with ID %d",
 		dbPredictor.PredictorName, dbPredictor.PredictorVersion, dbPredictor.PredictorID,
@@ -702,26 +768,31 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 		}
 	}
+
 	lsParams := db.ListUserLocationSourcesAtTimestampParams{
 		SourceTypeName: req.EnergySource.String(),
 		LocationUuids:  locationUuids,
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimestampUtc.AsTime(), Valid: true},
 		ServiceAccount: req.UserRole,
 	}
+
 	dbSources, err := querier.ListUserLocationSourcesAtTimestamp(ctx, lsParams)
 	if err != nil || len(dbSources) == 0 {
 		l.Err(err).Msgf("querier.ListUserLocationSourcesAtTimestamp(%+v)", lsParams)
+
 		return nil, status.Errorf(
 			codes.NotFound,
 			"No '%s' sources found for the specified locations", req.EnergySource.String(),
 		)
 	}
+
 	if len(dbSources) != len(req.LocationUuids) {
 		l.Warn().Msgf(
 			"Expected %d location sources, but found %d. Some locations may not have associated sources.",
 			len(req.LocationUuids), len(dbSources),
 		)
 	}
+
 	ids := make([]uuid.UUID, len(dbSources))
 	for i := range dbSources {
 		ids[i] = dbSources[i].LocationUuid
@@ -734,9 +805,11 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 		Time:          pgtype.Timestamp{Time: req.TimestampUtc.AsTime(), Valid: true},
 		HorizonMins:   0,
 	}
+
 	dbCrossSection, err := querier.ListPredictionsAtTimeForLocations(ctx, params3)
 	if err != nil {
 		l.Err(err).Msgf("querier.ListPredictionsAtTimeForLocations(%+v)", params3)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No predicted values found for the specified locations at the given time",
 		)
@@ -779,6 +852,7 @@ func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -788,17 +862,20 @@ func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
+
 	params := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
 		ServiceAccount: req.UserRole,
 	}
+
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", params)
+
 		return nil, status.Errorf(
-			codes.NotFound, "No location source found for name '%s' with source type '%s'. Ensure the location has an associated source and it is not decomissioned.",
+			codes.NotFound, "No location source found for name '%s' with source type '%s'. Ensure the location has an associated source and it is not decommissioned.",
 			req.LocationUuid, req.EnergySource,
 		)
 	}
@@ -846,6 +923,7 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -855,19 +933,23 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		l.Err(err).Msgf("uuid.Parse(%s)", req.Forecast.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
+
 	gsParams := db.GetLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.Forecast.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.Forecast.InitTimeUtc.AsTime(), Valid: true},
 	}
+
 	dbSource, err := querier.GetLocationSourceAtTimestamp(ctx, gsParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetLocationSourceAtTimestamp(%+v)", gsParams)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for id '%s' with source type '%s'.",
 			req.Forecast.LocationUuid, req.Forecast.EnergySource,
 		)
 	}
+
 	resolution_mins := req.Values[1].HorizonMins - req.Values[0].HorizonMins // TODO: Check they are all the same
 
 	// Check the forecaster exists
@@ -875,12 +957,14 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		PredictorName:    req.Forecast.Forecaster.ForecasterName,
 		PredictorVersion: req.Forecast.Forecaster.ForecasterVersion,
 	}
+
 	_, err = querier.GetPredictorElseLatest(ctx, pctParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetPredictorElseLatest(%+v)", pctParams)
+
 		return nil, status.Errorf(
-			codes.NotFound, "No forecaster found for name '%s' and version '%s'." +
-			"Create the forecaster before submitting a forecast.",
+			codes.NotFound, "No forecaster found for name '%s' and version '%s'."+
+				"Create the forecaster before submitting a forecast.",
 			req.Forecast.Forecaster.ForecasterName, req.Forecast.Forecaster.ForecasterVersion,
 		)
 	}
@@ -897,11 +981,13 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 			Valid: true,
 		},
 	}
+
 	dbForecast, err := querier.CreateForecast(ctx, params2)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreateForecast(%+v)", params2)
 		return nil, status.Error(codes.InvalidArgument, "Invalid forecast")
 	}
+
 	l.Debug().Msgf("Created forecast with ID '%s' and init time %s", dbForecast.ForecastUuid, dbForecast.InitTimeUtc.Time)
 
 	// Create the forecast data
@@ -909,6 +995,7 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 	for i, value := range req.Values {
 		p10sip := int16((value.P10Pct / 100.0) * 30000.0)
 		p90sip := int16((value.P90Pct / 100.0) * 30000.0)
+
 		metadata, err := value.Metadata.MarshalJSON()
 		if err != nil {
 			l.Err(err).Msgf("value.Metadata.MarshalJSON()")
@@ -949,6 +1036,7 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -958,9 +1046,11 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 		LocationName:     strings.ToUpper(req.LocationName),
 		Geom:             req.GeometryWkt,
 	}
+
 	dbLocation, err := querier.CreateLocation(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreateLocation(%+v)", params)
+
 		return nil, status.Error(
 			codes.InvalidArgument,
 			"Invalid location. Ensure name is not empty and uppercase, and that geometry is valid, closed,  WGS84.",
@@ -973,6 +1063,7 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 		RoleName:       "OWNER",
 		LocationUuids:  []uuid.UUID{dbLocation.LocationUuid},
 	}
+
 	err = querier.CreateLocationPolices(ctx, clp)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreateLocationPolices(%+v)", clp)
@@ -981,6 +1072,7 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 
 	// Get the energy source type
 	sParams := db.GetSourceTypeByNameParams{SourceTypeName: req.EnergySource.String()}
+
 	dbSourceType, err := querier.GetSourceTypeByName(ctx, sParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetSourceTypeByName(%+v)", sParams)
@@ -993,11 +1085,13 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 		l.Err(err).Msgf("req.Metadata.MarshalJSON()")
 		return nil, status.Error(codes.InvalidArgument, "Invalid metadata. Ensure metadata is a valid JSON object.")
 	}
+
 	cp, ex, err := capacityToValueMultiplier(req.CapacityWatts)
 	if err != nil {
 		l.Err(err).Msgf("capacityMwToValueMultiplier(%d)", req.CapacityWatts)
 		return nil, status.Error(codes.InvalidArgument, "Invalid capacity. Ensure capacity is non-negative.")
 	}
+
 	csParams := db.CreateUserLocationSourceEntryParams{
 		LocationUuid:             dbLocation.LocationUuid,
 		SourceTypeID:             dbSourceType.SourceTypeID,
@@ -1007,9 +1101,11 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 		ValidFromUtc:             pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
 		ServiceAccount:           req.UserRole,
 	}
+
 	dbSource, err := querier.CreateUserLocationSourceEntry(ctx, csParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreateUserLocationSourceEntry(%+v)", params)
+
 		return nil, status.Error(
 			codes.InvalidArgument, "Invalid location. Ensure metadata is NULL or a non-empty JSON object.",
 		)
@@ -1037,6 +1133,7 @@ func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req 
 		log.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -1047,6 +1144,7 @@ func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req 
 	} else {
 		simplificationLevel = 0.5
 	}
+
 	locationUuids := make([]uuid.UUID, len(req.LocationUuids))
 	for i, id := range req.LocationUuids {
 		locationUuids[i], err = uuid.Parse(id)
@@ -1055,10 +1153,12 @@ func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req 
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 		}
 	}
+
 	params := db.GetLocationGeoJSONParams{
 		SimplificationLevel: simplificationLevel,
 		LocationUuids:       locationUuids,
 	}
+
 	geojson, err := querier.GetLocationGeoJSON(ctx, params)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetLocationGeoJSONByIds(%+v)", params)
@@ -1078,6 +1178,7 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -1087,15 +1188,18 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
+
 	gsParams := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUtc.AsTime(), Valid: true},
 		ServiceAccount: req.UserRole,
 	}
+
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, gsParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", gsParams)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for name '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -1107,9 +1211,11 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 		PredictorName:    req.Forecaster.ForecasterName,
 		PredictorVersion: req.Forecaster.ForecasterVersion,
 	}
+
 	dbPredictor, err := querier.GetPredictorElseLatest(ctx, gpParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.GetPredictorElseLatest(%+v)", gpParams)
+
 		return nil, status.Errorf(
 			codes.NotFound, "No forecaster found for name '%s' and version '%s'.",
 			req.Forecaster.ForecasterName, req.Forecaster.ForecasterVersion,
@@ -1126,15 +1232,18 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 		StartTimestamp: start,
 		EndTimestamp:   end,
 	}
+
 	dbValues, err := querier.ListPredictionsForLocation(ctx, lpParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.ListPredictionsForLocation(%+v)", lpParams)
+
 		return nil, status.Errorf(
 			codes.NotFound,
 			"No values found for location '%s' with horizon %d minutes",
 			req.LocationUuid, req.HorizonMins,
 		)
 	}
+
 	l.Debug().Msgf(
 		"Found %d values for location '%s' with horizon %d minutes",
 		len(dbValues), req.LocationUuid, req.HorizonMins,
@@ -1142,7 +1251,6 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 
 	values := make([]*pb.GetForecastAsTimeseriesResponse_Value, len(dbValues))
 	for i, value := range dbValues {
-
 		var p10 float32
 		if value.P10Sip == nil {
 			p10 = float32(math.NaN())
@@ -1183,6 +1291,7 @@ func (s *DataPlatformServerImpl) AddLocationPolicy(ctx context.Context, req *pb.
 		l.Err(err).Msg("q.pool.Begin()")
 		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+
 	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
@@ -1194,6 +1303,7 @@ func (s *DataPlatformServerImpl) AddLocationPolicy(ctx context.Context, req *pb.
 			l.Err(err).Msgf("uuid.Parse(%s)", u)
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 		}
+
 		locationUuids[i] = locationUuid
 	}
 
@@ -1202,6 +1312,7 @@ func (s *DataPlatformServerImpl) AddLocationPolicy(ctx context.Context, req *pb.
 		ServiceAccount: req.UserRole,
 		LocationUuids:  locationUuids,
 	}
+
 	err = querier.CreateLocationPolices(ctx, pParams)
 	if err != nil {
 		l.Err(err).Msgf("querier.CreateLocationPolices(%+v)", pParams)
@@ -1211,5 +1322,5 @@ func (s *DataPlatformServerImpl) AddLocationPolicy(ctx context.Context, req *pb.
 	return &pb.AddLocationPolicyResponse{}, tx.Commit(ctx)
 }
 
-// Compile-time check to ensure the interface is implemented fully
+// Compile-time check to ensure the interface is implemented fully.
 var _ pb.DataPlatformServiceServer = (*DataPlatformServerImpl)(nil)

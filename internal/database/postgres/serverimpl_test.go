@@ -92,6 +92,7 @@ func createPostgresContainer(tb testing.TB) string {
 	})
 
 	tb.Logf("Postgres container started at %s", pgConnString)
+
 	return pgConnString
 }
 
@@ -102,6 +103,7 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (output struc
 ) {
 	seedfiles, _ := filepath.Glob(filepath.Join(".", "testdata", "seed*.sql"))
 	conn, err := pgx.Connect(tb.Context(), pgConnString)
+
 	require.NoError(tb, err)
 	defer conn.Close(tb.Context())
 
@@ -110,10 +112,12 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (output struc
 		require.NoError(tb, err)
 		_, err = conn.Exec(tb.Context(), string(sql))
 		require.NoError(tb, err)
+
 		var result struct {
 			NumPgvs       int
 			LocationUuids []pgtype.UUID
 		}
+
 		err = conn.QueryRow(
 			tb.Context(),
 			fmt.Sprintf(
@@ -128,28 +132,34 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (output struc
 		).Scan(&result)
 		require.NoError(tb, err)
 		tb.Logf("Seeded %d predicted generation values for %d locations", output.NumPgvs, len(output.LocationUuids))
+
 		stringUuids := make([]string, len(result.LocationUuids))
 		for i, u := range result.LocationUuids {
 			stringUuids[i] = u.String()
 		}
+
 		output.NumPgvs = result.NumPgvs
 		output.LocationUuids = stringUuids
 	}
+
 	return output
 }
 
-// Create a GRPC client for running tests with
+// Create a GRPC client for running tests with.
 func setupClient(tb testing.TB, pgConnString string) pb.DataPlatformServiceClient {
 	tb.Helper()
 	// Create server using in-memory listener
 
 	validator, err := protovalidate.New()
 	require.NoError(tb, err)
+
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(middleware.UnaryServerInterceptor(validator)),
 	)
 	lis := bufconn.Listen(1024 * 1024)
+
 	pb.RegisterDataPlatformServiceServer(s, NewPostgresDataPlatformServerImpl(pgConnString))
+
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			tb.Fatalf("Server exited with error: %v", err)
@@ -166,7 +176,9 @@ func setupClient(tb testing.TB, pgConnString string) pb.DataPlatformServiceClien
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	require.NoError(tb, err)
+
 	c := pb.NewDataPlatformServiceClient(cc)
+
 	tb.Logf("GRPC client created successfully")
 
 	tb.Cleanup(func() {
@@ -206,6 +218,7 @@ func TestCapacityToMultiplier(t *testing.T) {
 		expectedMultiplier int16
 		shouldError        bool
 	}
+
 	tests := []TestCase{
 		{0, 0, 0, false},
 		{500000, 500, 3, false},
@@ -387,7 +400,7 @@ func TestCreateLocation(t *testing.T) {
 						LocationUuid:    resp.LocationUuid,
 						EnergySource:    tt.req.EnergySource,
 						IncludeGeometry: false,
-						UserRole: tt.req.UserRole,
+						UserRole:        tt.req.UserRole,
 					},
 				)
 				require.NoError(t, err, "Expected same user to be able to see created location")
@@ -417,7 +430,6 @@ func TestCreateLocation(t *testing.T) {
 		require.Error(t, err)
 	})
 }
-
 
 func TestCreateUpdateForecaster(t *testing.T) {
 	c := setupClient(t, createPostgresContainer(t))
@@ -449,7 +461,7 @@ func TestCreateUpdateForecaster(t *testing.T) {
 			},
 		},
 		{
-			name: "Shouldn't update non-existant forecaster",
+			name: "Shouldn't update non-existent forecaster",
 			updateReq: &pb.UpdateForecasterRequest{
 				Name:       "non_existent_model",
 				NewVersion: "v1",
@@ -476,9 +488,11 @@ func TestCreateUpdateForecaster(t *testing.T) {
 		if tt.createReq != nil {
 			_, err = c.CreateForecaster(t.Context(), tt.createReq)
 		}
+
 		if tt.updateReq != nil {
 			_, err = c.UpdateForecaster(t.Context(), tt.updateReq)
 		}
+
 		if strings.Split(tt.name, " ")[0] == "Shouldn't" {
 			require.Error(t, err)
 		} else {
@@ -527,6 +541,7 @@ func TestGetLocationsAsGeoJSON(t *testing.T) {
 			LocationType:  pb.LocationType_SITE,
 		})
 		require.NoError(t, err)
+
 		siteUuids[i] = resp.LocationUuid
 	}
 
@@ -534,6 +549,7 @@ func TestGetLocationsAsGeoJSON(t *testing.T) {
 		LocationUuids: siteUuids,
 	})
 	require.NoError(t, err)
+
 	var result map[string]any
 	json.Unmarshal([]byte(geojson.Geojson), &result)
 	features := result["features"].([]any)
@@ -624,11 +640,13 @@ func TestGetForecastAsTimeseries(t *testing.T) {
 			require.NotNil(t, resp)
 
 			targetTimes := make([]int64, len(resp.Values))
+
 			actualValues := make([]float32, len(resp.Values))
 			for i, v := range resp.Values {
 				targetTimes[i] = v.TimestampUtc.AsTime().Unix()
 				actualValues[i] = v.P50ValuePercent
 			}
+
 			require.IsIncreasing(t, targetTimes)
 			require.Equal(t, tt.expectedValues, actualValues)
 		})
@@ -732,6 +750,7 @@ func TestGetLocationsWithin(t *testing.T) {
 		{1, 5},
 		{0, 170},
 	}
+
 	inner_uuids := make([]string, len(lls))
 	for i, ll := range lls {
 		sResp, err := c.CreateLocation(t.Context(), &pb.CreateLocationRequest{
@@ -743,6 +762,7 @@ func TestGetLocationsWithin(t *testing.T) {
 			Metadata:      metadata,
 		})
 		require.NoError(t, err)
+
 		inner_uuids[i] = sResp.LocationUuid
 	}
 
@@ -752,6 +772,7 @@ func TestGetLocationsWithin(t *testing.T) {
 		UserRole:              "",
 	})
 	require.NoError(t, err)
+
 	expected := []*pb.ListLocationsResponse_LocationData{
 		{LocationUuid: resp.LocationUuid, LocationName: "GSP_OUTER_BOX"},
 		{LocationUuid: inner_uuids[0], LocationName: "SITE_0"},
@@ -761,6 +782,7 @@ func TestGetLocationsWithin(t *testing.T) {
 	for _, g := range result.Locations {
 		t.Log("Location:", g.LocationName, "ID:", g.LocationUuid)
 	}
+
 	require.Equal(t, expected, result.Locations)
 }
 
@@ -820,6 +842,7 @@ func TestCreateForecast(t *testing.T) {
 // Instead it determines how long each RPC takes to complete against a database of a given size.
 func BenchmarkPostgresClient(b *testing.B) {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
 	pivotTime := time.Date(2010, 1, 1, 1, 0, 0, 0, time.UTC)
 	metadata, err := structpb.NewStruct(map[string]any{"source": "test"})
 	require.NoError(b, err)
@@ -867,6 +890,7 @@ func BenchmarkPostgresClient(b *testing.B) {
 			if len(output.LocationUuids) > 100 {
 				output.LocationUuids = output.LocationUuids[0:100]
 			}
+
 			for b.Loop() {
 				crossSectionResp, err := c.GetForecastAtTimestamp(b.Context(), &pb.GetForecastAtTimestampRequest{
 					EnergySource:  pb.EnergySource_SOLAR,
