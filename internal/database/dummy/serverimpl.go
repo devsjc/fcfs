@@ -321,16 +321,16 @@ func (d *DataPlatformServerImpl) GetLocationsAsGeoJSON(context.Context, *pb.GetL
 }
 
 // GetLocationsWithin implements dp.DataPlatformServiceServer.
-func (d *DataPlatformServerImpl) GetLocationsWithin(ctx context.Context, req *pb.GetLocationsWithinRequest) (*pb.GetLocationsWithinResponse, error) {
-	locations := make([]*pb.GetLocationsWithinResponse_LocationData, 5)
+func (d *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.ListLocationsRequest) (*pb.ListLocationsResponse, error) {
+	locations := make([]*pb.ListLocationsResponse_LocationData, 5)
 	for i := range locations {
-		locations[i] = &pb.GetLocationsWithinResponse_LocationData{
+		locations[i] = &pb.ListLocationsResponse_LocationData{
 			LocationUuid: uuid.New().String(),
 			LocationName: fmt.Sprintf("DummyLocation%d", i),
 		}
 	}
 
-	return &pb.GetLocationsWithinResponse{
+	return &pb.ListLocationsResponse{
 		Locations: locations,
 	}, nil
 }
@@ -423,6 +423,10 @@ func (d *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.U
 			ForecasterVersion: req.NewVersion,
 		},
 	}, nil
+}
+
+func (d *DataPlatformServerImpl) AddLocationPolicy(context.Context, *pb.AddLocationPolicyRequest) (*pb.AddLocationPolicyResponse, error) {
+	return &pb.AddLocationPolicyResponse{}, nil
 }
 
 // Compile-time check to ensure the interface is implemented fully

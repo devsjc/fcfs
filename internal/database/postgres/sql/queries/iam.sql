@@ -1,8 +1,5 @@
 /* --- Queries for the IAM table --- */
 
--- name: SetServiceAccountForTransaction :exec
-SET LOCAL app.current_service_account TO $1;
-
 -- name: GetLocationPolicy :many
 SELECT (
     role_name,
@@ -20,7 +17,7 @@ SELECT (
     location_uuid,
     service_account
 ) FROM iam.location_policies
-WHERE service_account = current_setting('app.current_service_account')::text
+WHERE service_account = $1
     AND role_name = ANY(sqlc.arg(role_names)::text []);
 
 -- name: CreateLocationPolices :exec

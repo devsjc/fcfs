@@ -54,35 +54,6 @@ CREATE TABLE iam.location_policies (
     UNIQUE (service_account, location_uuid)
 );
 
-/*- Functions -------------------------------------------------------------------------------*/
-
--- +goose StatementBegin
--- Trigger to ensure new locations are owned by the writing service account
-CREATE OR REPLACE FUNCTION loc.set_location_owner()
-RETURNS TRIGGER AS $$
-DECLARE
-    current_sa UUID;
-BEGIN
-    BEGIN
-        current_sa := current_setting('app.current_service_account')::UUID;
-    EXCEPTION WHEN OTHERS THEN
-        RAISE EXCEPTION 'app.current_service_account must be set to create a location';
-    END;
-    INSERT INTO iam.location_policies (location_uuid, role_id, service_account)
-    VALUES (
-        NEW.location_uuid,
-        (SELECT role_id FROM iam.roles WHERE role_name = 'OWNER'), 
-        current_sa
-    );
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
--- +goose StatementEnd
-
-CREATE OR REPLACE TRIGGER set_location_owner
-AFTER INSERT ON loc.locations
-FOR EACH ROW EXECUTE FUNCTION loc.set_location_owner();
-
 -- +goose Down
 DROP TRIGGER IF EXISTS set_location_owner ON loc.locations;
 DROP SCHEMA iam CASCADE;

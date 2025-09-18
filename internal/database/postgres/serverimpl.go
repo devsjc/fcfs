@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -139,26 +138,6 @@ func NewPostgresDataPlatformServerImpl(connString string) *DataPlatformServerImp
 	return &DataPlatformServerImpl{pool: pool}
 }
 
-func (s *DataPlatformServerImpl) setupTransaction(ctx context.Context, userRole string) (pgx.Tx, db.Querier, error) {
-	// Establish a transaction with the database
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("q.pool.Begin(): %w", err)
-	}
-	querier := db.New(tx)
-
-	// Set the current user role, if desired
-	if len(userRole) > 0 {
-		ssaParams := db.SetServiceAccountForTransactionParams{Column1: userRole}
-		err = querier.SetServiceAccountForTransaction(ctx, ssaParams)
-		if err != nil {
-			return tx, nil, fmt.Errorf("querier.SetServiceAccountForTransaction(%+v): %w", ssaParams, err)
-		}
-	}
-
-	return tx, querier, nil
-}
-
 // --- Server Method Implementations --------------------------------------------------------------
 // GetLatestForecasts implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetLatestForecasts(context.Context, *pb.GetLatestForecastsRequest) (*pb.GetLatestForecastsResponse, error) {
@@ -170,11 +149,13 @@ func (s *DataPlatformServerImpl) GetLatestForecasts(context.Context, *pb.GetLate
 func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.CreateForecasterRequest) (*pb.CreateForecasterResponse, error) {
 	l := log.With().Str("method", "CreateForecaster").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, "")
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Check if the predictor already exists and error out if so
@@ -212,11 +193,13 @@ func (s *DataPlatformServerImpl) CreateForecaster(ctx context.Context, req *pb.C
 func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.UpdateForecasterRequest) (*pb.UpdateForecasterResponse, error) {
 	l := log.With().Str("method", "UpdateForecaster").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, "")
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Check if the predictor already exists and error out if not
@@ -232,7 +215,7 @@ func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.U
 		)
 	}
 
-	// Update the predictor
+	// Update the forecaster
 	params := db.CreatePredictorParams{PredictorName: dbPredictor.PredictorName, PredictorVersion: req.NewVersion}
 	forecasterID, err := querier.CreatePredictor(ctx, params)
 	if err != nil {
@@ -253,11 +236,13 @@ func (s *DataPlatformServerImpl) UpdateForecaster(ctx context.Context, req *pb.U
 func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRequest, stream grpc.ServerStreamingServer[pb.StreamForecastDataResponse]) error {
 	l := log.With().Str("method", "StreamForecastData").Logger()
 
-	tx, querier, err := s.setupTransaction(stream.Context(), "")
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(stream.Context())
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return status.Error(codes.Internal, "Error communicating with backend"	)
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(stream.Context())
 
 	locationUuid, err := uuid.Parse(req.LocationUuid)
@@ -265,14 +250,15 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
-	srcParams := db.GetSourceAtTimestampParams{
+	// Get the source as it was at the initial time of the time window
+	srcParams := db.GetLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUtc.AsTime(), Valid: true},
 	}
-	dbSource, err := querier.GetSourceAtTimestamp(stream.Context(), srcParams)
+	dbSource, err := querier.GetLocationSourceAtTimestamp(stream.Context(), srcParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", srcParams)
+		l.Err(err).Msgf("querier.GetLocationSourceAtTimestamp(%+v)", srcParams)
 		return status.Errorf(
 			codes.NotFound, "No location found for uuid %s with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -346,20 +332,14 @@ func (s *DataPlatformServerImpl) StreamForecastData(req *pb.StreamForecastDataRe
 func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.ListLocationsRequest) (*pb.ListLocationsResponse, error) {
 	l := log.With().Str("method", "ListLocations").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend"	)
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
-
-	// Set the current user role
-	ssaParams := db.SetServiceAccountForTransactionParams{Column1: req.UserRole}
-	err = querier.SetServiceAccountForTransaction(ctx, ssaParams)
-	if err != nil {
-		l.Err(err).Msgf("querier.SetServiceAccountForTransaction(%+v)", ssaParams)
-		return nil, status.Error(codes.Unauthenticated, "Must be authenticated to access forecast data.")
-	}
 
 	var locations []*pb.ListLocationsResponse_LocationData
 
@@ -370,10 +350,13 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 			l.Err(err).Msgf("uuid.Parse(%s)", *req.EnclosingLocationUuid)
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 		}
-		lwParams := db.GetLocationsWithinParams{LocationUuid: locationUuid}
-		dbLocations, err := querier.GetLocationsWithin(ctx, lwParams)
+		lwParams := db.GetUserLocationsWithinParams{
+			LocationUuid: locationUuid,
+			ServiceAccount: req.UserRole,	
+		}
+		dbLocations, err := querier.GetUserLocationsWithin(ctx, lwParams)
 		if err != nil {
-			l.Err(err).Msgf("querier.GetLocationIdsWithin(%+v)", lwParams)
+			l.Err(err).Msgf("querier.GetUserLocationsWithin(%+v)", lwParams)
 			return nil, status.Errorf(
 				codes.NotFound,
 				"No locations found within the specified location '%s'", *req.EnclosingLocationUuid,
@@ -388,10 +371,13 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 		}
 	} else {
 		// List all the locations
-		dbLocations, err := querier.GetLocations(ctx)
+		glParams := db.GetUserLocationsParams{
+			ServiceAccount: req.UserRole,
+		}
+		dbLocations, err := querier.GetUserLocations(ctx, glParams)
 		if err != nil {
-			l.Err(err).Msg("querier.GetLocations()")
-			return nil, status.Errorf(codes.Internal, "No locations found")
+			l.Err(err).Msgf("querier.GetUserLocations(%+v)", glParams)
+			return nil, status.Errorf(codes.NotFound, "No locations found")
 		}
 		for i := range dbLocations {
 			locations = append(locations, &pb.ListLocationsResponse_LocationData{
@@ -410,11 +396,13 @@ func (s *DataPlatformServerImpl) ListLocations(ctx context.Context, req *pb.List
 func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *pb.GetWeekAverageDeltasRequest) (*pb.GetWeekAverageDeltasResponse, error) {
 	l := log.With().Str("method", "GetWeekAverageDeltas").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, "")
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the location and source
@@ -423,14 +411,14 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
-	params := db.GetSourceAtTimestampParams{
+	gstParams := db.GetLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.PivotTime.AsTime(), Valid: true},
 	}
-	dbSource, err := querier.GetSourceAtTimestamp(ctx, params)
+	dbSource, err := querier.GetLocationSourceAtTimestamp(ctx, gstParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", params)
+		l.Err(err).Msgf("querier.GetLocationSourceAtTimestamp(%+v)", gstParams)
 		return nil, status.Errorf(
 			codes.NotFound, "No location source found for name '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -486,7 +474,7 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 		deltas[i] = &pb.GetWeekAverageDeltasResponse_AverageDelta{
 			DeltaPercent:           (float32(delta.AvgDeltaSip) / 30000.0) * 100.0,
 			HorizonMins:            uint32(delta.HorizonMins),
-			EffectiveCapacityWatts: 3, // TODO
+			EffectiveCapacityWatts: uint64(dbSource.Capacity) * uint64(math.Pow10(int(dbSource.CapacityUnitPrefixFactor))), // TODO: Do this over time
 		}
 	}
 	return &pb.GetWeekAverageDeltasResponse{
@@ -499,11 +487,13 @@ func (s *DataPlatformServerImpl) GetWeekAverageDeltas(ctx context.Context, req *
 func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context, req *pb.GetObservationsAsTimeseriesRequest) (*pb.GetObservationsAsTimeseriesResponse, error) {
 	l := log.With().Str("method", "GetObservationsAsTimeseries").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the location and source
@@ -512,14 +502,15 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
-	gsParams := db.GetSourceAtTimestampParams{
+	gsParams := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUtc.AsTime(), Valid: true},
+		ServiceAccount: req.UserRole,
 	}
-	dbSource, err := querier.GetSourceAtTimestamp(ctx, gsParams)
+	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, gsParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", gsParams)
+		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", gsParams)
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for ID '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -553,7 +544,7 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 	}
 	dbObs, err := querier.GetObservationsBetween(ctx, goParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetObservationsAsInt16Between(%+v)", goParams)
+		l.Err(err).Msgf("querier.GetObservationsBetween(%+v)", goParams)
 		return nil, status.Errorf(codes.NotFound, "No observations found for location '%s'", req.LocationUuid)
 	}
 
@@ -576,11 +567,13 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(ctx context.Context
 func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb.CreateObservationsRequest) (*pb.CreateObservationsResponse, error) {
 	l := log.With().Str("method", "CreateObservations").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the location and source
@@ -589,14 +582,15 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
-	params := db.GetSourceAtTimestampParams{
+	params := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.Values[0].TimestampUtc.AsTime(), Valid: true},
+		ServiceAccount: req.UserRole,
 	}
-	dbSource, err := querier.GetSourceAtTimestamp(ctx, params)
+	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, params)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", params)
+		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", params)
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for name '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -650,11 +644,13 @@ func (s *DataPlatformServerImpl) CreateObservations(ctx context.Context, req *pb
 func (s *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.CreateObserverRequest) (*pb.CreateObserverResponse, error) {
 	l := log.With().Str("method", "CreateObserver").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, "")
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	obParams := db.CreateObserverParams{ObserverName: req.Name}
@@ -667,15 +663,16 @@ func (s *DataPlatformServerImpl) CreateObserver(ctx context.Context, req *pb.Cre
 	return &pb.CreateObserverResponse{ObserverId: dbObserverId}, tx.Commit(ctx)
 }
 
-// GetForecastAtTimestamp implements dp.DataPlatformServiceServer.
 func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req *pb.GetForecastAtTimestampRequest) (*pb.GetForecastAtTimestampResponse, error) {
 	l := log.With().Str("method", "GetForecastAtTimestamp").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the relevant predictor
@@ -705,14 +702,15 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 		}
 	}
-	lsParams := db.ListSourcesAtTimestampParams{
+	lsParams := db.ListUserLocationSourcesAtTimestampParams{
 		SourceTypeName: req.EnergySource.String(),
 		LocationUuids:  locationUuids,
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimestampUtc.AsTime(), Valid: true},
+		ServiceAccount: req.UserRole,
 	}
-	dbSources, err := querier.ListSourcesAtTimestamp(ctx, lsParams)
+	dbSources, err := querier.ListUserLocationSourcesAtTimestamp(ctx, lsParams)
 	if err != nil || len(dbSources) == 0 {
-		l.Err(err).Msgf("querier.ListLocationsSources(%+v)", lsParams)
+		l.Err(err).Msgf("querier.ListUserLocationSourcesAtTimestamp(%+v)", lsParams)
 		return nil, status.Errorf(
 			codes.NotFound,
 			"No '%s' sources found for the specified locations", req.EnergySource.String(),
@@ -738,7 +736,7 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 	}
 	dbCrossSection, err := querier.ListPredictionsAtTimeForLocations(ctx, params3)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetPredictionsAsPercentAtTimeAndHorizonForLocations(%+v)", params3)
+		l.Err(err).Msgf("querier.ListPredictionsAtTimeForLocations(%+v)", params3)
 		return nil, status.Errorf(
 			codes.NotFound, "No predicted values found for the specified locations at the given time",
 		)
@@ -775,11 +773,13 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(ctx context.Context, req
 func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLocationRequest) (*pb.GetLocationResponse, error) {
 	l := log.With().Str("method", "GetLocation").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the location and source
@@ -788,14 +788,15 @@ func (s *DataPlatformServerImpl) GetLocation(ctx context.Context, req *pb.GetLoc
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
-	params := db.GetSourceAtTimestampParams{
+	params := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
+		ServiceAccount: req.UserRole,
 	}
-	dbSource, err := querier.GetSourceAtTimestamp(ctx, params)
+	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, params)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", params)
+		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", params)
 		return nil, status.Errorf(
 			codes.NotFound, "No location source found for name '%s' with source type '%s'. Ensure the location has an associated source and it is not decomissioned.",
 			req.LocationUuid, req.EnergySource,
@@ -839,11 +840,13 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		return nil, status.Error(codes.InvalidArgument, "No forecast values provided")
 	}
 
-	tx, querier, err := s.setupTransaction(ctx, "")
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the location and source
@@ -852,20 +855,35 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 		l.Err(err).Msgf("uuid.Parse(%s)", req.Forecast.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
-	gsParams := db.GetSourceAtTimestampParams{
+	gsParams := db.GetLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.Forecast.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.Forecast.InitTimeUtc.AsTime(), Valid: true},
 	}
-	dbSource, err := querier.GetSourceAtTimestamp(ctx, gsParams)
+	dbSource, err := querier.GetLocationSourceAtTimestamp(ctx, gsParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", gsParams)
+		l.Err(err).Msgf("querier.GetLocationSourceAtTimestamp(%+v)", gsParams)
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for id '%s' with source type '%s'.",
 			req.Forecast.LocationUuid, req.Forecast.EnergySource,
 		)
 	}
 	resolution_mins := req.Values[1].HorizonMins - req.Values[0].HorizonMins // TODO: Check they are all the same
+
+	// Check the forecaster exists
+	pctParams := db.GetPredictorElseLatestParams{
+		PredictorName:    req.Forecast.Forecaster.ForecasterName,
+		PredictorVersion: req.Forecast.Forecaster.ForecasterVersion,
+	}
+	_, err = querier.GetPredictorElseLatest(ctx, pctParams)
+	if err != nil {
+		l.Err(err).Msgf("querier.GetPredictorElseLatest(%+v)", pctParams)
+		return nil, status.Errorf(
+			codes.NotFound, "No forecaster found for name '%s' and version '%s'." +
+			"Create the forecaster before submitting a forecast.",
+			req.Forecast.Forecaster.ForecasterName, req.Forecast.Forecaster.ForecasterVersion,
+		)
+	}
 
 	// Create a new forecast
 	params2 := db.CreateForecastParams{
@@ -925,11 +943,13 @@ func (s *DataPlatformServerImpl) CreateForecast(ctx context.Context, req *pb.Cre
 func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.CreateLocationRequest) (*pb.CreateLocationResponse, error) {
 	l := log.With().Str("method", "CreateLocation").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Create a new location
@@ -945,6 +965,18 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 			codes.InvalidArgument,
 			"Invalid location. Ensure name is not empty and uppercase, and that geometry is valid, closed,  WGS84.",
 		)
+	}
+
+	// Make the user the owner of the location
+	clp := db.CreateLocationPolicesParams{
+		ServiceAccount: req.UserRole,
+		RoleName:       "OWNER",
+		LocationUuids:  []uuid.UUID{dbLocation.LocationUuid},
+	}
+	err = querier.CreateLocationPolices(ctx, clp)
+	if err != nil {
+		l.Err(err).Msgf("querier.CreateLocationPolices(%+v)", clp)
+		return nil, status.Error(codes.Internal, "Error assigning location ownership")
 	}
 
 	// Get the energy source type
@@ -966,17 +998,18 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 		l.Err(err).Msgf("capacityMwToValueMultiplier(%d)", req.CapacityWatts)
 		return nil, status.Error(codes.InvalidArgument, "Invalid capacity. Ensure capacity is non-negative.")
 	}
-	csParams := db.CreateSourceEntryParams{
+	csParams := db.CreateUserLocationSourceEntryParams{
 		LocationUuid:             dbLocation.LocationUuid,
 		SourceTypeID:             dbSourceType.SourceTypeID,
 		Capacity:                 cp,
 		CapacityUnitPrefixFactor: ex,
 		Metadata:                 metadata,
 		ValidFromUtc:             pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
+		ServiceAccount:           req.UserRole,
 	}
-	dbSource, err := querier.CreateSourceEntry(ctx, csParams)
+	dbSource, err := querier.CreateUserLocationSourceEntry(ctx, csParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.CreateSource(%+v)", params)
+		l.Err(err).Msgf("querier.CreateUserLocationSourceEntry(%+v)", params)
 		return nil, status.Error(
 			codes.InvalidArgument, "Invalid location. Ensure metadata is NULL or a non-empty JSON object.",
 		)
@@ -998,11 +1031,13 @@ func (s *DataPlatformServerImpl) CreateLocation(ctx context.Context, req *pb.Cre
 func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req *pb.GetLocationsAsGeoJSONRequest) (*pb.GetLocationsAsGeoJSONResponse, error) {
 	l := log.With().Str("method", "GetLocationsAsGeoJSON").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, "") // TODO: ROLE
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		log.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the locations as GeoJSON
@@ -1037,11 +1072,13 @@ func (s *DataPlatformServerImpl) GetLocationsAsGeoJSON(ctx context.Context, req 
 func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, req *pb.GetForecastAsTimeseriesRequest) (*pb.GetForecastAsTimeseriesResponse, error) {
 	l := log.With().Str("method", "GetForecastAsTimeseries").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, req.UserRole)
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Get the location and source
@@ -1050,14 +1087,15 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 		l.Err(err).Msgf("uuid.Parse(%s)", req.LocationUuid)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid location UUID: %v", err)
 	}
-	gsParams := db.GetSourceAtTimestampParams{
+	gsParams := db.GetUserLocationSourceAtTimestampParams{
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimeWindow.StartTimestampUtc.AsTime(), Valid: true},
+		ServiceAccount: req.UserRole,
 	}
-	dbSource, err := querier.GetSourceAtTimestamp(ctx, gsParams)
+	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, gsParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetSourceAtTimestamp(%+v)", gsParams)
+		l.Err(err).Msgf("querier.GetUserLocationSourceAtTimestamp(%+v)", gsParams)
 		return nil, status.Errorf(
 			codes.NotFound, "No location found for name '%s' with source type '%s'.",
 			req.LocationUuid, req.EnergySource,
@@ -1090,7 +1128,7 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 	}
 	dbValues, err := querier.ListPredictionsForLocation(ctx, lpParams)
 	if err != nil {
-		l.Err(err).Msgf("querier.GetWindowedPredictedGenerationValuesAtHorizon(%+v)", lpParams)
+		l.Err(err).Msgf("querier.ListPredictionsForLocation(%+v)", lpParams)
 		return nil, status.Errorf(
 			codes.NotFound,
 			"No values found for location '%s' with horizon %d minutes",
@@ -1139,11 +1177,13 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 func (s *DataPlatformServerImpl) AddLocationPolicy(ctx context.Context, req *pb.AddLocationPolicyRequest) (*pb.AddLocationPolicyResponse, error) {
 	l := log.With().Str("method", "AddLocationPolicy").Logger()
 
-	tx, querier, err := s.setupTransaction(ctx, "")
+	// Establish a transaction with the database
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		l.Err(err).Msg("setupTransaction()")
-		return nil, status.Error(codes.Internal, "Encountered database connection error")
+		l.Err(err).Msg("q.pool.Begin()")
+		return nil, status.Error(codes.Internal, "Error communicating with backend")
 	}
+	querier := db.New(tx)
 	defer tx.Rollback(ctx)
 
 	// Parse the location UUID

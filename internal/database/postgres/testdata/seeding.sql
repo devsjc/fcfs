@@ -16,7 +16,6 @@ DECLARE
     num_pgvs_per_forecast INTEGER := forecast_length_mins / gv_resolution_mins;
     earliest_forecast_offset_mins INTEGER := num_forecasts_per_location * forecast_resolution_mins;
 BEGIN
-    SET LOCAL 
     -- Insert predictors
     INSERT INTO pred.predictors (predictor_name, predictor_version)
     SELECT
@@ -43,7 +42,7 @@ BEGIN
         INSERT INTO iam.location_policies
             (role_id, service_account, location_uuid)
         VALUES
-            (1, 'TEST_OWNER', loc_id);
+            (1, 'TEST_OWNER', loc_id),
             (2, 'TEST_VIEWER', loc_id);
 
         INSERT INTO loc.sources_history

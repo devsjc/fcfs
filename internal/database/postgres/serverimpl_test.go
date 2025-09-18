@@ -248,6 +248,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 1230,
 				LocationType:  pb.LocationType_SITE,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -259,6 +260,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 1230,
 				LocationType:  pb.LocationType_SITE,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -270,6 +272,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 4560,
 				LocationType:  pb.LocationType_SITE,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -281,6 +284,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 1230,
 				LocationType:  pb.LocationType_LOCATION_TYPE_UNSPECIFIED,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -292,6 +296,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 1230,
 				LocationType:  pb.LocationType_SITE,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -303,6 +308,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 1000e9,
 				LocationType:  pb.LocationType_GSP,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -314,6 +320,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 14e6,
 				LocationType:  pb.LocationType_DNO,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -325,6 +332,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 1100e6,
 				LocationType:  pb.LocationType_DNO,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -336,6 +344,7 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 14e6,
 				LocationType:  pb.LocationType_DNO,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
 			},
 		},
 		{
@@ -347,6 +356,19 @@ func TestCreateLocation(t *testing.T) {
 				CapacityWatts: 10289e3,
 				LocationType:  pb.LocationType_SITE,
 				Metadata:      metadata,
+				UserRole:      "TEST_OWNER",
+			},
+		},
+		{
+			name: "Shouldn't create location with invalid user role",
+			req: &pb.CreateLocationRequest{
+				LocationName:  "NON_WGS84",
+				EnergySource:  pb.EnergySource_SOLAR,
+				GeometryWkt:   "POINT(1000000 1000000)",
+				CapacityWatts: 10289e3,
+				LocationType:  pb.LocationType_SITE,
+				Metadata:      metadata,
+				UserRole:      "TEST_OWNER; DROP TABLE USERS; --",
 			},
 		},
 	}
@@ -356,25 +378,37 @@ func TestCreateLocation(t *testing.T) {
 			resp, err := c.CreateLocation(t.Context(), tt.req)
 
 			if strings.Split(tt.name, " ")[0] == "Shouldn't" {
-				require.Error(t, err)
+				require.Error(t, err, "Expected not to be able to create the location")
 			} else {
-				require.NoError(t, err)
+				require.NoError(t, err, "Expected to be able to create the location")
 				resp2, err := c.GetLocation(
 					t.Context(),
 					&pb.GetLocationRequest{
 						LocationUuid:    resp.LocationUuid,
 						EnergySource:    tt.req.EnergySource,
 						IncludeGeometry: false,
+						UserRole: tt.req.UserRole,
 					},
 				)
-				require.NoError(t, err)
+				require.NoError(t, err, "Expected same user to be able to see created location")
 				require.Equal(t, tt.req.LocationName, resp2.LocationName)
 				// require.Equal(t, tt.req.GeometryWkt, string(resp2.GeometryWkb))
 				require.Equal(t, tt.req.CapacityWatts, resp2.CapacityWatts)
 				require.Equal(t, tt.req.Metadata.AsMap(), resp2.Metadata.AsMap())
+				_, err = c.GetLocation(
+					t.Context(),
+					&pb.GetLocationRequest{
+						LocationUuid:    resp.LocationUuid,
+						EnergySource:    tt.req.EnergySource,
+						IncludeGeometry: false,
+						UserRole:        "ANOTHER_ROLE",
+					},
+				)
+				require.Error(t, err, "Expected different user to not be able to see location")
 			}
 		})
 	}
+
 	t.Run("Shouldn't get non-existent location", func(t *testing.T) {
 		_, err := c.GetLocation(
 			t.Context(),
@@ -383,6 +417,7 @@ func TestCreateLocation(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
 
 func TestCreateUpdateForecaster(t *testing.T) {
 	c := setupClient(t, createPostgresContainer(t))

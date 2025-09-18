@@ -3,6 +3,7 @@ init:
 	@echo "Installing Go dependencies..."
 	go get ./...
 	go install tool
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@2.4.0
 	@echo "Adding git hooks..."
 	@git config --local core.hooksPath .github/hooks
 	@echo "Generating boilerplate code..."
@@ -15,7 +16,8 @@ test:
 .PHONY: lint
 lint:
 	@go mod tidy
-	@go tool gofumpt -l -w .
+	@golangci-lint run \
+	   --show-stats=false --fix --enable=exhaustive,godot,misspell,perfsprint,godot,wsl_v5
 	@uvx -q sqlfluff fix -q \
 		--disable-progress-bar \
 		--config=internal/database/postgres/sql/.sqlfluff.toml \
