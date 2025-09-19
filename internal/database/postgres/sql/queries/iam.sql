@@ -36,4 +36,3 @@ ON CONFLICT DO NOTHING;
 DELETE FROM iam.location_policies
 WHERE service_account = $1
     AND location_uuid = ANY(sqlc.arg(location_uuids)::uuid []);
-

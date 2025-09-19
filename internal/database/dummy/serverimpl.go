@@ -37,10 +37,6 @@ func randomUkLngLat() lnglat {
 	}
 }
 
-func (l lnglat) lonRads() float64 {
-	return l.lonDegs * math.Pi / 180.0
-}
-
 func (l lnglat) latRads() float64 {
 	return l.latDegs * math.Pi / 180.0
 }
@@ -192,16 +188,13 @@ func determineIrradiance(t time.Time, p lnglat) SolarData {
 
 // cloudCoverFactor returns a value between 0.0 and 1.0 representing the cloud cover at the given
 // time and location.
-func cloudCoverFactor(t time.Time, p lnglat) float64 {
-	// TODO: Implement a more realistic cloud cover model.
-	// Handy blog on fake clouds https://nullprogram.com/blog/2007/11/20/
+// TODO: Implement cloud cover model.
+// Handy blog on fake clouds https://nullprogram.com/blog/2007/11/20/
 
-	// 1. Generate FBM noise.
-	//
-	// This is a mix of spline-smoothed Gaussian noise on a few different scales,
-	// with more weight given to the lower frequencies.
-	return 0.5
-}
+// 1. Generate FBM noise.
+//
+// This is a mix of spline-smoothed Gaussian noise on a few different scales,
+// with more weight given to the lower frequencies.
 
 // --- Server Implementation ----------------------------------------------------------------------
 

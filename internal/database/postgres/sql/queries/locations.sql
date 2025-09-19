@@ -78,7 +78,7 @@ SELECT
     ST_Y(l.centroid)::real AS latitude,
     ST_X(l.centroid)::real AS longitude
 FROM loc.locations AS l
-INNER JOIN iam.location_policies AS lp USING (location_uuid)
+INNER JOIN iam.location_policies USING (location_uuid)
 INNER JOIN
     loc.locations AS l_outer ON ST_WITHIN(
         l.geom,

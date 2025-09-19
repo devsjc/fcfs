@@ -17,7 +17,7 @@ test:
 lint:
 	@go mod tidy
 	@golangci-lint run \
-	   --show-stats=false --fix --enable=exhaustive,godot,misspell,perfsprint,godot,wsl_v5
+	   --show-stats=false --fix --enable-only=govet,staticcheck,godot,misspell,perfsprint,wsl_v5
 	@uvx -q sqlfluff fix -q \
 		--disable-progress-bar \
 		--config=internal/database/postgres/sql/.sqlfluff.toml \

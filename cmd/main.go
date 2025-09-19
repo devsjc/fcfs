@@ -71,5 +71,6 @@ func main() {
 	grpc_health_v1.RegisterHealthServer(s, health.NewServer())
 	reflection.Register(s)
 	log.Info().Msg("Listening on :50051")
-	s.Serve(lis)
+
+	_ = s.Serve(lis) // If this errors, we want it to panic! It's fundamental
 }

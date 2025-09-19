@@ -10,6 +10,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -43,10 +44,6 @@ var embedMigrations embed.FS
 // This is an important function which tries to preserve accuracy whilst also enabling a
 // large range of values to be represented by two 16 bit integers.
 func capacityToValueMultiplier(capacityWatts uint64) (int16, int16, error) {
-	if capacityWatts < 0 {
-		return 0, 0, fmt.Errorf("input capacity %d cannot be negative", capacityWatts)
-	}
-
 	if capacityWatts == 0 {
 		return 0, 0, nil
 	}
@@ -104,7 +101,7 @@ func timeWindowToPgWindow(window *pb.TimeWindow) (start pgtype.Timestamp, end pg
 		start = pgtype.Timestamp{Time: window.StartTimestampUtc.AsTime(), Valid: true}
 		end = pgtype.Timestamp{Time: window.EndTimestampUtc.AsTime(), Valid: true}
 	} else {
-		err = errors.New("Invalid time window: both start and end timestamps must be provided or neither")
+		err = errors.New("invalid time window: both start and end timestamps must be provided or neither")
 	}
 
 	return start, end, err
@@ -1224,6 +1221,11 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(ctx context.Context, re
 
 	// Get the predictions for the given location source
 	start, end, err := timeWindowToPgWindow(req.TimeWindow)
+	if err != nil {
+		l.Err(err).Msgf("timeWindowToPgWindow(%+v)", req.TimeWindow)
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid time window: %v", err)
+	}
+
 	lpParams := db.ListPredictionsForLocationParams{
 		LocationUuid:   dbSource.LocationUuid,
 		PredictorID:    dbPredictor.PredictorID,
