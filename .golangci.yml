@@ -40,3 +40,5 @@ formatters:
     goimports:
       local-prefixes:
         - github.com/devsjc/fcfs
+    gofumpt:
+      module-path: github.com/devsjc/fcfs
