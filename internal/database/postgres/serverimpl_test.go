@@ -13,12 +13,12 @@ import (
 	"time"
 
 	"buf.build/go/protovalidate"
-	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
 	"github.com/google/uuid"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc"
@@ -27,7 +27,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/stretchr/testify/require"
+	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
 )
 
 // --- HELPERS ------------------------------------------------------------------------------------
@@ -65,7 +65,9 @@ func createPostgresContainer(tb testing.TB) string {
 			wait.ForListeningPort("5432/tcp"),
 		),
 		LogConsumerCfg: &testcontainers.LogConsumerConfig{
-			Opts:      []testcontainers.LogProductionOption{testcontainers.WithLogProductionTimeout(10 * time.Second)},
+			Opts: []testcontainers.LogProductionOption{
+				testcontainers.WithLogProductionTimeout(10 * time.Second),
+			},
 			Consumers: []testcontainers.LogConsumer{&g},
 		},
 		Name: fmt.Sprintf("dp_testdb_%d", time.Now().Unix()),
@@ -79,8 +81,10 @@ func createPostgresContainer(tb testing.TB) string {
 		},
 	)
 	require.NoError(tb, err)
+
 	containerPort, err := pgC.MappedPort(tb.Context(), "5432/tcp")
 	require.NoError(tb, err)
+
 	host, err := pgC.Host(tb.Context())
 	require.NoError(tb, err)
 
@@ -116,6 +120,7 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (output struc
 	for _, f := range seedfiles {
 		sql, err := os.ReadFile(f)
 		require.NoError(tb, err)
+
 		_, err = conn.Exec(tb.Context(), string(sql))
 		require.NoError(tb, err)
 
@@ -137,7 +142,11 @@ func seed(tb testing.TB, pgConnString string, params seedDBParams) (output struc
 			),
 		).Scan(&result)
 		require.NoError(tb, err)
-		tb.Logf("Seeded %d predicted generation values for %d locations", output.NumPgvs, len(output.LocationUuids))
+		tb.Logf(
+			"Seeded %d predicted generation values for %d locations",
+			output.NumPgvs,
+			len(output.LocationUuids),
+		)
 
 		stringUuids := make([]string, len(result.LocationUuids))
 		for i, u := range result.LocationUuids {
@@ -403,6 +412,7 @@ func TestCreateLocation(t *testing.T) {
 			} else {
 				// Try fetching the created location and check it's the same
 				require.NoError(t, err, "Expected to be able to create the location")
+
 				resp2, err := c.GetLocation(
 					t.Context(),
 					&pb.GetLocationRequest{
@@ -526,13 +536,16 @@ func TestGetForecastAtTimestamp(t *testing.T) {
 		PivotTime:               pivotTime,
 	})
 
-	crossSectionResp, err := c.GetForecastAtTimestamp(t.Context(), &pb.GetForecastAtTimestampRequest{
-		EnergySource:  pb.EnergySource_SOLAR,
-		TimestampUtc:  timestamppb.New(pivotTime),
-		LocationUuids: output.LocationUuids,
-		Forecaster:    &pb.Forecaster{ForecasterName: "test_model_1", ForecasterVersion: "v1"},
-		UserRole:      "TEST_OWNER",
-	})
+	crossSectionResp, err := c.GetForecastAtTimestamp(
+		t.Context(),
+		&pb.GetForecastAtTimestampRequest{
+			EnergySource:  pb.EnergySource_SOLAR,
+			TimestampUtc:  timestamppb.New(pivotTime),
+			LocationUuids: output.LocationUuids,
+			Forecaster:    &pb.Forecaster{ForecasterName: "test_model_1", ForecasterVersion: "v1"},
+			UserRole:      "TEST_OWNER",
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, crossSectionResp)
 	require.Len(t, crossSectionResp.Values, len(output.LocationUuids))
@@ -645,7 +658,10 @@ func TestGetForecastAsTimeseries(t *testing.T) {
 			resp, err := c.GetForecastAsTimeseries(t.Context(), &pb.GetForecastAsTimeseriesRequest{
 				LocationUuid: output.LocationUuids[0],
 				HorizonMins:  uint32(tt.horizonMins),
-				Forecaster:   &pb.Forecaster{ForecasterName: "test_model_1", ForecasterVersion: "v1"},
+				Forecaster: &pb.Forecaster{
+					ForecasterName:    "test_model_1",
+					ForecasterVersion: "v1",
+				},
 				EnergySource: pb.EnergySource_SOLAR,
 				TimeWindow: &pb.TimeWindow{
 					StartTimestampUtc: timestamppb.New(pivotTime.Add(-time.Hour * 48)),
@@ -698,16 +714,19 @@ func TestGetObservationsAsTimeseries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Size %d", tt.expectedSize), func(t *testing.T) {
-			resp, err := c.GetObservationsAsTimeseries(t.Context(), &pb.GetObservationsAsTimeseriesRequest{
-				LocationUuid: output.LocationUuids[0],
-				EnergySource: pb.EnergySource_SOLAR,
-				TimeWindow: &pb.TimeWindow{
-					StartTimestampUtc: timestamppb.New(tt.startTime),
-					EndTimestampUtc:   timestamppb.New(tt.endTime),
+			resp, err := c.GetObservationsAsTimeseries(
+				t.Context(),
+				&pb.GetObservationsAsTimeseriesRequest{
+					LocationUuid: output.LocationUuids[0],
+					EnergySource: pb.EnergySource_SOLAR,
+					TimeWindow: &pb.TimeWindow{
+						StartTimestampUtc: timestamppb.New(tt.startTime),
+						EndTimestampUtc:   timestamppb.New(tt.endTime),
+					},
+					ObserverName: "test_observer",
+					UserRole:     "TEST_OWNER",
 				},
-				ObserverName: "test_observer",
-				UserRole:     "TEST_OWNER",
-			})
+			)
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedSize, len(resp.Values))
 		})
@@ -882,7 +901,14 @@ func BenchmarkPostgresClient(b *testing.B) {
 	tests := []seedDBParams{
 		// {NumLocations: 373, PgvResolutionMins: 30, ForecastResolutionMins: 60, ForecastLengthHours: 8, NumForecastsPerLocation: 10, PivotTime: pivotTime},
 		// {NumLocations: 373, PgvResolutionMins: 5, ForecastResolutionMins: 60, ForecastLengthHours: 16, NumForecastsPerLocation: 48, PivotTime: pivotTime},
-		{NumLocations: 500, PgvResolutionMins: 30, ForecastResolutionMins: 30, ForecastLengthHours: 24, NumForecastsPerLocation: 256, PivotTime: pivotTime},
+		{
+			NumLocations:            500,
+			PgvResolutionMins:       30,
+			ForecastResolutionMins:  30,
+			ForecastLengthHours:     24,
+			NumForecastsPerLocation: 256,
+			PivotTime:               pivotTime,
+		},
 		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 76, PivotTime: pivotTime},
 		// {NumLocations: 10000, PgvResolutionMins: 5, ForecastResolutionMins: 30, ForecastLengthHours: 8, NumForecastsPerLocation: 256, PivotTime: pivotTime},
 	}
@@ -905,16 +931,22 @@ func BenchmarkPostgresClient(b *testing.B) {
 
 		b.Run(fmt.Sprintf("%d/GetForecastAsTimeseries", output.NumPgvs), func(b *testing.B) {
 			for b.Loop() {
-				resp, err := c.GetForecastAsTimeseries(b.Context(), &pb.GetForecastAsTimeseriesRequest{
-					LocationUuid: output.LocationUuids[0],
-					EnergySource: pb.EnergySource_SOLAR,
-					Forecaster:   &pb.Forecaster{ForecasterName: "test_model_1", ForecasterVersion: "v1"},
-					TimeWindow: &pb.TimeWindow{
-						StartTimestampUtc: timestamppb.New(pivotTime.Add(-time.Hour * 48)),
-						EndTimestampUtc:   timestamppb.New(pivotTime.Add(time.Hour * 36)),
+				resp, err := c.GetForecastAsTimeseries(
+					b.Context(),
+					&pb.GetForecastAsTimeseriesRequest{
+						LocationUuid: output.LocationUuids[0],
+						EnergySource: pb.EnergySource_SOLAR,
+						Forecaster: &pb.Forecaster{
+							ForecasterName:    "test_model_1",
+							ForecasterVersion: "v1",
+						},
+						TimeWindow: &pb.TimeWindow{
+							StartTimestampUtc: timestamppb.New(pivotTime.Add(-time.Hour * 48)),
+							EndTimestampUtc:   timestamppb.New(pivotTime.Add(time.Hour * 36)),
+						},
+						UserRole: "TEST_OWNER",
 					},
-					UserRole: "TEST_OWNER",
-				})
+				)
 				require.NoError(b, err)
 				require.GreaterOrEqual(b, len(resp.Values), 1)
 			}
@@ -925,13 +957,19 @@ func BenchmarkPostgresClient(b *testing.B) {
 			}
 
 			for b.Loop() {
-				crossSectionResp, err := c.GetForecastAtTimestamp(b.Context(), &pb.GetForecastAtTimestampRequest{
-					EnergySource:  pb.EnergySource_SOLAR,
-					LocationUuids: output.LocationUuids,
-					Forecaster:    &pb.Forecaster{ForecasterName: "test_model_1", ForecasterVersion: "v1"},
-					TimestampUtc:  timestamppb.New(pivotTime),
-					UserRole:      "TEST_OWNER",
-				})
+				crossSectionResp, err := c.GetForecastAtTimestamp(
+					b.Context(),
+					&pb.GetForecastAtTimestampRequest{
+						EnergySource:  pb.EnergySource_SOLAR,
+						LocationUuids: output.LocationUuids,
+						Forecaster: &pb.Forecaster{
+							ForecasterName:    "test_model_1",
+							ForecasterVersion: "v1",
+						},
+						TimestampUtc: timestamppb.New(pivotTime),
+						UserRole:     "TEST_OWNER",
+					},
+				)
 				require.NoError(b, err)
 				require.NotNil(b, crossSectionResp)
 				require.GreaterOrEqual(b, len(crossSectionResp.Values), 1)
@@ -939,16 +977,19 @@ func BenchmarkPostgresClient(b *testing.B) {
 		})
 		b.Run(fmt.Sprintf("%d/GetObservationsAsTimeseries", output.NumPgvs), func(b *testing.B) {
 			for b.Loop() {
-				obsResp, err := c.GetObservationsAsTimeseries(b.Context(), &pb.GetObservationsAsTimeseriesRequest{
-					LocationUuid: output.LocationUuids[0],
-					ObserverName: "test_observer",
-					EnergySource: pb.EnergySource_SOLAR,
-					TimeWindow: &pb.TimeWindow{
-						StartTimestampUtc: timestamppb.New(pivotTime.Add(-time.Hour * 36)),
-						EndTimestampUtc:   timestamppb.New(pivotTime),
+				obsResp, err := c.GetObservationsAsTimeseries(
+					b.Context(),
+					&pb.GetObservationsAsTimeseriesRequest{
+						LocationUuid: output.LocationUuids[0],
+						ObserverName: "test_observer",
+						EnergySource: pb.EnergySource_SOLAR,
+						TimeWindow: &pb.TimeWindow{
+							StartTimestampUtc: timestamppb.New(pivotTime.Add(-time.Hour * 36)),
+							EndTimestampUtc:   timestamppb.New(pivotTime),
+						},
+						UserRole: "TEST_OWNER",
 					},
-					UserRole: "TEST_OWNER",
-				})
+				)
 				require.NoError(b, err)
 				require.GreaterOrEqual(b, len(obsResp.Values), 36*60/tt.PgvResolutionMins)
 			}
@@ -957,7 +998,10 @@ func BenchmarkPostgresClient(b *testing.B) {
 			for b.Loop() {
 				_, err := c.CreateForecast(b.Context(), &pb.CreateForecastRequest{
 					Forecast: &pb.CreateForecastRequest_Forecast{
-						Forecaster:   &pb.Forecaster{ForecasterName: "test_model_1", ForecasterVersion: "v1"},
+						Forecaster: &pb.Forecaster{
+							ForecasterName:    "test_model_1",
+							ForecasterVersion: "v1",
+						},
 						LocationUuid: output.LocationUuids[0],
 						EnergySource: pb.EnergySource_SOLAR,
 						InitTimeUtc: timestamppb.New(

@@ -6,18 +6,15 @@ import (
 	"slices"
 	"strings"
 
+	"buf.build/go/protovalidate"
+	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
-	// Installing the gzip encoding registers it as an available compressor.
-	// gRPC will automatically negotiate and use gzip if the client supports it.
-	_ "google.golang.org/grpc/encoding/gzip"
-	"google.golang.org/grpc/reflection"
-
-	"buf.build/go/protovalidate"
-	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
+	_ "google.golang.org/grpc/encoding/gzip" // GRPC will automatically negotiate and use gzip if the client supports it.
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection"
 
 	dbdy "github.com/devsjc/fcfs/dp/internal/database/dummy"
 	dbpg "github.com/devsjc/fcfs/dp/internal/database/postgres"
