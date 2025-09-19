@@ -27,6 +27,12 @@ $ make gen.proto.python
 $ uvx marimo edit --headless --sandbox examples/python-notebook/example.py 
 ```
 
+For ease, the above process is wrapped in a Makefile target:
+
+```bash
+$ make run.notebook
+```
+
 ### Typescript Frontend Client
 
 TODO!

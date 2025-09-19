@@ -365,6 +365,7 @@ func (s *DataPlatformServerImpl) StreamForecastData(
 			var p10 *float32
 			if dbPreds[i].P10Sip != nil {
 				p10val := (float32(*dbPreds[i].P10Sip) / 30000.0) * 100.0
+
 				p10 = &p10val
 			}
 
@@ -419,7 +420,7 @@ func (s *DataPlatformServerImpl) ListLocations(
 
 		lwParams := db.GetUserLocationsWithinParams{
 			LocationUuid:   locationUuid,
-			ServiceAccount: req.UserRole,
+			ServiceAccount: strings.ToUpper(req.UserRole),
 		}
 
 		dbLocations, err := querier.GetUserLocationsWithin(ctx, lwParams)
@@ -441,7 +442,7 @@ func (s *DataPlatformServerImpl) ListLocations(
 	} else {
 		// List all the locations
 		glParams := db.GetUserLocationsParams{
-			ServiceAccount: req.UserRole,
+			ServiceAccount: strings.ToUpper(req.UserRole),
 		}
 
 		dbLocations, err := querier.GetUserLocations(ctx, glParams)
@@ -606,7 +607,7 @@ func (s *DataPlatformServerImpl) GetObservationsAsTimeseries(
 			Time:  req.TimeWindow.StartTimestampUtc.AsTime(),
 			Valid: true,
 		},
-		ServiceAccount: req.UserRole,
+		ServiceAccount: strings.ToUpper(req.UserRole),
 	}
 
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, gsParams)
@@ -705,7 +706,7 @@ func (s *DataPlatformServerImpl) CreateObservations(
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: req.Values[0].TimestampUtc.AsTime(), Valid: true},
-		ServiceAccount: req.UserRole,
+		ServiceAccount: strings.ToUpper(req.UserRole),
 	}
 
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, params)
@@ -847,7 +848,7 @@ func (s *DataPlatformServerImpl) GetForecastAtTimestamp(
 		SourceTypeName: req.EnergySource.String(),
 		LocationUuids:  locationUuids,
 		AtTimestampUtc: pgtype.Timestamp{Time: req.TimestampUtc.AsTime(), Valid: true},
-		ServiceAccount: req.UserRole,
+		ServiceAccount: strings.ToUpper(req.UserRole),
 	}
 
 	dbSources, err := querier.ListUserLocationSourcesAtTimestamp(ctx, lsParams)
@@ -952,7 +953,7 @@ func (s *DataPlatformServerImpl) GetLocation(
 		LocationUuid:   locationUuid,
 		SourceTypeName: req.EnergySource.String(),
 		AtTimestampUtc: pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
-		ServiceAccount: req.UserRole,
+		ServiceAccount: strings.ToUpper(req.UserRole),
 	}
 
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, params)
@@ -1167,7 +1168,7 @@ func (s *DataPlatformServerImpl) CreateLocation(
 
 	// Make the user the owner of the location
 	clp := db.CreateLocationPolicesParams{
-		ServiceAccount: req.UserRole,
+		ServiceAccount: strings.ToUpper(req.UserRole),
 		RoleName:       "OWNER",
 		LocationUuids:  []uuid.UUID{dbLocation.LocationUuid},
 	}
@@ -1215,7 +1216,7 @@ func (s *DataPlatformServerImpl) CreateLocation(
 		CapacityUnitPrefixFactor: ex,
 		Metadata:                 metadata,
 		ValidFromUtc:             pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
-		ServiceAccount:           req.UserRole,
+		ServiceAccount: strings.ToUpper(          req.UserRole),
 	}
 
 	dbSource, err := querier.CreateUserLocationSourceEntry(ctx, csParams)
@@ -1323,7 +1324,7 @@ func (s *DataPlatformServerImpl) GetForecastAsTimeseries(
 			Time:  req.TimeWindow.StartTimestampUtc.AsTime(),
 			Valid: true,
 		},
-		ServiceAccount: req.UserRole,
+		ServiceAccount: strings.ToUpper(req.UserRole),
 	}
 
 	dbSource, err := querier.GetUserLocationSourceAtTimestamp(ctx, gsParams)
@@ -1451,7 +1452,7 @@ func (s *DataPlatformServerImpl) AddLocationPolicy(
 
 	pParams := db.CreateLocationPolicesParams{
 		RoleName:       req.Scope,
-		ServiceAccount: req.UserRole,
+		ServiceAccount: strings.ToUpper(req.UserRole),
 		LocationUuids:  locationUuids,
 	}
 
