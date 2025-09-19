@@ -1,4 +1,4 @@
-module github.com/devsjc/fcfs/dp
+module github.com/devsjc/fcfs
 
 go 1.24.0
 

@@ -29,8 +29,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	db "github.com/devsjc/fcfs/dp/internal/database/postgres/gen"
-	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
+	db "github.com/devsjc/fcfs/internal/database/postgres/gen"
+	pb "github.com/devsjc/fcfs/internal/gen/ocf/dp"
 )
 
 //go:embed sql/migrations/*.sql

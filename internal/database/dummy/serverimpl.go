@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "github.com/devsjc/fcfs/dp/internal/gen/ocf/dp"
+	pb "github.com/devsjc/fcfs/internal/gen/ocf/dp"
 )
 
 // --- Reuseable Functions for route logic --------------------------------------------------------

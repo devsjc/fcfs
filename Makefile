@@ -18,7 +18,8 @@ lint:
 	@go mod tidy
 	@golangci-lint run \
 	   --show-stats=false --fix
-	@golangci-lint fmt -v
+	@go tool gofmt -l . # Lists files that are likely to be changed by the next command
+	@golangci-lint fmt
 	@uvx -q sqlfluff fix -q \
 		--disable-progress-bar \
 		--config=internal/database/postgres/sql/.sqlfluff.toml \
