@@ -1216,7 +1216,7 @@ func (s *DataPlatformServerImpl) CreateLocation(
 		CapacityUnitPrefixFactor: ex,
 		Metadata:                 metadata,
 		ValidFromUtc:             pgtype.Timestamp{Time: time.Now().UTC(), Valid: true},
-		ServiceAccount: strings.ToUpper(          req.UserRole),
+		ServiceAccount:           strings.ToUpper(req.UserRole),
 	}
 
 	dbSource, err := querier.CreateUserLocationSourceEntry(ctx, csParams)

@@ -18,7 +18,7 @@ lint:
 	@go mod tidy
 	@golangci-lint run \
 	   --show-stats=false --fix
-	@golangci-lint fmt
+	@golangci-lint fmt -v
 	@uvx -q sqlfluff fix -q \
 		--disable-progress-bar \
 		--config=internal/database/postgres/sql/.sqlfluff.toml \
