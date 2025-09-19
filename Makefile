@@ -3,7 +3,6 @@ init:
 	@echo "Installing Go dependencies..."
 	go get ./...
 	go install tool
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@2.4.0
 	@echo "Adding git hooks..."
 	@git config --local core.hooksPath .github/hooks
 	@echo "Generating boilerplate code..."
@@ -15,10 +14,11 @@ test:
 
 .PHONY: lint
 lint:
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0
 	@go mod tidy
 	@golangci-lint run \
 	   --show-stats=false --fix
-	@go tool gofmt -l . # Lists files that are likely to be changed by the next command
+	@gofmt -l . # Lists files that are likely to be changed by the next command
 	@golangci-lint fmt
 	@uvx -q sqlfluff fix -q \
 		--disable-progress-bar \
